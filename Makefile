@@ -11,9 +11,9 @@ $(TARGET): main.c $(GLAD_SRC)
 zip: projekt.zip
 
 projekt.zip: $(TARGET) main.c
-	rm -rf projekt
-	mkdir projekt
-	rsync -qav . --exclude projekt projekt/
+	mkdir -p projekt
+	rm -rf projekt/*
+	rsync -qa . --exclude projekt projekt/
 	cd projekt && git clean -fx && rm -rf .git .gitignore
 	zip -r projekt.zip projekt
 	rm -rf projekt
