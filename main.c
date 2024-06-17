@@ -1,13 +1,42 @@
 #include <glad/gl.h>
 //
 #include <GLFW/glfw3.h>
+// for hot reloading
+#include <fcntl.h>
+#include <sys/inotify.h>
+//
+#include <errno.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
-char *readShaderSource(const char *shaderFile) {
-  FILE *file = fopen(shaderFile, "r");
+#define EVENT_SIZE (sizeof(struct inotify_event))
+#define BUF_LEN (1024 * (EVENT_SIZE + 16))
+
+int watch_shader_file(const char *shader_path) {
+  int fd = inotify_init();
+  if (fd < 0) {
+    perror("inotify_init");
+    exit(EXIT_FAILURE);
+  }
+
+  int wd = inotify_add_watch(fd, shader_path, IN_MODIFY);
+  if (wd == -1) {
+    fprintf(stderr, "Cannot watch '%s'\n", shader_path);
+    exit(EXIT_FAILURE);
+  }
+
+  int flags = fcntl(fd, F_GETFL, 0);
+  fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+
+  return fd;
+}
+
+char *read_shader_source(const char *shader_file) {
+  FILE *file = fopen(shader_file, "r");
   if (!file) {
-    fprintf(stderr, "Error: Could not open shader file %s\n", shaderFile);
+    fprintf(stderr, "Error: Could not open shader file %s\n", shader_file);
     exit(EXIT_FAILURE);
   }
 
@@ -28,7 +57,7 @@ char *readShaderSource(const char *shaderFile) {
   return buffer;
 }
 
-GLuint compileShader(const char *shaderSource, GLenum shaderType) {
+GLuint compile_shader(const char *shaderSource, GLenum shaderType) {
   GLuint shader = glCreateShader(shaderType);
   glShaderSource(shader, 1, &shaderSource, NULL);
   glCompileShader(shader);
@@ -45,11 +74,11 @@ GLuint compileShader(const char *shaderSource, GLenum shaderType) {
   return shader;
 }
 
-GLuint createShaderProgram(const char *fragmentShaderPath) {
-  char *fragmentShaderSource = readShaderSource(fragmentShaderPath);
+GLuint create_shader_program(const char *fragment_shader_path) {
+  char *fragment_shader_source = read_shader_source(fragment_shader_path);
 
   GLuint fragmentShader =
-      compileShader(fragmentShaderSource, GL_FRAGMENT_SHADER);
+      compile_shader(fragment_shader_source, GL_FRAGMENT_SHADER);
 
   GLuint shaderProgram = glCreateProgram();
   glAttachShader(shaderProgram, fragmentShader);
@@ -65,9 +94,36 @@ GLuint createShaderProgram(const char *fragmentShaderPath) {
   }
 
   glDeleteShader(fragmentShader);
-  free(fragmentShaderSource);
+  free(fragment_shader_source);
 
   return shaderProgram;
+}
+
+bool reload_shader(int watcher_fd, GLuint *program, const char *shader_path) {
+  char buffer[BUF_LEN];
+  int length = read(watcher_fd, buffer, BUF_LEN);
+  if (length < 0) {
+    if (errno != EAGAIN)
+      perror("read");
+    return false;
+  }
+
+  int i = 0;
+  bool did_reload = false;
+  while (i < length) {
+    struct inotify_event *event = (struct inotify_event *)&buffer[i];
+    if (event->mask & IN_MODIFY) {
+      printf("%s modified, recompiling...\n", shader_path);
+      GLuint new_program = create_shader_program(shader_path);
+      if (new_program) {
+        glDeleteProgram(*program);
+        *program = new_program;
+        did_reload = true;
+      }
+    }
+    i += EVENT_SIZE + event->len;
+  }
+  return did_reload;
 }
 
 // Function to handle errors
@@ -76,6 +132,7 @@ void error_callback(int error, const char *description) {
 }
 
 int main(void) {
+
   glfwSetErrorCallback(error_callback);
 
   if (!glfwInit())
@@ -125,7 +182,8 @@ int main(void) {
   // "row", offset of each "row"
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), NULL);
 
-  GLuint shader_program = createShaderProgram("renderer.glsl");
+  GLuint shader_program = create_shader_program("renderer.glsl");
+  int shader_watcher_fd = watch_shader_file("renderer.glsl");
 
   int width, height;
   glfwGetFramebufferSize(window, &width, &height);
@@ -137,9 +195,9 @@ int main(void) {
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
   // create the texture for the framebuffer
-  GLuint fboTexture;
-  glGenTextures(1, &fboTexture);
-  glBindTexture(GL_TEXTURE_2D, fboTexture);
+  GLuint fbo_texture;
+  glGenTextures(1, &fbo_texture);
+  glBindTexture(GL_TEXTURE_2D, fbo_texture);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
                GL_UNSIGNED_BYTE, NULL);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -148,14 +206,7 @@ int main(void) {
 
   // attach the texture to our framebuffer
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                         fboTexture, 0);
-
-  /* // Check if framebuffer is complete (whatever that means) */
-  /* if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-   */
-  /*   fprintf(stderr, "Error: Framebuffer is not complete!\n"); */
-  /*   exit(EXIT_FAILURE); */
-  /* } */
+                         fbo_texture, 0);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   // FPS COUNTING SETUP
@@ -165,6 +216,9 @@ int main(void) {
   double last_frame_time = glfwGetTime();
 
   while (!glfwWindowShouldClose(window)) {
+    bool did_reload =
+        reload_shader(shader_watcher_fd, &shader_program, "renderer.glsl");
+
     // recalculate window dimensions
     int new_width, new_height;
     glfwGetFramebufferSize(window, &new_width, &new_height);
@@ -173,7 +227,7 @@ int main(void) {
       height = new_height;
 
       // Resize the backbuffer texture
-      glBindTexture(GL_TEXTURE_2D, fboTexture);
+      glBindTexture(GL_TEXTURE_2D, fbo_texture);
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
                    GL_UNSIGNED_BYTE, NULL);
       glBindTexture(GL_TEXTURE_2D, 0);
@@ -195,12 +249,18 @@ int main(void) {
       last_frame_time = current_time;
     }
 
-    // DRAWING THE FRAME
+    if (did_reload) {
+      iFrame = 0;
+      fps_counter = 0;
+      last_frame_time = current_time;
+    }
 
+
+    // DRAWING THE FRAME
     // render the quad to the back buffer
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, fboTexture);
+    glBindTexture(GL_TEXTURE_2D, fbo_texture);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -225,8 +285,9 @@ int main(void) {
   glDeleteBuffers(1, &vbo);
   glDeleteProgram(shader_program);
   glDeleteFramebuffers(1, &fbo);
-  glDeleteTextures(1, &fboTexture);
+  glDeleteTextures(1, &fbo_texture);
   glfwTerminate();
+  close(shader_watcher_fd);
 
   return 0;
 }
