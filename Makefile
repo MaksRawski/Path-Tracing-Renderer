@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -Wall -Wpedantic -Ilib/include
-LDFLAGS = -lglfw -lGL
+CFLAGS = -Wall -Wextra -Wno-unused -Ilib/include
+LDFLAGS = -lglfw -ldl
 TARGET = bin/main
 GLAD_SRC = ./lib/src/gl.c
 
