@@ -9,6 +9,7 @@
 
 uniform int iFrame;
 uniform vec2 iResolution;
+uniform sampler2D iChannel0;
 
 // https://raytracing.github.io/books/RayTracingInOneWeekend.html#positionablecamera (12.2)
 struct Camera {
@@ -72,7 +73,7 @@ float RandomFloat(inout uint state)
 
 const float C_PI = 3.141592653589793;
 const float C_TWOPI = 6.283185307179586;
-const int MAX_BOUNCE_COUNT = 2;
+const int MAX_BOUNCE_COUNT = 4;
 const int SAMPLES_PER_PIXEL = 4;
 
 const int NUM_OF_SPHERES = 5;
@@ -133,7 +134,7 @@ HitInfo RayHitsSphere(Ray ray, Sphere s) {
 HitInfo CalculateRayCollision(Ray ray) {
     HitInfo closestHit;
     closestHit.didHit = false;
-    closestHit.dst = 1.0 / 0.0; // infinity
+    closestHit.dst = 1.0e30; // _infinity_
 
     // iterate through all the spheres
     for (int i = 0; i < NUM_OF_SPHERES; ++i) {
@@ -165,13 +166,13 @@ vec3 GetEnviromentLight(Ray ray) {
     vec3 GroundColor = vec3(0.7, 0.7, 0.7);
     vec3 SunLightDirection = vec3(0.0, -2.0, 0.0);
 
-    float skyGradientT = pow(smoothstep(0, 0.4, ray.dir.y), 0.35);
+    float skyGradientT = pow(smoothstep(0.0, 0.4, ray.dir.y), 0.35);
     vec3 skyGradient = mix(SkyColorHorizon, SkyColorZenith, skyGradientT);
-    float sun = pow(max(0, dot(ray.dir, -SunLightDirection)), SunFocus) * SunIntensivity;
+    float sun = pow(max(0.0, dot(ray.dir, -SunLightDirection)), SunFocus) * SunIntensivity;
 
     // combine ground sky and sun
-    float groundToSkyT = smoothstep(-0.01, 0, ray.dir.y);
-    float sunMask = groundToSkyT >= 1 ? 1.0 : 0.0;
+    float groundToSkyT = smoothstep(-0.01, 0.0, ray.dir.y);
+    float sunMask = groundToSkyT >= 1.0 ? 1.0 : 0.0;
     return mix(GroundColor, skyGradient, groundToSkyT) + sun * sunMask;
 }
 
@@ -249,9 +250,12 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     }
     c /= float(SAMPLES_PER_PIXEL);
 
-    // vec3 lastFrameColor = texture(iChannel0, fragCoord / iResolution.xy).rgb;
-    // if (iFrame == 0) lastFrameColor = c;
-    // c = mix(lastFrameColor, c, 1.0 / float(iFrame + 1));
+    vec3 lastFrameColor = texture(iChannel0, fragCoord / iResolution.xy).rgb;
+    if (iFrame == 0) lastFrameColor = c;
+    c = mix(c, lastFrameColor, 1.0 / float(iFrame + 1));
+    float weight = 1.0 / (float(iFrame) + 1.0);
+    c = lastFrameColor * (1.0 - weight) + c * weight;
+    // c = lastFrameColor * vec3(1.0, 0.0, 0.0) + vec3(0.1, 0.0, 0.0);
 
     // fragColor = vec4(uv, 0, 1);
     fragColor = vec4(c, 1);
