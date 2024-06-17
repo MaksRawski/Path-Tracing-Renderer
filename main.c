@@ -2,12 +2,72 @@
 //
 #include <GLFW/glfw3.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-const char *fragment_shader = "#version 330\n"
-                              "out vec4 frag_colour;"
-                              "void main() {"
-                              "  frag_colour = vec4(1, 0.0, 0, 1.0);"
-                              "}";
+char *readShaderSource(const char *shaderFile) {
+    FILE *file = fopen(shaderFile, "r");
+    if (!file) {
+        fprintf(stderr, "Error: Could not open shader file %s\n", shaderFile);
+        exit(EXIT_FAILURE);
+    }
+
+    fseek(file, 0, SEEK_END);
+    long length = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    char *buffer = (char *)malloc(length + 1);
+    if (!buffer) {
+        fprintf(stderr, "Error: Could not allocate memory for shader source\n");
+        exit(EXIT_FAILURE);
+    }
+
+    fread(buffer, 1, length, file);
+    buffer[length] = '\0';
+
+    fclose(file);
+    return buffer;
+}
+
+GLuint compileShader(const char *shaderSource, GLenum shaderType) {
+    GLuint shader = glCreateShader(shaderType);
+    glShaderSource(shader, 1, &shaderSource, NULL);
+    glCompileShader(shader);
+
+    GLint success;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        GLchar infoLog[512];
+        glGetShaderInfoLog(shader, 512, NULL, infoLog);
+        fprintf(stderr, "Error: Shader compilation failed\n%s\n", infoLog);
+        exit(EXIT_FAILURE);
+    }
+
+    return shader;
+}
+
+GLuint createShaderProgram(const char *fragmentShaderPath) {
+    char *fragmentShaderSource = readShaderSource(fragmentShaderPath);
+
+    GLuint fragmentShader = compileShader(fragmentShaderSource, GL_FRAGMENT_SHADER);
+
+    GLuint shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram);
+
+    GLint success;
+    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    if (!success) {
+        GLchar infoLog[512];
+        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+        fprintf(stderr, "Error: Shader program linking failed\n%s\n", infoLog);
+        exit(EXIT_FAILURE);
+    }
+
+    glDeleteShader(fragmentShader);
+    free(fragmentShaderSource);
+
+    return shaderProgram;
+}
 
 // Function to handle errors
 void error_callback(int error, const char *description) {
@@ -21,7 +81,7 @@ int main(void) {
     return -1;
 
   GLFWwindow *window =
-      glfwCreateWindow(600, 600, "OpenGL Full-Screen Quad", NULL, NULL);
+      glfwCreateWindow(600, 600, "LAK - Projekt zaliczeniowy", NULL, NULL);
   if (!window) {
     glfwTerminate();
     return -1;
@@ -64,33 +124,27 @@ int main(void) {
   // "row", offset of each "row"
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), NULL);
 
-  GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(fs, 1, &fragment_shader, NULL);
-  glCompileShader(fs);
+  GLuint shader_program = createShaderProgram("renderer.glsl");
 
-  GLuint shader_program = glCreateProgram();
-  glAttachShader(shader_program, fs);
-  glLinkProgram(shader_program);
+  unsigned int iFrame = 0;
 
   while (!glfwWindowShouldClose(window)) {
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
     const float ratio = width / (float)height;
-
     glViewport(0, 0, width, height);
 
-    glClear(GL_COLOR_BUFFER_BIT);
-    // wipe the drawing surface clear
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(shader_program);
+    glUniform1i(glGetUniformLocation(shader_program, "iFrame"), iFrame);
+    glUniform2f(glGetUniformLocation(shader_program, "iResolution"), width, height);
+
     glBindVertexArray(vao);
-    // draw points 0-3 from the currently bound VAO with current in-use shader
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-    // put the stuff we've been drawing onto the display
     glfwSwapBuffers(window);
-    // update other events like input handling
     glfwPollEvents();
+    ++iFrame;
   }
 
   glDeleteVertexArrays(1, &vao);

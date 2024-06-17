@@ -5,9 +5,10 @@
 // - https://github.com/ssloy/tinyraytracer/wiki/Part-1:-understandable-raytracing (FOV)
 // - https://www.intel.com/content/www/us/en/content-details/763947/path-tracing-workshop-part-1-ray-tracing.html (camera setup idea)
 
-// using shady's setting to get a previous frame into a sampler
-// https://github.com/polyfloyd/shady?tab=readme-ov-file#the-builtin-loader
-// #pragma map iChannel0=builtin:Back Buffer
+#version 330 core
+
+uniform int iFrame;
+uniform vec2 iResolution;
 
 // https://raytracing.github.io/books/RayTracingInOneWeekend.html#positionablecamera (12.2)
 struct Camera {
@@ -83,7 +84,6 @@ const Sphere SPHERES[NUM_OF_SPHERES] = Sphere[NUM_OF_SPHERES](
         // Sphere(vec3(-5.0, 21.0, 9.0), 16.0, Material(vec3(0.8, 0.8, 0.8), 50.0, vec3(0.8, 0.8, 0.0))), // sun
         Sphere(vec3(-5.0, -1005.0, 10.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.5, 0.5, 0.5))) // ground
     );
-
 
 vec3 RandomUnitVector(inout uint state)
 {
@@ -256,4 +256,12 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     // fragColor = vec4(uv, 0, 1);
     fragColor = vec4(c, 1);
     // fragColor = vec4(lastFrameColor, 1.0);
+}
+
+// mainImage is what shadertoy requires
+// but this is how you should actually write it
+void main() {
+    vec4 fragColor;
+    mainImage(fragColor, gl_FragCoord.xy);
+    gl_FragColor = fragColor;
 }
