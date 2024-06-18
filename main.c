@@ -68,7 +68,7 @@ GLuint compile_shader(const char *shaderSource, GLenum shaderType) {
     GLchar infoLog[512];
     glGetShaderInfoLog(shader, 512, NULL, infoLog);
     fprintf(stderr, "Error: Shader compilation failed\n%s\n", infoLog);
-    exit(EXIT_FAILURE);
+    return -1;
   }
 
   return shader;
@@ -80,6 +80,8 @@ GLuint create_shader_program(const char *fragment_shader_path) {
   GLuint fragmentShader =
       compile_shader(fragment_shader_source, GL_FRAGMENT_SHADER);
 
+  if (fragmentShader < 0) return -1;
+
   GLuint shaderProgram = glCreateProgram();
   glAttachShader(shaderProgram, fragmentShader);
   glLinkProgram(shaderProgram);
@@ -90,7 +92,7 @@ GLuint create_shader_program(const char *fragment_shader_path) {
     GLchar infoLog[512];
     glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
     fprintf(stderr, "Error: Shader program linking failed\n%s\n", infoLog);
-    exit(EXIT_FAILURE);
+    /* exit(EXIT_FAILURE); */
   }
 
   glDeleteShader(fragmentShader);
