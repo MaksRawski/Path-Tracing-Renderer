@@ -1,9 +1,6 @@
-// resources:
+// overall resources:
 // - https://www.youtube.com/watch?v=Qz0KTGYJtUk
-// - https://blog.demofox.org/2020/05/25/casual-shadertoy-path-tracing-1-basic-camera-diffuse-emissive/
-// - https://www.realtimerendering.com/raytracing/Ray%20Tracing%20in%20a%20Weekend.pdf
-// - https://github.com/ssloy/tinyraytracer/wiki/Part-1:-understandable-raytracing (FOV)
-// - https://www.intel.com/content/www/us/en/content-details/763947/path-tracing-workshop-part-1-ray-tracing.html (camera setup idea)
+// - https://github.com/ssloy/tinyraytracer/wiki/Part-1:-understandable-raytracing (FOV, reflection stuff)
 
 #version 330 core
 
@@ -48,6 +45,20 @@ struct Sphere {
     Material mat;
 };
 
+struct Triangle {
+    vec3 a, b, c;
+};
+
+struct MeshInfo {
+    // index of the first triangle in the StructuredBuffer triangle list
+    uint firstTriangleIndex;
+    uint numTriangles;
+    // bounding box
+    vec3 boundsMin;
+    vec3 boundsMax;
+    Material material;
+};
+
 struct HitInfo {
     bool didHit;
     float dst;
@@ -76,15 +87,21 @@ const float C_TWOPI = 6.283185307179586;
 const int MAX_BOUNCE_COUNT = 4;
 const int SAMPLES_PER_PIXEL = 4;
 
-const int NUM_OF_SPHERES = 5;
+const int NUM_OF_SPHERES = 6;
 const Sphere SPHERES[NUM_OF_SPHERES] = Sphere[NUM_OF_SPHERES](
         Sphere(vec3(25.0, 0.0, -20.0), 6.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0))), // white ball
         Sphere(vec3(20.0, -1.4, -10.0), 4.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 0.0, 0.0))), // red ball
         Sphere(vec3(18.0, -2.4, -4.0), 3.5, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 1.0, 0.0))), // green ball
         Sphere(vec3(16.0, -2.4, 4.0), 3.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 0.0, 1.0))), // blue ball
-        // Sphere(vec3(-5.0, 21.0, 9.0), 16.0, Material(vec3(0.8, 0.8, 0.8), 50.0, vec3(0.8, 0.8, 0.0))), // sun
+        Sphere(vec3(65.0, 21.0, 9.0), 16.0, Material(vec3(0.8, 0.8, 0.8), 15.0, vec3(0.8, 0.8, 0.0))), // sun
         Sphere(vec3(-5.0, -1005.0, 10.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.5, 0.5, 0.5))) // ground
     );
+
+const int NUM_OF_TRIANGLES = 1;
+const Triangle TRIANGLES[NUM_OF_TRIANGLES] = Triangle[NUM_OF_TRIANGLES] (
+        Triangle(vec3(20.0, 0.0, -20.0), vec3(15, 0.0, -20.0), vec3(17.5, 5.0, -18.0))
+    );
+
 
 vec3 RandomUnitVector(inout uint state)
 {
@@ -105,7 +122,7 @@ vec3 RandomUnitVector(inout uint state)
 // s²(d_1² + d_2² + d_3²) + 2s(o_1*d_1 + o_2*d_2 + o_3*d_3) + (o_1²+o_2²+0_3²) = r²
 // s² * dot(d, d) + 2s * dot(d, o), + dot(o,o) = r²
 // quadratic equation for s
-HitInfo RayHitsSphere(Ray ray, Sphere s) {
+HitInfo RaySphereIntersection(Ray ray, Sphere s) {
     HitInfo hitInfo;
     hitInfo.didHit = false;
     vec3 offsetRay = ray.origin - s.pos;
@@ -130,15 +147,53 @@ HitInfo RayHitsSphere(Ray ray, Sphere s) {
     return hitInfo;
 }
 
+// https://www.youtube.com/watch?v=fK1RPmF_zjQ
+// https://cadxfem.org/inf/Fast%20MinimumStorage%20RayTriangle%20Intersection.pdf
+// Point T(u,v) = (1-u-v)V0 + uV1 + vV2, where (u, v) are barycentric coordinates,
+// is inside a triangle if u >= 0, v >= 0 and u + v <= 1
+// u and v can be thought of as closeness to either vertex of a triangle.
+// A ray which has an equation R(t) = O + tD,
+// where O is origin, D is direction and t is distance traveled in that direction.
+// If we assume that a ray hits the triangle we can then equate both formulas:
+// R(t) = T(u,v)
+// O + tD = (1-u-v)V0 + uV1 + vV2 (only t, u and v are unknowns)
+//
+// Rearanging gives:
+// V0 - uV0 -vV0 + uV1 + vV2 - tD = O
+// u(V1 - V0) + v(V2 - V0) - tD = O - V0
+// [t, u, v][-D, V1-V0, V2-V0] = O - V0.
+//
+// To solve for t, u and v we will use Cramer's rule:
+// - if det([-D, V1-V0, V2-V0]) == 0, then there are no solutions,
+//   therefore the ray is parallel to triangle.
+HitInfo RayTriangleIntersection(Ray ray, Triangle t){
+    HitInfo hitInfo;
+    hitInfo.didHit = false;
+    vec3 e1 = t.b - t.a;
+    vec3 e2 = t.c - t.a;
+    vec3 P = cross(ray.dir, e2);
+
+    return hitInfo;
+}
+
 // returns info about the nearest point which the ray hits
 HitInfo CalculateRayCollision(Ray ray) {
     HitInfo closestHit;
     closestHit.didHit = false;
     closestHit.dst = 1.0e30; // _infinity_
 
+    // iterate through all triangles
+    for (int i = 0; i < NUM_OF_TRIANGLES; ++i) {
+        HitInfo hit = RayTriangleIntersection(ray, TRIANGLES[i]);
+        if (hit.didHit && hit.dst < closestHit.dst) {
+            closestHit = hit;
+            closestHit.mat = Material(vec3(1.0, 0.0, 0.0), 0.0, vec3(1.0/64.0, 1.0/224.0, 1.0/208.0));
+        }
+    }
+
     // iterate through all the spheres
     for (int i = 0; i < NUM_OF_SPHERES; ++i) {
-        HitInfo hit = RayHitsSphere(ray, SPHERES[i]);
+        HitInfo hit = RaySphereIntersection(ray, SPHERES[i]);
         if (hit.didHit && hit.dst < closestHit.dst) {
             closestHit = hit;
             closestHit.mat = SPHERES[i].mat;
@@ -185,11 +240,16 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
     for (int i = 0; i <= MAX_BOUNCE_COUNT; ++i) {
         HitInfo hitInfo = CalculateRayCollision(ray);
         if (hitInfo.didHit) {
+            // bounce
             ray.origin = hitInfo.hitPoint;
-            // This is because of Lambert's cosine law?
+            // light strength depends on the angle between the normal vector of the surface
+            // and the light direction, the smaller the angle, the stronger the light
+            // we can use a cosine weighted distribution to achieve that
+            // we attach a random vector at the end of the normal vector and then normalize
+            // the result to get any point at a hemisphere
             ray.dir = normalize(hitInfo.normal + RandomUnitVector(rngState));
-
             // ray.dir = RandomHemisphereDirection(hitInfo.normal, rngState);
+
             // calculate the potential light that the object is emitting
             vec3 emittedLight = hitInfo.mat.emissionColor * hitInfo.mat.emissionStrength;
             // tint the color of the incoming light by that color
@@ -239,7 +299,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     Ray ray;
     ray.origin = cam.pos;
     ray.dir = normalize(rayTarget - ray.origin);
-    ray.epsilon = 0.001;
+    ray.epsilon = 0.00001;
 
     // shooting rays
     // HitInfo hitInfo = CalculateRayCollision(ray);
@@ -263,7 +323,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 }
 
 // mainImage is what shadertoy requires
-// but this is how you should actually write it
+// but this is how shaders actually work
 void main() {
     vec4 fragColor;
     mainImage(fragColor, gl_FragCoord.xy);
