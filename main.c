@@ -14,6 +14,10 @@
 #define EVENT_SIZE (sizeof(struct inotify_event))
 #define BUF_LEN (1024 * (EVENT_SIZE + 16))
 
+// renders just pure white
+const char *DEFAULT_SHADER_PROGRAM =
+    "#version 330 core\nvoid main(){gl_FragColor=vec4(1.0,1.0,1.0,1.0);}";
+
 int watch_shader_file(const char *shader_path) {
   int fd = inotify_init();
   if (fd < 0) {
@@ -74,19 +78,18 @@ GLuint compile_shader(const char *shaderSource, GLenum shaderType) {
   return shader;
 }
 
-GLuint create_shader_program(const char *fragment_shader_path) {
-  char *fragment_shader_source = read_shader_source(fragment_shader_path);
-
+GLuint create_shader_program(const char *fragment_shader_source) {
   GLuint fragmentShader =
       compile_shader(fragment_shader_source, GL_FRAGMENT_SHADER);
 
-  // NOTE: if compile_shader fails, it will return -1, which will cause
-  // shaderProgram to be invalid, which will in turn cause the render loop
-  // to render some default color like white (i guess this could be kind of UB?)
+  if (fragmentShader == (GLuint)-1)
+    return -1;
 
   GLuint shaderProgram = glCreateProgram();
   glAttachShader(shaderProgram, fragmentShader);
   glLinkProgram(shaderProgram);
+
+  glDeleteShader(fragmentShader);
 
   GLint success;
   glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
@@ -94,10 +97,8 @@ GLuint create_shader_program(const char *fragment_shader_path) {
     GLchar infoLog[512];
     glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
     fprintf(stderr, "Error: Shader program linking failed\n%s\n", infoLog);
+    return -1;
   }
-
-  glDeleteShader(fragmentShader);
-  free(fragment_shader_source);
 
   return shaderProgram;
 }
@@ -117,13 +118,16 @@ bool reload_shader(int watcher_fd, GLuint *program, const char *shader_path) {
     struct inotify_event *event = (struct inotify_event *)&buffer[i];
     if (event->mask & IN_MODIFY) {
       printf("%s modified, recompiling...\n", shader_path);
-      GLuint new_program = create_shader_program(shader_path);
-      // NOTE: create_shader_program fails only if there was a linking error
-      if (new_program) {
-        glDeleteProgram(*program);
-        *program = new_program;
-        did_reload = true;
-      }
+      char *fragment_shader_source = read_shader_source(shader_path);
+      GLuint new_program = create_shader_program(fragment_shader_source);
+      free(fragment_shader_source);
+
+      if (new_program == (GLuint)-1)
+        new_program = create_shader_program(DEFAULT_SHADER_PROGRAM);
+
+      glDeleteProgram(*program);
+      did_reload = true;
+      *program = new_program;
     }
     i += EVENT_SIZE + event->len;
   }
@@ -186,7 +190,9 @@ int main(void) {
   // "row", offset of each "row"
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), NULL);
 
-  GLuint shader_program = create_shader_program("renderer.glsl");
+  char *shader_src = read_shader_source("renderer.glsl");
+  GLuint shader_program = create_shader_program(shader_src);
+  free(shader_src);
   int shader_watcher_fd = watch_shader_file("renderer.glsl");
 
   int width, height;
