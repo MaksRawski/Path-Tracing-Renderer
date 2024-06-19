@@ -80,7 +80,9 @@ GLuint create_shader_program(const char *fragment_shader_path) {
   GLuint fragmentShader =
       compile_shader(fragment_shader_source, GL_FRAGMENT_SHADER);
 
-  if (fragmentShader < 0) return -1;
+  // NOTE: if compile_shader fails, it will return -1, which will cause
+  // shaderProgram to be invalid, which will in turn cause the render loop
+  // to render some default color like white (i guess this could be kind of UB?)
 
   GLuint shaderProgram = glCreateProgram();
   glAttachShader(shaderProgram, fragmentShader);
@@ -92,7 +94,6 @@ GLuint create_shader_program(const char *fragment_shader_path) {
     GLchar infoLog[512];
     glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
     fprintf(stderr, "Error: Shader program linking failed\n%s\n", infoLog);
-    /* exit(EXIT_FAILURE); */
   }
 
   glDeleteShader(fragmentShader);
@@ -117,6 +118,7 @@ bool reload_shader(int watcher_fd, GLuint *program, const char *shader_path) {
     if (event->mask & IN_MODIFY) {
       printf("%s modified, recompiling...\n", shader_path);
       GLuint new_program = create_shader_program(shader_path);
+      // NOTE: create_shader_program fails only if there was a linking error
       if (new_program) {
         glDeleteProgram(*program);
         *program = new_program;
