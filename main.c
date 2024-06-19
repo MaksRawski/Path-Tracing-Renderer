@@ -14,6 +14,8 @@
 #define EVENT_SIZE (sizeof(struct inotify_event))
 #define BUF_LEN (1024 * (EVENT_SIZE + 16))
 
+const char *WINDOW_TITLE = "LAK - Projekt zaliczeniowy";
+
 // renders just pure white
 const char *DEFAULT_SHADER_PROGRAM =
     "#version 330 core\nvoid main(){gl_FragColor=vec4(1.0,1.0,1.0,1.0);}";
@@ -146,8 +148,9 @@ int main(void) {
   if (!glfwInit())
     return -1;
 
-  GLFWwindow *window =
-      glfwCreateWindow(600, 600, "LAK - Projekt zaliczeniowy", NULL, NULL);
+  GLFWwindow *window = glfwCreateWindow(600, 600, WINDOW_TITLE, NULL, NULL);
+  // NOTE: disabling vsync to see the speed
+
   if (!window) {
     glfwTerminate();
     return -1;
@@ -159,6 +162,7 @@ int main(void) {
     printf("Failed to initialize OpenGL context\n");
     return -1;
   }
+  glfwSwapInterval(0);
 
   // Successfully loaded OpenGL
   printf("Loaded OpenGL %d.%d\n", GLAD_VERSION_MAJOR(version),
@@ -220,6 +224,7 @@ int main(void) {
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   // FPS COUNTING SETUP
+  char window_title[40];
   unsigned int iFrame = 0;
   unsigned int fps_counter = 0;
   double fps;
@@ -254,7 +259,9 @@ int main(void) {
 
     if (delta_time >= 2.0) {
       fps = fps_counter / delta_time;
-      printf("FPS: %.2f\n", fps);
+      sprintf(window_title, "%s [%.2f FPS]", WINDOW_TITLE, fps);
+      glfwSetWindowTitle(window, window_title);
+      /* printf("FPS: %.2f\n", fps); */
       fps_counter = 0;
       last_frame_time = current_time;
     }
@@ -264,7 +271,6 @@ int main(void) {
       fps_counter = 0;
       last_frame_time = current_time;
     }
-
 
     // DRAWING THE FRAME
     // render the quad to the back buffer
