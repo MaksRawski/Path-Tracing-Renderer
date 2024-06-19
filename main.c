@@ -149,7 +149,6 @@ int main(void) {
     return -1;
 
   GLFWwindow *window = glfwCreateWindow(600, 600, WINDOW_TITLE, NULL, NULL);
-  // NOTE: disabling vsync to see the speed
 
   if (!window) {
     glfwTerminate();
@@ -162,7 +161,8 @@ int main(void) {
     printf("Failed to initialize OpenGL context\n");
     return -1;
   }
-  glfwSwapInterval(0);
+  // NOTE: disabling vsync to see the speed
+  /* glfwSwapInterval(0); */
 
   // Successfully loaded OpenGL
   printf("Loaded OpenGL %d.%d\n", GLAD_VERSION_MAJOR(version),
