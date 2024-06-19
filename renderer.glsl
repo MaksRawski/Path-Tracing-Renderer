@@ -98,10 +98,12 @@ const Sphere SPHERES[NUM_OF_SPHERES] = Sphere[NUM_OF_SPHERES](
     );
 
 const int NUM_OF_TRIANGLES = 1;
-const Triangle TRIANGLES[NUM_OF_TRIANGLES] = Triangle[NUM_OF_TRIANGLES] (
-        Triangle(vec3(20.0, 0.0, -20.0), vec3(15, 0.0, -20.0), vec3(17.5, 5.0, -18.0))
+const float OFX = -2.5;
+const float OFY = 2.5;
+const float OFZ = 32.0;
+const Triangle TRIANGLES[NUM_OF_TRIANGLES] = Triangle[NUM_OF_TRIANGLES](
+        Triangle(vec3(OFX+20.0, 0.0, -20.0+OFZ), vec3(OFX+10, 0.0, -20.0+OFZ), vec3(OFX+17.5, 5.0, -18.0+OFZ))
     );
-
 
 vec3 RandomUnitVector(inout uint state)
 {
@@ -149,29 +151,108 @@ HitInfo RaySphereIntersection(Ray ray, Sphere s) {
 
 // https://www.youtube.com/watch?v=fK1RPmF_zjQ
 // https://cadxfem.org/inf/Fast%20MinimumStorage%20RayTriangle%20Intersection.pdf
-// Point T(u,v) = (1-u-v)V0 + uV1 + vV2, where (u, v) are barycentric coordinates,
-// is inside a triangle if u >= 0, v >= 0 and u + v <= 1
+// Point T(u,v) = (1-u-v)A + uB + vC, where (u, v) are barycentric coordinates
+// and A, B, C are positions of vertices of the triangle,
+// is inside a triangle if u >= 0, v >= 0 and u + v <= 1.
 // u and v can be thought of as closeness to either vertex of a triangle.
-// A ray which has an equation R(t) = O + tD,
-// where O is origin, D is direction and t is distance traveled in that direction.
+// A ray has an equation R(t) = O + tD, where O is origin,
+// D is direction and t is distance traveled in that direction.
 // If we assume that a ray hits the triangle we can then equate both formulas:
 // R(t) = T(u,v)
-// O + tD = (1-u-v)V0 + uV1 + vV2 (only t, u and v are unknowns)
+// O + tD = (1-u-v)A + uB + vC (only t, u and v are unknowns)
 //
 // Rearanging gives:
-// V0 - uV0 -vV0 + uV1 + vV2 - tD = O
-// u(V1 - V0) + v(V2 - V0) - tD = O - V0
-// [t, u, v][-D, V1-V0, V2-V0] = O - V0.
+// A - uA -vA + uB + vC - tD = O
+// - tD + u(B - A) + v(C - A) = O - A
+// [-D, B-A, C-A]x[t, u, v] = O - A
+// renaming: E1 := B - A, E2 := C - A, T := O - A, gives:
+// [-D, E1, E2]x[t, u, v] = T
 //
-// To solve for t, u and v we will use Cramer's rule:
-// - if det([-D, V1-V0, V2-V0]) == 0, then there are no solutions,
-//   therefore the ray is parallel to triangle.
-HitInfo RayTriangleIntersection(Ray ray, Triangle t){
+// We can apply cramer's rule, which in case of:
+// [a1 b1 c1][x] = [d1]
+// [a2 b2 c2][y] = [d2]
+// [a3 b3 c3][z] = [d3],
+// allows us to find that:
+//     | d1 b1 c1 |   | a1 b1 c1 |
+// x = | d2 b2 c2 | / | a2 b2 c2 |
+//     | d3 b3 c3 |   | a3 b3 c3 |
+//
+//     | a1 d1 c1 |   | a1 b1 c1 |
+// y = | a2 d2 c2 | / | a2 b2 c2 |
+//     | a3 d3 c3 |   | a3 b3 c3 |
+//
+//     | a1 b1 d1 |   | a1 b1 c1 |
+// z = | a2 b2 d2 | / | a2 b2 c2 |
+//     | a3 b3 d3 |   | a3 b3 c3 |.
+//
+// Applying this to our situation, we get:
+// t = | T E1 E2 | / | -D E1 E2 |
+// u = | -D T E2 | / | -D E1 E2 |
+// v = | -D E1 T | / | -D E1 E2 |.
+// Keep in mind that those equations for t, u and v above are actually
+// on 3x3 matrix as each element is actually a vec3.
+// We can think of a value of a 3x3 determinant as a signed area of a parallelogram
+// defined by 3 vectors. The area of a (vector described) parallelogram is a . (b x c),
+// where b x c is a cross product of the 2 base vectors, which results in a vertical
+// vector with the magnitude of the area of the base and dot product simply multiplies
+// the height with the area of a base (which is a vector with the same direction as a)
+// and as they have the same direction and therefore the angle between them is zero,
+// just their magnitudes get multiplied and we get a scalar.
+//
+// So the first determinants for each of the unknowns can be found as:
+// t = T . (E1 x E2)
+// u = -D . (T x E2)
+// v = -D . (E1 x T).
+// As "the scalar triple product is unchanged under a circular shift" (https://en.wikipedia.org/wiki/Triple_product)
+// we can change the equation for t to instead be:
+// t = (T x E1) . E2
+// We can also use the fact that "Swapping any two of the three operands negates the triple product", and get:
+// v = D . (T x E1)
+//
+// For the determinant common among the three equations, we will have:
+// det = -D . (E1 x E2)
+// and that's it!
+HitInfo RayTriangleIntersection(Ray ray, Triangle tri) {
     HitInfo hitInfo;
     hitInfo.didHit = false;
-    vec3 e1 = t.b - t.a;
-    vec3 e2 = t.c - t.a;
-    vec3 P = cross(ray.dir, e2);
+    vec3 D = ray.dir;
+    vec3 e1 = tri.b - tri.a;
+    vec3 e2 = tri.c - tri.a;
+    vec3 e1e2 = cross(e1, e2);
+    float det = dot(-D, e1e2);
+
+    if (abs(det) < ray.epsilon){
+       // the vectors -D, e1 and e2 are not linearly independent,
+       // meaning ray is coming in parallel to the triangle
+        return hitInfo;
+    }
+
+    float inv_det = 1.0/det;
+
+    vec3 T = ray.origin - tri.a;
+    vec3 Te2 = cross(T, e2);
+    vec3 Te1 = cross(T, e1);
+
+    float u = dot(-D, Te2) * inv_det;
+
+    // the barycentric coordinate u is too far, for the point of intersection
+    // to be inside the triangle
+    if (u < 0 || u > 1) return hitInfo;
+
+    float v = dot(D, Te1)  * inv_det;
+
+    // the barycentric coordinate v is too far, for the point of intersection
+    // to be inside the triangle or both u and v are too far from centre
+    if (v < 0 || u + v > 1) return hitInfo;
+
+    // finally, if we got here, it means that we did actually hit the triangle
+    float t = dot(Te1, e2) * inv_det;
+    hitInfo.didHit = true;
+    hitInfo.hitPoint = ray.origin + ray.dir * t;
+    // look at the right beginning of the description of this function
+    float w = 1 - u - v;
+    hitInfo.normal = normalize(tri.a * w + tri.b * u + tri.c * v);
+    hitInfo.dst = t;
 
     return hitInfo;
 }
@@ -187,7 +268,7 @@ HitInfo CalculateRayCollision(Ray ray) {
         HitInfo hit = RayTriangleIntersection(ray, TRIANGLES[i]);
         if (hit.didHit && hit.dst < closestHit.dst) {
             closestHit = hit;
-            closestHit.mat = Material(vec3(1.0, 0.0, 0.0), 0.0, vec3(1.0/64.0, 1.0/224.0, 1.0/208.0));
+            closestHit.mat = Material(vec3(0.0, 1.0, 1.0), 1.0, vec3(1.0 / 64.0, 1.0 / 224.0, 1.0 / 208.0));
         }
     }
 
