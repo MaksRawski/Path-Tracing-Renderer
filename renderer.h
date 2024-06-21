@@ -27,7 +27,6 @@ typedef struct RendererBuffers {
 typedef struct Uniforms{
 	unsigned int iFrame;
 	float iResolution[2];
-	GLuint backBufferTexture;
 	float camPos[3], camLookat[3], camUp[3], camFov;
 } Uniforms;
 
@@ -40,7 +39,7 @@ bool reload_shader(int watcher_fd, GLuint *program, const char *shader_path);
 int watch_shader_file(const char *shader_path);
 void setup_back_buffer(BackBuffer *bb, unsigned int width,
                        unsigned int height);
-void display_fps(GLFWwindow *window, unsigned int frame_counter,
+void display_fps(GLFWwindow *window, unsigned int *frame_counter,
                  double *last_frame_time);
 void update_frame(GLuint shader_program, GLFWwindow *window, Uniforms *uniforms, RendererBuffers *rb, BackBuffer *back_buffer) ;
 

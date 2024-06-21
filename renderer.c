@@ -37,7 +37,7 @@ GLFWwindow *setup_opengl(bool disable_vsync) {
     printf("Failed to initialize OpenGL context\n");
     exit(EXIT_FAILURE);
   }
-  // NOTE: disabling vsync to see the speed
+  // disable vsync to see the full speed
   if (disable_vsync)
     glfwSwapInterval(0);
 
@@ -50,7 +50,8 @@ GLFWwindow *setup_opengl(bool disable_vsync) {
   return window;
 }
 
-void setup_renderer(GLuint *shader_program, int *shader_watcher_fd, RendererBuffers *rb) {
+void setup_renderer(GLuint *shader_program, int *shader_watcher_fd,
+                    RendererBuffers *rb) {
   // Define vertices for a full-screen quad
   float vertices[] = {
       -1.0f, 1.0f,  // Top left
@@ -78,29 +79,30 @@ void setup_renderer(GLuint *shader_program, int *shader_watcher_fd, RendererBuff
   *shader_watcher_fd = watch_shader_file("renderer.glsl");
 }
 
-void update_frame(GLuint shader_program, GLFWwindow *window, Uniforms *uniforms, RendererBuffers *rb, BackBuffer *back_buffer) {
+void update_frame(GLuint shader_program, GLFWwindow *window, Uniforms *uniforms,
+                  RendererBuffers *rb, BackBuffer *back_buffer) {
   // render the quad to the back buffer
   glBindFramebuffer(GL_FRAMEBUFFER, back_buffer->fbo);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, back_buffer->fbo_texture);
   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   // update uniforms
   glUseProgram(shader_program);
   glUniform1i(glGetUniformLocation(shader_program, "iFrame"), uniforms->iFrame);
   glUniform2f(glGetUniformLocation(shader_program, "iResolution"),
               uniforms->iResolution[0], uniforms->iResolution[1]);
-  glUniform1i(glGetUniformLocation(shader_program, "iChannel0"), uniforms->backBufferTexture);
   glUniform3f(glGetUniformLocation(shader_program, "camPos"),
               uniforms->camPos[0], uniforms->camPos[1], uniforms->camPos[2]);
   glUniform3f(glGetUniformLocation(shader_program, "camLookat"),
-              uniforms->camLookat[0], uniforms->camLookat[1], uniforms->camLookat[2]);
+              uniforms->camLookat[0], uniforms->camLookat[1],
+              uniforms->camLookat[2]);
   glUniform3f(glGetUniformLocation(shader_program, "camUp"), uniforms->camUp[0],
               uniforms->camUp[1], uniforms->camUp[2]);
   glUniform1f(glGetUniformLocation(shader_program, "camFov"), uniforms->camFov);
 
   // render the quad to the screen
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glBindVertexArray(rb->vao);
   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
   glfwSwapBuffers(window);
@@ -222,7 +224,8 @@ int watch_shader_file(const char *shader_path) {
   return fd;
 }
 
-void setup_back_buffer(BackBuffer *bb, unsigned int width, unsigned int height) {
+void setup_back_buffer(BackBuffer *bb, unsigned int width,
+                       unsigned int height) {
   glGenFramebuffers(1, &bb->fbo);
   glBindFramebuffer(GL_FRAMEBUFFER, bb->fbo);
 
@@ -233,7 +236,7 @@ void setup_back_buffer(BackBuffer *bb, unsigned int width, unsigned int height) 
                GL_UNSIGNED_BYTE, NULL);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glBindTexture(GL_TEXTURE_2D, 0); // ???
+  glBindTexture(GL_TEXTURE_2D, 0);
 
   // attach the texture to our framebuffer
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
@@ -241,23 +244,23 @@ void setup_back_buffer(BackBuffer *bb, unsigned int width, unsigned int height) 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void display_fps(GLFWwindow *window, unsigned int frame_counter,
+void display_fps(GLFWwindow *window, unsigned int *frame_counter,
                  double *last_frame_time) {
   double current_time = glfwGetTime();
   double delta_time = current_time - *last_frame_time;
   char window_title[40];
 
   if (delta_time >= 2.0) {
-    double fps = frame_counter / delta_time;
+    double fps = *frame_counter / delta_time;
     sprintf(window_title, "%s [%.2f FPS]", WINDOW_TITLE, fps);
     glfwSetWindowTitle(window, window_title);
-    /* printf("FPS: %.2f\n", fps); */
+    printf("FPS: %.2f\n", fps);
+    *frame_counter = 0;
+    *last_frame_time = current_time;
   }
-  frame_counter = 0;
-  *last_frame_time = current_time;
 }
 
-void free_gl_buffers(RendererBuffers *rb, BackBuffer *bb){
+void free_gl_buffers(RendererBuffers *rb, BackBuffer *bb) {
   glDeleteVertexArrays(1, &rb->vao);
   glDeleteBuffers(1, &rb->vbo);
   glDeleteFramebuffers(1, &bb->fbo);

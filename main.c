@@ -23,18 +23,16 @@ int main(void) {
 
   BackBuffer bb;
   setup_back_buffer(&bb, width, height);
+  // set the program uniform for the texture sampler
+  glUniform1i(glGetUniformLocation(shader_program, "iChannel0"), 0);
 
-  Uniforms uniforms = {.backBufferTexture = bb.fbo_texture,
-                       .camFov = PI / 2.0,
+  Uniforms uniforms = {.camFov = PI / 2.0,
                        .camLookat = {0.0, 1.0, 0.0},
                        .camPos = {-5.0, 1.0, 0.0},
                        .camUp = {0.0, 1.0, 0.0},
                        .iResolution = {width, height},
                        .iFrame = 0};
 
-  // BUG: for some reason i get a segfault if i remove this line
-  // even though i don't reference it
-  char window_title[40];
   unsigned int frame_counter = 0;
   double last_frame_time = glfwGetTime();
 
@@ -44,7 +42,7 @@ int main(void) {
     if (did_reload) {
       frame_counter = 0;
       uniforms.iFrame = 0;
-      display_fps(window, frame_counter, &last_frame_time);
+      display_fps(window, &frame_counter, &last_frame_time);
     }
 
     // recalculate window dimensions
@@ -53,6 +51,8 @@ int main(void) {
     if (new_width != width || new_height != height) {
       width = new_width;
       height = new_height;
+      uniforms.iResolution[0] = width;
+      uniforms.iResolution[1] = height;
 
       // Resize the backbuffer texture
       glBindTexture(GL_TEXTURE_2D, bb.fbo_texture);
@@ -64,12 +64,11 @@ int main(void) {
       uniforms.iFrame = 0;
     }
 
+    display_fps(window, &frame_counter, &last_frame_time);
+    frame_counter++;
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    display_fps(window, frame_counter, &last_frame_time);
-
     update_frame(shader_program, window, &uniforms, &rb, &bb);
-    ++frame_counter;
 
     glfwPollEvents();
     ++uniforms.iFrame;
