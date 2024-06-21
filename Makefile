@@ -2,15 +2,22 @@ CC = gcc
 CFLAGS = -Wall -Wextra -Wno-unused -Ilib/include
 LDFLAGS = -lglfw -ldl
 TARGET = bin/main
+SRC = main.c renderer.c
+OBJ = $(patsubst %.c, bin/%.o, $(SRC))
 GLAD_SRC = ./lib/src/gl.c
 
-$(TARGET): main.c $(GLAD_SRC)
+all: $(TARGET)
+
+$(TARGET): $(OBJ) $(GLAD_SRC)
 	mkdir -p bin
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $(TARGET)
 
+bin/%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
 zip: projekt.zip
 
-projekt.zip: $(TARGET) main.c
+projekt.zip: $(TARGET) $(SRC)
 	mkdir -p projekt
 	rm -rf projekt/*
 	rsync -qa . --exclude projekt projekt/
@@ -21,4 +28,4 @@ projekt.zip: $(TARGET) main.c
 clean:
 	rm -rf bin/* projekt.zip
 
-.PHONY: clean zip
+.PHONY: all clean zip

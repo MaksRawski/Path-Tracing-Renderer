@@ -9,16 +9,10 @@ uniform vec2 iResolution;
 uniform sampler2D iChannel0;
 
 // https://raytracing.github.io/books/RayTracingInOneWeekend.html#positionablecamera (12.2)
-struct Camera {
-    // camera's position
-    vec3 pos;
-    // what's camera pointed at
-    vec3 lookat;
-    // camera's relative up direction, shouldn't be confused with the viewport's relative up direction
-    vec3 up;
-    // horizontal field of view in radians
-    float fov;
-};
+uniform vec3 camPos; // camera's position
+uniform vec3 camLookat; // what's camera pointed at
+uniform vec3 camUp; // camera's relative up direction
+uniform float camFov; // horizontal field of view in radians
 
 struct Ray {
     vec3 origin;
@@ -355,17 +349,17 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     float aspectRatio = iResolution.x / iResolution.y;
 
     // camera
-    Camera cam;
-    cam.pos = vec3(-5.0, 1.0, 0.0);
-    cam.lookat = vec3(0.0, 1.0, 0.0);
-    cam.up = vec3(0.0, 1.0, 0.0);
-    cam.fov = C_PI / 2.0; // 90 degrees
-    vec3 cameraDirection = normalize(cam.lookat - cam.pos);
-    vec3 viewportRight = cross(cameraDirection, cam.up); // cross calculates the vector perpendicular to both its arguments
+    // Camera cam;
+    // cam.pos = vec3(-5.0, 1.0, 0.0);
+    // cam.lookat = vec3(0.0, 1.0, 0.0);
+    // cam.up = vec3(0.0, 1.0, 0.0);
+    // cam.fov = C_PI / 2.0; // 90 degrees
+    vec3 cameraDirection = normalize(camLookat - camPos);
+    vec3 viewportRight = cross(cameraDirection, camUp); // cross calculates the vector perpendicular to both its arguments
     vec3 viewportUp = cross(viewportRight, cameraDirection); // use the right-hand rule to see why it makes sense :)
-    float cameraDistanceFromViewport = length(cam.lookat - cam.pos); // AKA focal length
+    float cameraDistanceFromViewport = length(camLookat - camPos); // AKA focal length
 
-    float viewportWidth = 2.0 * cameraDistanceFromViewport * tan(cam.fov / 2.0);
+    float viewportWidth = 2.0 * cameraDistanceFromViewport * tan(camFov / 2.0);
     float viewportHeight = viewportWidth / aspectRatio;
     // float viewportHeight = 2 * cameraDistanceFromViewport * tan(cam.fov / 2);
     // float viewportWidth = viewportHeight * aspectRatio;
@@ -378,7 +372,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     // imagine that the camera is just a point that shoots rays
     // but is behind the viewport and each ray has to travel through a different pixel
     Ray ray;
-    ray.origin = cam.pos;
+    ray.origin = camPos;
     ray.dir = normalize(rayTarget - ray.origin);
     ray.epsilon = 0.00001;
 
