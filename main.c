@@ -24,7 +24,7 @@ int main(void) {
   BackBuffer bb;
   setup_back_buffer(&bb, width, height);
   // set the program uniform for the texture sampler
-  glUniform1i(glGetUniformLocation(shader_program, "iChannel0"), 0);
+  glUniform1i(glGetUniformLocation(shader_program, "BackBufferTexture"), 0);
 
   Uniforms uniforms = {.camFov = PI / 2.0,
                        .camLookat = {0.0, 1.0, 0.0},
