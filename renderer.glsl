@@ -6,13 +6,25 @@
 
 uniform int iFrame;
 uniform vec2 iResolution;
-uniform sampler2D iChannel0;
+uniform sampler2D backBufferTexture;
+uniform samplerBuffer trianglesBuffer;
+uniform int numOfTriangles;
+
+const vec3 camOrigin = vec3(20, 1, 5);
+const float radius = 20.0;
+const float speed = 100;
 
 // https://raytracing.github.io/books/RayTracingInOneWeekend.html#positionablecamera (12.2)
-uniform vec3 camPos; // camera's position
-uniform vec3 camLookat; // what's camera pointed at
-uniform vec3 camUp; // camera's relative up direction
-uniform float camFov; // horizontal field of view in radians
+struct Camera {
+    // camera's position
+    vec3 pos;
+    // what's camera pointed at
+    vec3 lookat;
+    // camera's relative up direction, shouldn't be confused with the viewport's relative up direction
+    vec3 up;
+    // horizontal field of view in radians
+    float fov;
+};
 
 struct Ray {
     vec3 origin;
@@ -41,7 +53,18 @@ struct Sphere {
 
 struct Triangle {
     vec3 a, b, c;
+    vec3 na, nb, nc;
 };
+
+Triangle getTriangle(int i) {
+    vec3 a = texelFetch(trianglesBuffer, 6 * i).rgb;
+    vec3 b = texelFetch(trianglesBuffer, 6 * i + 1).rgb;
+    vec3 c = texelFetch(trianglesBuffer, 6 * i + 2).rgb;
+    vec3 na = texelFetch(trianglesBuffer, 6 * i + 3).rgb;
+    vec3 nb = texelFetch(trianglesBuffer, 6 * i + 4).rgb;
+    vec3 nc = texelFetch(trianglesBuffer, 6 * i + 5).rgb;
+    return Triangle(a, b, c, na, nb, nc);
+}
 
 struct MeshInfo {
     // index of the first triangle in the StructuredBuffer triangle list
@@ -92,11 +115,11 @@ const Sphere SPHERES[NUM_OF_SPHERES] = Sphere[NUM_OF_SPHERES](
     );
 
 const int NUM_OF_TRIANGLES = 1;
-const float OFX = -2.5;
-const float OFY = 2.5;
-const float OFZ = 32.0;
 const Triangle TRIANGLES[NUM_OF_TRIANGLES] = Triangle[NUM_OF_TRIANGLES](
-        Triangle(vec3(OFX+20.0, 0.0, -20.0+OFZ), vec3(OFX+10, 0.0, -20.0+OFZ), vec3(OFX+17.5, 5.0, -18.0+OFZ))
+        Triangle(
+            vec3(20.0, -1.0, -5.0), vec3(17.5, 5.0, 10.0), vec3(10.0, 1.0, 10.0),
+            vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0)
+        )
     );
 
 vec3 RandomUnitVector(inout uint state)
@@ -215,13 +238,13 @@ HitInfo RayTriangleIntersection(Ray ray, Triangle tri) {
     vec3 e1e2 = cross(e1, e2);
     float det = dot(-D, e1e2);
 
-    if (abs(det) < ray.epsilon){
-       // the vectors -D, e1 and e2 are not linearly independent,
-       // meaning ray is coming in parallel to the triangle
+    if (abs(det) < ray.epsilon) {
+        // the vectors -D, e1 and e2 are not linearly independent,
+        // meaning ray is coming in parallel to the triangle
         return hitInfo;
     }
 
-    float inv_det = 1.0/det;
+    float inv_det = 1.0 / det;
 
     vec3 T = ray.origin - tri.a;
     vec3 Te2 = cross(T, e2);
@@ -233,7 +256,7 @@ HitInfo RayTriangleIntersection(Ray ray, Triangle tri) {
     // to be inside the triangle
     if (u < 0 || u > 1) return hitInfo;
 
-    float v = dot(D, Te1)  * inv_det;
+    float v = dot(D, Te1) * inv_det;
 
     // the barycentric coordinate v is too far, for the point of intersection
     // to be inside the triangle or both u and v are too far from centre
@@ -241,12 +264,14 @@ HitInfo RayTriangleIntersection(Ray ray, Triangle tri) {
 
     // finally, if we got here, it means that we did actually hit the triangle
     float t = dot(Te1, e2) * inv_det;
-    hitInfo.didHit = true;
-    hitInfo.hitPoint = ray.origin + ray.dir * t;
-    // look at the right beginning of the description of this function
-    float w = 1 - u - v;
-    hitInfo.normal = normalize(tri.a * w + tri.b * u + tri.c * v);
-    hitInfo.dst = t;
+    if (t > ray.epsilon) {
+        hitInfo.didHit = true;
+        hitInfo.hitPoint = ray.origin + ray.dir * t;
+        // look at the right beginning of the description of this function
+        float w = 1 - u - v;
+        hitInfo.normal = normalize(w * tri.na + u * tri.nb + v * tri.nc);
+        hitInfo.dst = t;
+    }
 
     return hitInfo;
 }
@@ -259,7 +284,8 @@ HitInfo CalculateRayCollision(Ray ray) {
 
     // iterate through all triangles
     for (int i = 0; i < NUM_OF_TRIANGLES; ++i) {
-        HitInfo hit = RayTriangleIntersection(ray, TRIANGLES[i]);
+        // HitInfo hit = RayTriangleIntersection(ray, TRIANGLES[i]);
+        HitInfo hit = RayTriangleIntersection(ray, getTriangle(i));
         if (hit.didHit && hit.dst < closestHit.dst) {
             closestHit = hit;
             closestHit.mat = Material(vec3(0.0, 1.0, 1.0), 1.0, vec3(1.0 / 64.0, 1.0 / 224.0, 1.0 / 208.0));
@@ -349,17 +375,18 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     float aspectRatio = iResolution.x / iResolution.y;
 
     // camera
-    // Camera cam;
-    // cam.pos = vec3(-5.0, 1.0, 0.0);
-    // cam.lookat = vec3(0.0, 1.0, 0.0);
-    // cam.up = vec3(0.0, 1.0, 0.0);
-    // cam.fov = C_PI / 2.0; // 90 degrees
-    vec3 cameraDirection = normalize(camLookat - camPos);
-    vec3 viewportRight = cross(cameraDirection, camUp); // cross calculates the vector perpendicular to both its arguments
-    vec3 viewportUp = cross(viewportRight, cameraDirection); // use the right-hand rule to see why it makes sense :)
-    float cameraDistanceFromViewport = length(camLookat - camPos); // AKA focal length
+    Camera cam;
+    cam.pos = camOrigin + vec3(cos(iFrame / speed) * radius, 0.0, sin(iFrame / speed) * radius);
+    cam.lookat = vec3(0.0, 1.0, 0.0);
+    cam.up = vec3(0.0, 1.0, 0.0);
+    cam.fov = C_PI / 2.0; // 90 degrees
 
-    float viewportWidth = 2.0 * cameraDistanceFromViewport * tan(camFov / 2.0);
+    vec3 cameraDirection = normalize(cam.lookat - cam.pos);
+    vec3 viewportRight = cross(cameraDirection, cam.up); // cross calculates the vector perpendicular to both its arguments
+    vec3 viewportUp = cross(viewportRight, cameraDirection); // use the right-hand rule to see why it makes sense :)
+    float cameraDistanceFromViewport = length(cam.lookat - cam.pos); // AKA focal length
+
+    float viewportWidth = 2.0 * cameraDistanceFromViewport * tan(cam.fov / 2.0);
     float viewportHeight = viewportWidth / aspectRatio;
     // float viewportHeight = 2 * cameraDistanceFromViewport * tan(cam.fov / 2);
     // float viewportWidth = viewportHeight * aspectRatio;
@@ -372,29 +399,27 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     // imagine that the camera is just a point that shoots rays
     // but is behind the viewport and each ray has to travel through a different pixel
     Ray ray;
-    ray.origin = camPos;
+    ray.origin = cam.pos;
     ray.dir = normalize(rayTarget - ray.origin);
     ray.epsilon = 0.00001;
 
     // shooting rays
-    // HitInfo hitInfo = CalculateRayCollision(ray);
-    // vec4 c = hitInfo.didHit ? vec4(hitInfo.mat.albedo, 1.0) : vec4(0.0, 0.0, 0.0, 1.0);
     vec3 c = vec3(0.0, 0.0, 0.0);
     for (int i = 0; i < SAMPLES_PER_PIXEL; ++i) {
         c += GetColorForRay(ray, rngState);
     }
     c /= float(SAMPLES_PER_PIXEL);
 
-    vec3 lastFrameColor = texture(iChannel0, fragCoord / iResolution.xy).rgb;
+    vec3 lastFrameColor = texture(backBufferTexture, fragCoord / iResolution.xy).rgb;
     if (iFrame == 0) lastFrameColor = c;
-    c = mix(c, lastFrameColor, 1.0 / float(iFrame + 1));
-    float weight = 1.0 / (float(iFrame) + 1.0);
-    c = lastFrameColor * (1.0 - weight) + c * weight;
+    // c = mix(c, lastFrameColor, 1.0 / float(iFrame + 1));
+    // float weight = 1.0 / (float(iFrame) + 1.0);
+    // c = lastFrameColor * (1.0 - weight) + c * weight;
     // c = lastFrameColor * vec3(1.0, 0.0, 0.0) + vec3(0.1, 0.0, 0.0);
 
     // fragColor = vec4(uv, 0, 1);
-    fragColor = vec4(c, 1);
-    // fragColor = vec4(lastFrameColor, 1.0);
+    // fragColor = vec4(c, 1);
+    fragColor = vec4(c, 1.0);
 }
 
 // mainImage is what shadertoy requires

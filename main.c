@@ -15,7 +15,7 @@ int main(void) {
   GLuint shader_program;
   int shader_watcher_fd;
   RendererBuffers rb;
-  setup_renderer(&shader_program, &shader_watcher_fd, &rb);
+  setup_renderer("renderer.glsl", &shader_program, &shader_watcher_fd, &rb);
 
   int width, height;
   glfwGetFramebufferSize(window, &width, &height);
@@ -36,6 +36,9 @@ int main(void) {
   unsigned int frame_counter = 0;
   double last_frame_time = glfwGetTime();
 
+  ModelBuffer mb;
+  load_obj_model("triangle.obj", shader_program, &mb);
+
   while (!glfwWindowShouldClose(window)) {
     bool did_reload =
         reload_shader(shader_watcher_fd, &shader_program, "renderer.glsl");
@@ -55,7 +58,7 @@ int main(void) {
       uniforms.iResolution[1] = height;
 
       // Resize the backbuffer texture
-      glBindTexture(GL_TEXTURE_2D, bb.fbo_texture);
+      glBindTexture(GL_TEXTURE_2D, bb.fboTex);
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
                    GL_UNSIGNED_BYTE, NULL);
       glBindTexture(GL_TEXTURE_2D, 0);
@@ -63,18 +66,17 @@ int main(void) {
       glViewport(0, 0, width, height);
       uniforms.iFrame = 0;
     }
-
     display_fps(window, &frame_counter, &last_frame_time);
     frame_counter++;
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    update_frame(shader_program, window, &uniforms, &rb, &bb);
+    update_frame(shader_program, window, &uniforms, &rb, &bb, &mb);
 
     glfwPollEvents();
     ++uniforms.iFrame;
   }
 
-  free_gl_buffers(&rb, &bb);
+  free_gl_buffers(&rb, &bb, &mb);
   glDeleteProgram(shader_program);
   glfwTerminate();
   close(shader_watcher_fd);

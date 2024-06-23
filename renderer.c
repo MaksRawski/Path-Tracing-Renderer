@@ -50,8 +50,8 @@ GLFWwindow *setup_opengl(bool disable_vsync) {
   return window;
 }
 
-void setup_renderer(GLuint *shader_program, int *shader_watcher_fd,
-                    RendererBuffers *rb) {
+void setup_renderer(const char *shader_filename, GLuint *shader_program,
+                    int *shader_watcher_fd, RendererBuffers *rb) {
   // Define vertices for a full-screen quad
   float vertices[] = {
       -1.0f, 1.0f,  // Top left
@@ -73,18 +73,21 @@ void setup_renderer(GLuint *shader_program, int *shader_watcher_fd,
   // "row", offset of each "row"
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), NULL);
 
-  char *shader_src = read_shader_source("renderer.glsl");
+  char *shader_src = read_shader_source(shader_filename);
   *shader_program = create_shader_program(shader_src);
   free(shader_src);
-  *shader_watcher_fd = watch_shader_file("renderer.glsl");
+  *shader_watcher_fd = watch_shader_file(shader_filename);
 }
 
 void update_frame(GLuint shader_program, GLFWwindow *window, Uniforms *uniforms,
-                  RendererBuffers *rb, BackBuffer *back_buffer) {
+                  RendererBuffers *rb, BackBuffer *back_buffer,
+                  ModelBuffer *mb) {
+  /* glUseProgram(shader_program); */
+
   // render the quad to the back buffer
   glBindFramebuffer(GL_FRAMEBUFFER, back_buffer->fbo);
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, back_buffer->fbo_texture);
+  glBindTexture(GL_TEXTURE_2D, back_buffer->fboTex);
   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
   // update uniforms
@@ -100,6 +103,12 @@ void update_frame(GLuint shader_program, GLFWwindow *window, Uniforms *uniforms,
   glUniform3f(glGetUniformLocation(shader_program, "camUp"), uniforms->camUp[0],
               uniforms->camUp[1], uniforms->camUp[2]);
   glUniform1f(glGetUniformLocation(shader_program, "camFov"), uniforms->camFov);
+
+  // make sure the model is loaded
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_BUFFER, mb->tboTex);
+  glUniform1i(glGetUniformLocation(shader_program, "trianglesBuffer"), 1);
+  glUniform1i(glGetUniformLocation(shader_program, "numOfTriangles"), 1);
 
   // render the quad to the screen
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -230,8 +239,8 @@ void setup_back_buffer(BackBuffer *bb, unsigned int width,
   glBindFramebuffer(GL_FRAMEBUFFER, bb->fbo);
 
   // create the texture for the framebuffer
-  glGenTextures(1, &bb->fbo_texture);
-  glBindTexture(GL_TEXTURE_2D, bb->fbo_texture);
+  glGenTextures(1, &bb->fboTex);
+  glBindTexture(GL_TEXTURE_2D, bb->fboTex);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
                GL_UNSIGNED_BYTE, NULL);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -240,7 +249,7 @@ void setup_back_buffer(BackBuffer *bb, unsigned int width,
 
   // attach the texture to our framebuffer
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                         bb->fbo_texture, 0);
+                         bb->fboTex, 0);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
@@ -260,9 +269,48 @@ void display_fps(GLFWwindow *window, unsigned int *frame_counter,
   }
 }
 
-void free_gl_buffers(RendererBuffers *rb, BackBuffer *bb) {
+void free_gl_buffers(RendererBuffers *rb, BackBuffer *bb, ModelBuffer *mb) {
   glDeleteVertexArrays(1, &rb->vao);
   glDeleteBuffers(1, &rb->vbo);
   glDeleteFramebuffers(1, &bb->fbo);
-  glDeleteTextures(1, &bb->fbo_texture);
+  glDeleteTextures(1, &bb->fboTex);
+  glDeleteBuffers(1, &mb->tbo);
+  glDeleteTextures(1, &mb->tboTex);
+}
+
+void load_obj_model(const char *filename, GLuint shader_program,
+                    ModelBuffer *mb) {
+  Triangle triangles[1] = {{
+      {20.0f, -1.0f, -5.0f}, // a (left)
+      {17.5f, 5.0f, 10.0f},  // b (top)
+      {10.0f, 1.0f, 10.0f},  // c (right)
+      {0.0f, 1.0f, 0.0f},    // na
+      {0.0f, 1.0f, 0.0f},    // nb
+      {0.0f, 1.0f, 0.0f}     // nc
+  }};
+  // to store vertices
+  glGenBuffers(1, &mb->tbo);
+  glBindBuffer(GL_ARRAY_BUFFER, mb->tbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(triangles), triangles,
+               GL_STATIC_DRAW);
+
+  // texture buffer object, will bind the vbo to it
+  // so that the shader can sample the texture and actually
+  // get the data from the vbo
+  glGenTextures(1, &mb->tboTex);
+  glBindTexture(GL_TEXTURE_BUFFER, mb->tboTex);
+  // we choose GL_RGB32F to have each coordinate store 3 floats AKA vec3
+  // and then use vbo as data for that texture,
+  glTexBuffer(GL_TEXTURE_BUFFER, GL_RGB32F, mb->tbo);
+
+  // bind the texture as a uniform in the shader
+  glUseProgram(shader_program);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_BUFFER, mb->tboTex);
+  // set to texture at index 1 as index 0 we will be storing back buffer
+  glUniform1i(glGetUniformLocation(shader_program, "trianglesBuffer"), 1);
+  glUniform1i(glGetUniformLocation(shader_program, "numOfTriangles"), 2);
+
+  // unbind the texture buffer
+  glBindBuffer(GL_TEXTURE_BUFFER, 0);
 }
