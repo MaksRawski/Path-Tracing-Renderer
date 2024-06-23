@@ -61,5 +61,4 @@ void update_frame(GLuint shader_program, GLFWwindow *window, Uniforms *uniforms,
 
 void free_gl_buffers(RendererBuffers *rb, BackBuffer *bb, ModelBuffer *mb);
 
-void load_obj_model(const char *filename, GLuint shader_program, ModelBuffer *mb);
 #endif // RENDERER_H_

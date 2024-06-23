@@ -2,7 +2,9 @@
 //
 #include <GLFW/glfw3.h>
 //
+#include "obj_parser.h"
 #include "renderer.h"
+//
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
