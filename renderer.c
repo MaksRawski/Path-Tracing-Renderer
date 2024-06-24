@@ -80,9 +80,8 @@ void setup_renderer(const char *shader_filename, GLuint *shader_program,
 }
 
 void update_frame(GLuint shader_program, GLFWwindow *window, Uniforms *uniforms,
-                  RendererBuffers *rb, BackBuffer *back_buffer) {
-  /* glUseProgram(shader_program); */
-
+                  RendererBuffers *rb, BackBuffer *back_buffer,
+                  ModelBuffer *mb) {
   // render the quad to the back buffer
   glBindFramebuffer(GL_FRAMEBUFFER, back_buffer->fbo);
   glActiveTexture(GL_TEXTURE0);
@@ -91,23 +90,29 @@ void update_frame(GLuint shader_program, GLFWwindow *window, Uniforms *uniforms,
 
   // update uniforms
   glUseProgram(shader_program);
+  glUniform1i(glGetUniformLocation(shader_program, "BackBufferTexture"), 0);
   glUniform1i(glGetUniformLocation(shader_program, "iFrame"), uniforms->iFrame);
   glUniform2f(glGetUniformLocation(shader_program, "iResolution"),
               uniforms->iResolution[0], uniforms->iResolution[1]);
-  glUniform3f(glGetUniformLocation(shader_program, "camPos"),
-              uniforms->camPos[0], uniforms->camPos[1], uniforms->camPos[2]);
-  glUniform3f(glGetUniformLocation(shader_program, "camLookat"),
-              uniforms->camLookat[0], uniforms->camLookat[1],
-              uniforms->camLookat[2]);
-  glUniform3f(glGetUniformLocation(shader_program, "camUp"), uniforms->camUp[0],
-              uniforms->camUp[1], uniforms->camUp[2]);
-  glUniform1f(glGetUniformLocation(shader_program, "camFov"), uniforms->camFov);
+  /* glUniform3f(glGetUniformLocation(shader_program, "camPos"), */
+  /*             uniforms->camPos[0], uniforms->camPos[1], uniforms->camPos[2]);
+   */
+  /* glUniform3f(glGetUniformLocation(shader_program, "camLookat"), */
+  /*             uniforms->camLookat[0], uniforms->camLookat[1], */
+  /*             uniforms->camLookat[2]); */
+  /* glUniform3f(glGetUniformLocation(shader_program, "camUp"),
+   * uniforms->camUp[0], */
+  /*             uniforms->camUp[1], uniforms->camUp[2]); */
+  /* glUniform1f(glGetUniformLocation(shader_program, "camFov"),
+   * uniforms->camFov); */
 
   // make sure the model is loaded
-  /* glActiveTexture(GL_TEXTURE1); */
-  /* glBindTexture(GL_TEXTURE_BUFFER, mb->tboTex); */
-  /* glUniform1i(glGetUniformLocation(shader_program, "trianglesBuffer"), 1); */
-  /* glUniform1i(glGetUniformLocation(shader_program, "numOfTriangles"), mb->numOfTriangles); */
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_BUFFER, mb->tboTex);
+  glUniform1i(glGetUniformLocation(shader_program, "trianglesBuffer"), 1);
+  glUniform1i(glGetUniformLocation(shader_program, "numOfTriangles"),
+              mb->numOfTriangles);
+  /* printf("numOfTriangles = %d\n", mb->numOfTriangles); */
 
   // render the quad to the screen
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -268,9 +273,12 @@ void display_fps(GLFWwindow *window, unsigned int *frame_counter,
   }
 }
 
-void free_gl_buffers(RendererBuffers *rb, BackBuffer *bb) {
+void free_gl_buffers(RendererBuffers *rb, BackBuffer *bb, ModelBuffer *mb) {
   glDeleteVertexArrays(1, &rb->vao);
   glDeleteBuffers(1, &rb->vbo);
   glDeleteFramebuffers(1, &bb->fbo);
   glDeleteTextures(1, &bb->fboTex);
+  glDeleteBuffers(1, &mb->tbo);
+  glDeleteTextures(1, &mb->tboTex);
+  free(mb->triangles);
 }

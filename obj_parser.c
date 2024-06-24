@@ -126,7 +126,7 @@ void parse_obj(const char *filename, Triangle *triangles[],
       /*        vertices[num_of_vertices - 1].l[2]); */
     } else if (type[0] == 'v' && type[1] == 'n') {
       add_vertex(vns, &num_of_vns, line + 2);
-      /* printf("Added vertex = %f %f %f\n\n", vns[num_of_vns - 1].l[0], */
+      /* printf("Added vertex normal = %f %f %f\n\n", vns[num_of_vns - 1].l[0], */
       /*        vns[num_of_vns - 1].l[1], */
       /*        vns[num_of_vns - 1].l[2]); */
     }
@@ -134,34 +134,30 @@ void parse_obj(const char *filename, Triangle *triangles[],
       add_triangle(*triangles, num_of_triangles, vertices, vns, line + 2);
     }
   }
+  free(vertices);
+  free(vns);
 
   fclose(fp);
 }
 
 void load_obj_model(const char *filename, GLuint shader_program,
                     ModelBuffer *mb) {
-  /* Triangle *triangles = NULL; */
-  int num_of_triangles = 1;
-  /* parse_obj(filename, &triangles, &num_of_triangles); */
-  /* if (triangles != NULL){ */
-  /*   for (int i = 0; i < num_of_triangles; i++){ */
-  /*     printf("tri[%d].a %f %f %f\n", i, triangles[i].a[0], triangles[i].a[1], triangles[i].a[2]); */
-  /*     printf("tri[%d].b %f %f %f\n", i, triangles[i].b[0], triangles[i].b[1], triangles[i].b[2]); */
-  /*     printf("tri[%d].c %f %f %f\n", i, triangles[i].c[0], triangles[i].c[1], triangles[i].c[2]); */
-  /*     printf("tri[%d].na %f %f %f\n", i, triangles[i].na[0], triangles[i].na[1], triangles[i].na[2]); */
-  /*     printf("tri[%d].nb %f %f %f\n", i, triangles[i].nb[0], triangles[i].nb[1], triangles[i].nb[2]); */
-  /*     printf("tri[%d].nc %f %f %f\n", i, triangles[i].nc[0], triangles[i].nc[1], triangles[i].nc[2]); */
-  /*   } */
-  /* } */
+  Triangle *triangles = NULL;
+  int num_of_triangles = 0;
+  parse_obj(filename, &triangles, &num_of_triangles);
+  if (triangles != NULL){
+    for (int i = 0; i < num_of_triangles; i++){
+      printf("tri[%d].a %f %f %f\n", i, triangles[i].a[0], triangles[i].a[1], triangles[i].a[2]);
+      printf("tri[%d].b %f %f %f\n", i, triangles[i].b[0], triangles[i].b[1], triangles[i].b[2]);
+      printf("tri[%d].c %f %f %f\n", i, triangles[i].c[0], triangles[i].c[1], triangles[i].c[2]);
+      printf("tri[%d].na %f %f %f\n", i, triangles[i].na[0], triangles[i].na[1], triangles[i].na[2]);
+      printf("tri[%d].nb %f %f %f\n", i, triangles[i].nb[0], triangles[i].nb[1], triangles[i].nb[2]);
+      printf("tri[%d].nc %f %f %f\n", i, triangles[i].nc[0], triangles[i].nc[1], triangles[i].nc[2]);
+    }
+  }
+  mb->numOfTriangles = num_of_triangles;
+  mb->triangles = triangles;
 
-  Triangle triangles[1] = {{
-      {20.0f, -1.0f, -5.0f}, // a (left)
-      {17.5f, 5.0f, 10.0f},  // b (top)
-      {10.0f, 1.0f, 10.0f},  // c (right)
-      {0.0f, 1.0f, 0.0f},    // na
-      {0.0f, 1.0f, 0.0f},    // nb
-      {0.0f, 1.0f, 0.0f}     // nc
-  }};
   // to store vertices
   glGenBuffers(1, &mb->tbo);
   glBindBuffer(GL_ARRAY_BUFFER, mb->tbo);
@@ -183,8 +179,7 @@ void load_obj_model(const char *filename, GLuint shader_program,
   // set to texture at index 1 as index 0 we will be storing back buffer
   glUniform1i(glGetUniformLocation(shader_program, "trianglesBuffer"), 1);
   glUniform1i(glGetUniformLocation(shader_program, "numOfTriangles"), num_of_triangles);
-  mb->numOfTriangles = num_of_triangles;
-  printf("mb.numOfTriangles = %d\n", mb->numOfTriangles);
+  /* printf("mb.numOfTriangles = %d\n", mb->numOfTriangles); */
 
   // unbind the texture buffer
   glBindBuffer(GL_TEXTURE_BUFFER, 0);
