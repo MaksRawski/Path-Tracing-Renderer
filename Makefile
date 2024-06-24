@@ -9,10 +9,10 @@ GLAD_SRC = ./lib/src/gl.c
 all: $(TARGET)
 
 $(TARGET): $(OBJ) $(GLAD_SRC)
-	mkdir -p bin
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $(TARGET)
 
 bin/%.o: %.c
+	mkdir -p bin
 	$(CC) $(CFLAGS) -c $< -o $@
 
 zip: projekt.zip
