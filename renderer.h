@@ -58,8 +58,8 @@ void setup_back_buffer(BackBuffer *bb, unsigned int width, unsigned int height);
 void display_fps(GLFWwindow *window, unsigned int *frame_counter,
                  double *last_frame_time);
 void update_frame(GLuint shader_program, GLFWwindow *window, Uniforms *uniforms,
-                  RendererBuffers *rb, BackBuffer *back_buffer, ModelBuffer *mb);
+                  RendererBuffers *rb, BackBuffer *back_buffer);
 
-void free_gl_buffers(RendererBuffers *rb, BackBuffer *bb, ModelBuffer *mb);
+void free_gl_buffers(RendererBuffers *rb, BackBuffer *bb);
 
 #endif // RENDERER_H_

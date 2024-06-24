@@ -39,7 +39,7 @@ int main(void) {
   double last_frame_time = glfwGetTime();
 
   ModelBuffer mb;
-  load_obj_model("triangle.obj", shader_program, &mb);
+  /* load_obj_model("triangle.obj", shader_program, &mb); */
 
   while (!glfwWindowShouldClose(window)) {
     bool did_reload =
@@ -72,13 +72,13 @@ int main(void) {
     frame_counter++;
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    update_frame(shader_program, window, &uniforms, &rb, &bb, &mb);
+    update_frame(shader_program, window, &uniforms, &rb, &bb);
 
     glfwPollEvents();
     ++uniforms.iFrame;
   }
 
-  free_gl_buffers(&rb, &bb, &mb);
+  free_gl_buffers(&rb, &bb);
   glDeleteProgram(shader_program);
   glfwTerminate();
   close(shader_watcher_fd);
