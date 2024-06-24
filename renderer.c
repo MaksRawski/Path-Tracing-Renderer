@@ -73,7 +73,7 @@ void setup_renderer(const char *shader_filename, GLuint *shader_program,
   // "row", offset of each "row"
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), NULL);
 
-  char *shader_src = read_shader_source(shader_filename);
+  char *shader_src = read_file(shader_filename);
   *shader_program = create_shader_program(shader_src);
   free(shader_src);
   *shader_watcher_fd = watch_shader_file(shader_filename);
@@ -108,7 +108,7 @@ void update_frame(GLuint shader_program, GLFWwindow *window, Uniforms *uniforms,
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_BUFFER, mb->tboTex);
   glUniform1i(glGetUniformLocation(shader_program, "trianglesBuffer"), 1);
-  glUniform1i(glGetUniformLocation(shader_program, "numOfTriangles"), 1);
+  glUniform1i(glGetUniformLocation(shader_program, "numOfTriangles"), mb->numOfTriangles);
 
   // render the quad to the screen
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -117,10 +117,10 @@ void update_frame(GLuint shader_program, GLFWwindow *window, Uniforms *uniforms,
   glfwSwapBuffers(window);
 }
 
-char *read_shader_source(const char *shader_file) {
-  FILE *file = fopen(shader_file, "r");
+char *read_file(const char *filename) {
+  FILE *file = fopen(filename, "r");
   if (!file) {
-    fprintf(stderr, "Error: Could not open shader file %s\n", shader_file);
+    fprintf(stderr, "Error: Could not open file %s\n", filename);
     exit(EXIT_FAILURE);
   }
 
@@ -130,7 +130,7 @@ char *read_shader_source(const char *shader_file) {
 
   char *buffer = (char *)malloc(length + 1);
   if (!buffer) {
-    fprintf(stderr, "Error: Could not allocate memory for shader source\n");
+    fprintf(stderr, "Error: Could not allocate memory for file %s\n", filename);
     exit(EXIT_FAILURE);
   }
 
@@ -198,7 +198,7 @@ bool reload_shader(int watcher_fd, GLuint *program, const char *shader_path) {
     struct inotify_event *event = (struct inotify_event *)&buffer[i];
     if (event->mask & IN_MODIFY) {
       printf("%s modified, recompiling...\n", shader_path);
-      char *fragment_shader_source = read_shader_source(shader_path);
+      char *fragment_shader_source = read_file(shader_path);
       GLuint new_program = create_shader_program(fragment_shader_source);
       free(fragment_shader_source);
 

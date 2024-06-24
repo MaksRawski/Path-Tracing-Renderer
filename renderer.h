@@ -28,6 +28,7 @@ typedef struct RendererBuffers {
 typedef struct ModelBuffer {
   GLuint tbo;
   GLuint tboTex;
+  int numOfTriangles;
 } ModelBuffer;
 
 typedef struct Camera {
@@ -48,7 +49,7 @@ typedef struct {
 GLFWwindow *setup_opengl(bool disable_vsync);
 void setup_renderer(const char *shader_filename, GLuint *shader_program,
                     int *shader_watcher_fd, RendererBuffers *rb);
-char *read_shader_source(const char *shader_file);
+char *read_file(const char *shader_file);
 GLuint compile_shader(const char *shaderSource, GLenum shaderType);
 GLuint create_shader_program(const char *fragment_shader_source);
 bool reload_shader(int watcher_fd, GLuint *program, const char *shader_path);

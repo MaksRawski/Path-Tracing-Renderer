@@ -1,8 +1,8 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -Wno-unused -Ilib/include
+CFLAGS = -g -Wall -Wextra -Wno-unused -Ilib/include
 LDFLAGS = -lglfw -ldl
 TARGET = bin/main
-SRC = main.c renderer.c
+SRC = main.c renderer.c obj_parser.c
 OBJ = $(patsubst %.c, bin/%.o, $(SRC))
 GLAD_SRC = ./lib/src/gl.c
 

@@ -415,7 +415,6 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     // c = mix(c, lastFrameColor, 1.0 / float(iFrame + 1));
     // float weight = 1.0 / (float(iFrame) + 1.0);
     // c = lastFrameColor * (1.0 - weight) + c * weight;
-    // c = lastFrameColor * vec3(1.0, 0.0, 0.0) + vec3(0.1, 0.0, 0.0);
 
     // fragColor = vec4(uv, 0, 1);
     // fragColor = vec4(c, 1);
