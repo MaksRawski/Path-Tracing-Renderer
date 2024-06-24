@@ -39,7 +39,7 @@ int main(void) {
   double last_frame_time = glfwGetTime();
 
   ModelBuffer mb;
-  load_obj_model("cube.obj", shader_program, &mb);
+  load_obj_model("suzanne.obj", shader_program, &mb);
 
   while (!glfwWindowShouldClose(window)) {
     bool did_reload =

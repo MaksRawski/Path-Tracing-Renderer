@@ -10,9 +10,9 @@ uniform sampler2D backBufferTexture;
 uniform samplerBuffer trianglesBuffer;
 uniform int numOfTriangles;
 
-const vec3 camOrigin = vec3(0, 2, 0);
-const float radius = 5.0;
-const float speed = 100;
+// const vec3 camOrigin = vec3(0, 1, 0);
+// const float radius = 2.0;
+// const float speed = 100;
 
 // https://raytracing.github.io/books/RayTracingInOneWeekend.html#positionablecamera (12.2)
 struct Camera {
@@ -101,26 +101,26 @@ float RandomFloat(inout uint state)
 
 const float C_PI = 3.141592653589793;
 const float C_TWOPI = 6.283185307179586;
-const int MAX_BOUNCE_COUNT = 4;
-const int SAMPLES_PER_PIXEL = 4;
+const int MAX_BOUNCE_COUNT = 2;
+const int SAMPLES_PER_PIXEL = 1;
 
-const int NUM_OF_SPHERES = 6;
-const Sphere SPHERES[NUM_OF_SPHERES] = Sphere[NUM_OF_SPHERES](
-        Sphere(vec3(25.0, 0.0, -20.0), 6.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0))), // white ball
-        Sphere(vec3(20.0, -1.4, -10.0), 4.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 0.0, 0.0))), // red ball
-        Sphere(vec3(18.0, -2.4, -4.0), 3.5, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 1.0, 0.0))), // green ball
-        Sphere(vec3(16.0, -2.4, 4.0), 3.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 0.0, 1.0))), // blue ball
-        Sphere(vec3(65.0, 21.0, 9.0), 16.0, Material(vec3(0.8, 0.8, 0.8), 15.0, vec3(0.8, 0.8, 0.0))), // sun
-        Sphere(vec3(-5.0, -1005.0, 10.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.5, 0.5, 0.5))) // ground
-    );
+// const int NUM_OF_SPHERES = 6;
+// const Sphere SPHERES[NUM_OF_SPHERES] = Sphere[NUM_OF_SPHERES](
+//         Sphere(vec3(25.0, 0.0, -20.0), 6.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0))), // white ball
+//         Sphere(vec3(20.0, -1.4, -10.0), 4.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 0.0, 0.0))), // red ball
+//         Sphere(vec3(18.0, -2.4, -4.0), 3.5, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 1.0, 0.0))), // green ball
+//         Sphere(vec3(16.0, -2.4, 4.0), 3.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 0.0, 1.0))), // blue ball
+//         Sphere(vec3(65.0, 21.0, 9.0), 16.0, Material(vec3(0.8, 0.8, 0.8), 15.0, vec3(0.8, 0.8, 0.0))), // sun
+//         Sphere(vec3(-5.0, -1005.0, 10.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.5, 0.5, 0.5))) // ground
+//     );
 
-const int NUM_OF_TRIANGLES = 1;
-const Triangle TRIANGLES[NUM_OF_TRIANGLES] = Triangle[NUM_OF_TRIANGLES](
-        Triangle(
-            vec3(20.0, -1.0, -5.0), vec3(17.5, 5.0, 10.0), vec3(10.0, 1.0, 10.0),
-            vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0)
-        )
-    );
+// const int NUM_OF_TRIANGLES = 1;
+// const Triangle TRIANGLES[NUM_OF_TRIANGLES] = Triangle[NUM_OF_TRIANGLES](
+//         Triangle(
+//             vec3(20.0, -1.0, -5.0), vec3(17.5, 5.0, 10.0), vec3(10.0, 1.0, 10.0),
+//             vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0)
+//         )
+//     );
 
 vec3 RandomUnitVector(inout uint state)
 {
@@ -288,7 +288,7 @@ HitInfo CalculateRayCollision(Ray ray) {
         HitInfo hit = RayTriangleIntersection(ray, getTriangle(i));
         if (hit.didHit && hit.dst < closestHit.dst) {
             closestHit = hit;
-            closestHit.mat = Material(vec3(0.0, 1.0, 1.0), 0.0, vec3(0,0,1));
+            closestHit.mat = Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0, 0.4, 0.7));
         }
     }
 
@@ -376,8 +376,9 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
     // camera
     Camera cam;
-    cam.pos = camOrigin + vec3(cos(iFrame / speed) * radius, 0.0, sin(iFrame / speed) * radius);
-    cam.lookat = vec3(0.0, 1.0, 0.0);
+    // cam.pos = camOrigin + vec3(cos(iFrame / speed) * radius, 0.0, sin(iFrame / speed) * radius);
+    cam.pos = vec3(1.2, 0.8, 2.2);
+    cam.lookat = vec3(0.0, 0.8, 0.0);
     cam.up = vec3(0.0, 1.0, 0.0);
     cam.fov = C_PI / 2.0; // 90 degrees
 
@@ -413,8 +414,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec3 lastFrameColor = texture(backBufferTexture, fragCoord / iResolution.xy).rgb;
     if (iFrame == 0) lastFrameColor = c;
     // c = mix(c, lastFrameColor, 1.0 / float(iFrame + 1));
-    // float weight = 1.0 / (float(iFrame) + 1.0);
-    // c = lastFrameColor * (1.0 - weight) + c * weight;
+    float weight = 1.0 / (float(iFrame) + 1.0);
+    c = lastFrameColor * (1.0 - weight) + c * weight;
 
     // fragColor = vec4(uv, 0, 1);
     // fragColor = vec4(c, 1);
