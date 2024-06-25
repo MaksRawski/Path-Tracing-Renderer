@@ -1,3 +1,6 @@
+
+#define DEBUG
+
 #include <glad/gl.h>
 //
 #include <GLFW/glfw3.h>
@@ -17,16 +20,14 @@ int main(void) {
   GLuint shader_program;
   int shader_watcher_fd;
   RendererBuffers rb;
-  setup_renderer("renderer.glsl", &shader_program, &shader_watcher_fd, &rb);
+  setup_renderer("test.glsl", &shader_program, &shader_watcher_fd, &rb);
 
   int width, height;
   glfwGetFramebufferSize(window, &width, &height);
   glViewport(0, 0, width, height);
 
   BackBuffer bb;
-  setup_back_buffer(&bb, width, height);
-  // set the program uniform for the texture sampler
-  glUniform1i(glGetUniformLocation(shader_program, "BackBufferTexture"), 0);
+  setup_back_buffer(shader_program, &bb, width, height);
 
   Uniforms uniforms = {.camFov = PI / 2.0,
                        .camLookat = {0.0, 1.0, 0.0},
@@ -38,12 +39,12 @@ int main(void) {
   unsigned int frame_counter = 0;
   double last_frame_time = glfwGetTime();
 
-  ModelBuffer mb;
-  load_obj_model("suzanne.obj", shader_program, &mb);
+  ModelsBuffer mb = {0};
+  load_obj_model("triangle.obj", shader_program, &mb);
 
   while (!glfwWindowShouldClose(window)) {
     bool did_reload =
-        reload_shader(shader_watcher_fd, &shader_program, "renderer.glsl");
+        reload_shader(shader_watcher_fd, &shader_program, "test.glsl");
     if (did_reload) {
       frame_counter = 0;
       uniforms.iFrame = 0;

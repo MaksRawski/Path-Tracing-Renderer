@@ -8,7 +8,9 @@ uniform int iFrame;
 uniform vec2 iResolution;
 uniform sampler2D backBufferTexture;
 uniform samplerBuffer trianglesBuffer;
-uniform int numOfTriangles;
+uniform samplerBuffer meshesInfoBuffer;
+uniform samplerBuffer materialsBuffer;
+uniform int numOfMeshes;
 
 // const vec3 camOrigin = vec3(0, 1, 0);
 // const float radius = 2.0;
@@ -36,21 +38,6 @@ struct Ray {
     float epsilon;
 };
 
-struct Material {
-    // what color it emits
-    vec3 emissionColor;
-    // how much light it emits
-    float emissionStrength;
-    // what color it is under white light
-    vec3 albedo;
-};
-
-struct Sphere {
-    vec3 pos;
-    float r;
-    Material mat;
-};
-
 struct Triangle {
     vec3 a, b, c;
     vec3 na, nb, nc;
@@ -67,13 +54,55 @@ Triangle getTriangle(int i) {
 }
 
 struct MeshInfo {
-    // index of the first triangle in the StructuredBuffer triangle list
-    uint firstTriangleIndex;
-    uint numTriangles;
+    // index of the first triangle in trianglesBuffer
+    int firstTriangleIndex;
+    int numTriangles;
+    // index of the material in materialsBuffer
+    int materialIndex;
     // bounding box
     vec3 boundsMin;
     vec3 boundsMax;
-    Material material;
+};
+
+MeshInfo getMesh(int i) {
+    MeshInfo mi;
+    vec3 t = texelFetch(meshesInfoBuffer, 9 * i).rgb;
+    mi.firstTriangleIndex = int(t.r);
+    mi.numTriangles = int(t.g);
+    mi.materialIndex = int(t.b);
+    mi.boundsMin = texelFetch(meshesInfoBuffer, 9 * i + 1).rgb;
+    mi.boundsMax = texelFetch(meshesInfoBuffer, 9 * i + 2).rgb;
+    return mi;
+}
+
+struct Material {
+    // what color it emits
+    vec3 emissionColor;
+    // how much light it emits, in range [0; 1]
+    float emissionStrength;
+    // what color it is under white light
+    vec3 albedo;
+    // how reflective a surface is, in range [0; 1]
+    // when 0, diffuse
+    // when 1, reflect
+    float specularComponent;
+};
+
+Material getMaterial(int i) {
+    Material mat;
+    vec4 emission = texelFetch(materialsBuffer, 2 * i).rgba;
+    vec4 rest = texelFetch(materialsBuffer, 2 * i + 1).rgba;
+    mat.emissionColor = emission.rgb;
+    mat.emissionStrength = emission.a;
+    mat.albedo = rest.rgb;
+    mat.specularComponent = rest.a;
+    return mat;
+}
+
+struct Sphere {
+    vec3 pos;
+    float r;
+    Material mat;
 };
 
 struct HitInfo {
@@ -283,12 +312,15 @@ HitInfo CalculateRayCollision(Ray ray) {
     closestHit.dst = 1.0e30; // _infinity_
 
     // iterate through all triangles
-    for (int i = 0; i < numOfTriangles; ++i) {
-        // HitInfo hit = RayTriangleIntersection(ray, TRIANGLES[i]);
-        HitInfo hit = RayTriangleIntersection(ray, getTriangle(i));
-        if (hit.didHit && hit.dst < closestHit.dst) {
-            closestHit = hit;
-            closestHit.mat = Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0, 0.4, 0.7));
+    for (int i = 0; i < numOfMeshes; ++i) {
+        MeshInfo mi = getMesh(i);
+        // TODO: test RayBoundingBoxIntersection, if not continue
+        for (int j = 0; j < mi.numTriangles; ++j) {
+            HitInfo hit = RayTriangleIntersection(ray, getTriangle(mi.firstTriangleIndex + j));
+            if (hit.didHit && hit.dst < closestHit.dst) {
+                closestHit = hit;
+                closestHit.mat = getMaterial(mi.materialIndex);
+            }
         }
     }
 
@@ -306,10 +338,18 @@ HitInfo CalculateRayCollision(Ray ray) {
 
 // random direction in the same hemisphere the normal vector is in
 // for diffuse reflection
-vec3 RandomHemisphereDirection(vec3 normal, inout uint rngState) {
-    // dot product is negative if the vectors are more than 90 degrees apart
-    vec3 randomVector = RandomUnitVector(rngState);
-    return sign(dot(normal, randomVector)) * randomVector;
+// vec3 RandomHemisphereDirection(vec3 normal, inout uint rngState) {
+//     // dot product is negative if the vectors are more than 90 degrees apart
+//     vec3 randomVector = RandomUnitVector(rngState);
+//     return sign(dot(normal, randomVector)) * randomVector;
+// }
+
+vec3 DiffuseDirection(vec3 normal, inout uint rngState) {
+    return normalize(normal + RandomUnitVector(rngState));
+}
+
+vec3 ReflectDirection(vec3 dir, vec3 normal) {
+    return dir - 2 * dot(dir, normal) * normal;
 }
 
 // copy pasted from sebastian's video
@@ -348,8 +388,10 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
             // we can use a cosine weighted distribution to achieve that
             // we attach a random vector at the end of the normal vector and then normalize
             // the result to get any point at a hemisphere
-            ray.dir = normalize(hitInfo.normal + RandomUnitVector(rngState));
             // ray.dir = RandomHemisphereDirection(hitInfo.normal, rngState);
+            vec3 diffuseDir = DiffuseDirection(hitInfo.normal, rngState);
+            vec3 reflectDir = ReflectDirection(ray.dir, hitInfo.normal);
+            ray.dir = mix(diffuseDir, reflectDir, hitInfo.mat.specularComponent);
 
             // calculate the potential light that the object is emitting
             vec3 emittedLight = hitInfo.mat.emissionColor * hitInfo.mat.emissionStrength;
@@ -426,7 +468,12 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 // but this is how shaders actually work
 void main() {
     vec4 fragColor;
-    mainImage(fragColor, gl_FragCoord.xy);
-    gl_FragColor = fragColor;
-    // gl_FragColor = vec4(getTriangle(6).na, 1);
+    // mainImage(fragColor, gl_FragCoord.xy);
+    // gl_FragColor = fragColor;
+    // TODO: getTriangle and getMaterial work!
+    // get getMesh to work!!!
+    // gl_FragColor = vec4(getTriangle(0).a, 1);
+    // gl_FragColor = vec4(getMaterial(0).albedo, 1);
+    // gl_FragColor = vec4(texelFetch(meshesInfoBuffer, 0).rgb, 1);
+    gl_FragColor = vec4(1, 0,0, 1);
 }

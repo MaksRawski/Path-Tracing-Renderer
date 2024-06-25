@@ -5,6 +5,11 @@
 
 #include "obj_parser.h"
 
+const Material default_mat = {.albedo = {0, 0.4, 0.7},
+                              .emissionColor = {0, 0, 0},
+                              .emissionStrength = 0,
+                              .specularComponent = 0.2};
+
 ObjStats get_obj_stats(const char *filename) {
   ObjStats s = {0, 0, 0};
   FILE *fp = fopen(filename, "r");
@@ -21,7 +26,8 @@ ObjStats get_obj_stats(const char *filename) {
     else if (line[0] == 'f' && line[1] == ' ')
       ++s.f;
   }
-  printf("Loaded %s, stats: v = %d, vn = %d, f = %d\n", filename, s.v, s.vn, s.f);
+  printf("Loaded %s, stats: v = %d, vn = %d, f = %d\n", filename, s.v, s.vn,
+         s.f);
   fclose(fp);
   return s;
 }
@@ -101,18 +107,18 @@ void add_triangle(Triangle triangles[], int *num_of_triangles, vec3 vertices[],
 }
 
 void parse_obj(const char *filename, Triangle *triangles[],
-               int *num_of_triangles) {
-  ObjStats stats = get_obj_stats(filename);
+               int *num_of_triangles, ObjStats *stats) {
+  *stats = get_obj_stats(filename);
   FILE *fp = fopen(filename, "r");
   if (fp == NULL) {
     printf("Failed to open file %s\n", filename);
     exit(EXIT_FAILURE);
   }
 
-  *triangles = malloc(stats.f * sizeof(Triangle));
-  vec3 *vertices = malloc(stats.v * sizeof(vec3));
+  *triangles = malloc(stats->f * sizeof(Triangle));
+  vec3 *vertices = malloc(stats->v * sizeof(vec3));
   int num_of_vertices = 0;
-  vec3 *vns = malloc(stats.vn * sizeof(vec3));
+  vec3 *vns = malloc(stats->vn * sizeof(vec3));
   int num_of_vns = 0;
 
   for (char line[255]; fgets(line, sizeof(line), fp);) {
@@ -123,7 +129,8 @@ void parse_obj(const char *filename, Triangle *triangles[],
       continue;
     else if (type[0] == 'v' && type[1] == 0) {
       add_vertex(vertices, &num_of_vertices, line + 2);
-      /* printf("Added vertex = %f %f %f\n", vertices[num_of_vertices - 1].l[0], */
+      /* printf("Added vertex = %f %f %f\n", vertices[num_of_vertices - 1].l[0],
+       */
       /*        vertices[num_of_vertices - 1].l[1], */
       /*        vertices[num_of_vertices - 1].l[2]); */
     } else if (type[0] == 'v' && type[1] == 'n') {
@@ -141,11 +148,34 @@ void parse_obj(const char *filename, Triangle *triangles[],
   fclose(fp);
 }
 
+// expects the shader program to be loaded
+void create_gl_buffer(GLuint *tbo, GLuint *tbo_tex, unsigned long size,
+                      void *data, GLenum tex_format, GLenum tex_index) {
+  glGenBuffers(1, tbo);
+  glBindBuffer(GL_ARRAY_BUFFER, *tbo);
+  glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+
+  // texture buffer object, will bind the vbo to it
+  // so that the shader can sample the texture and
+  // get the data from the vbo
+  glGenTextures(1, tbo_tex);
+  glBindTexture(GL_TEXTURE_BUFFER, *tbo_tex);
+  // depending on the chosen format each "texel" (pixel of a texture)
+  // will contain a value in this format so e.g. for GL_RGB32F each texel
+  // will store 3 floats AKA vec3
+  glTexBuffer(GL_TEXTURE_BUFFER, tex_format, *tbo);
+
+  glActiveTexture(tex_index);
+  glBindTexture(GL_TEXTURE_BUFFER, *tbo_tex);
+}
+
 void load_obj_model(const char *filename, GLuint shader_program,
-                    ModelBuffer *mb) {
+                    ModelsBuffer *mb) {
   Triangle *triangles = NULL;
   int num_of_triangles = 0;
-  parse_obj(filename, &triangles, &num_of_triangles);
+  ObjStats stats;
+  parse_obj(filename, &triangles, &num_of_triangles, &stats);
+  /* #ifdef DEBUG_OBJ_LOADING */
   if (triangles != NULL) {
     for (int i = 0; i < num_of_triangles; i++) {
       printf("tri[%d].a %f %f %f\n", i, triangles[i].a[0], triangles[i].a[1],
@@ -162,34 +192,105 @@ void load_obj_model(const char *filename, GLuint shader_program,
              triangles[i].nc[2]);
     }
   }
-  mb->numOfTriangles = num_of_triangles;
-  mb->triangles = triangles;
+  /* #endif */
 
-  // to store vertices
-  glGenBuffers(1, &mb->tbo);
-  glBindBuffer(GL_ARRAY_BUFFER, mb->tbo);
-  glBufferData(GL_ARRAY_BUFFER, num_of_triangles * sizeof(Triangle), triangles,
-               GL_STATIC_DRAW);
+  int triangles_already_loaded = 0;
+  if (mb == NULL || mb->num_of_meshes == 0) {
+    if (mb == NULL)
+      mb = malloc(sizeof(ModelsBuffer));
+    ModelsBuffer mb_local;
+    // allocate memory for REALLOC_EVERY_N_MESHES instances of elements for
+    // these arrays, because these structs are small it's better to
+    // over-allocate memory than allocate each time
+    mb_local.meshesInfo = malloc(4 * sizeof(MeshInfo));
+    mb_local.materials = NULL;
+    mb_local.triangles = triangles;
+    mb_local.num_of_meshes = 1;
+    *mb = mb_local;
+  } else {
+    mb->num_of_meshes += 1;
 
-  // texture buffer object, will bind the vbo to it
-  // so that the shader can sample the texture and actually
-  // get the data from the vbo
-  glGenTextures(1, &mb->tboTex);
-  glBindTexture(GL_TEXTURE_BUFFER, mb->tboTex);
-  // we choose GL_RGB32F to have each pixel of the texture store 3 floats AKA
-  // vec3 and then use tbo as data for that texture,
-  glTexBuffer(GL_TEXTURE_BUFFER, GL_RGB32F, mb->tbo);
+    // realloc if the initial 4 elements have been filled in and
+    // every time num_of_meshes is a power of two
+    if (mb->num_of_meshes >= 4 &&
+        (mb->num_of_meshes & (mb->num_of_meshes - 1)) == 0) {
+      void *result = realloc(mb->meshesInfo,
+                             2 * mb->num_of_meshes * sizeof(mb->meshesInfo));
+      if (result == NULL) {
+        printf("Failed to reallocate %lu bytes of memory for meshesInfo!\n",
+               2 * mb->num_of_meshes * sizeof(mb->meshesInfo));
+        free(mb->meshesInfo);
+        exit(EXIT_FAILURE);
+      }
+      mb->meshesInfo = result;
+    }
 
-  // bind the texture as a uniform in the shader
+    triangles_already_loaded =
+        mb->meshesInfo[mb->num_of_meshes - 1].firstTriangleIndex +
+        mb->meshesInfo[mb->num_of_meshes - 1].numTriangles;
+
+    // because triangles buffer will be of quite unpredictable size and
+    // potentially large we will realloc memory per every new model and only
+    // as much as needed
+    void *result =
+        realloc(mb->triangles, (triangles_already_loaded + num_of_triangles) *
+                                   sizeof(Triangle));
+    if (result == NULL) {
+      free(mb->triangles);
+      printf("Failed to reallocate %lu bytes of memory for triangles!\n",
+             (triangles_already_loaded + num_of_triangles) * sizeof(Triangle));
+      exit(EXIT_FAILURE);
+    }
+    mb->triangles = result;
+    memcpy(mb->triangles + triangles_already_loaded, triangles,
+           num_of_triangles);
+
+    // delete previous buffers and textures as we will set them later
+    // with new data
+    glDeleteBuffers(1, &mb->tbo_triangles);
+    glDeleteBuffers(1, &mb->tbo_meshes);
+    glDeleteTextures(1, &mb->tbo_tex_triangles);
+    glDeleteTextures(1, &mb->tbo_tex_meshes);
+  }
+
+  // set the mesh info for the new model
+  MeshInfo mi = {
+      .firstTriangleIndex = triangles_already_loaded,
+      .numTriangles = num_of_triangles,
+      .materialIndex = 0, // set to default material
+      // TODO: use BVH here instead
+      .boundsMax = {2, 2, 2},
+      .boundsMin = {-2, -2, -2},
+  };
+  mb->meshesInfo[mb->num_of_meshes - 1] = mi;
+
+  // set the default material if there are no defined
+  if (mb->materials == NULL) {
+    mb->materials = malloc(sizeof(Material));
+    mb->materials[0] = default_mat;
+    create_gl_buffer(&mb->tbo_materials, &mb->tbo_tex_materials,
+                     sizeof(Material), mb->materials, GL_RGBA32F, GL_TEXTURE3);
+    glUseProgram(shader_program);
+    glUniform1i(glGetUniformLocation(shader_program, "materialsBuffer"), 3);
+  }
+
+  // create texture buffers for triangles and meshesInfo
   glUseProgram(shader_program);
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_BUFFER, mb->tboTex);
-  // set to texture at index 1 as index 0 we will be storing back buffer
+  create_gl_buffer(&mb->tbo_triangles, &mb->tbo_tex_triangles,
+                   (triangles_already_loaded + num_of_triangles) *
+                       sizeof(Triangle),
+                   mb->triangles, GL_RGB32F, GL_TEXTURE1);
   glUniform1i(glGetUniformLocation(shader_program, "trianglesBuffer"), 1);
-  glUniform1i(glGetUniformLocation(shader_program, "numOfTriangles"),
-              num_of_triangles);
-  /* printf("mb.numOfTriangles = %d\n", mb->numOfTriangles); */
+
+  create_gl_buffer(&mb->tbo_meshes, &mb->tbo_tex_meshes,
+                   mb->num_of_meshes * sizeof(MeshInfo), mb->meshesInfo,
+                   GL_RGB32I, GL_TEXTURE2);
+
+  glUniform1i(glGetUniformLocation(shader_program, "meshesInfoBuffer"), 2);
+  glUniform1i(glGetUniformLocation(shader_program, "numOfMeshes"),
+              mb->num_of_meshes);
 
   // unbind the texture buffer
   glBindBuffer(GL_TEXTURE_BUFFER, 0);
+  // TODO: is there more to unbind?
 }
