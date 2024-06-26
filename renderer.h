@@ -12,10 +12,19 @@
 #define PI 3.1415926535897932
 
 // renders just pure white
-#define DEFAULT_SHADER_PROGRAM                                                 \
+#define DEFAULT_FRAGMENT_SHADER                                                \
   "#version 330 core\nvoid main(){gl_FragColor=vec4(1.0,1.0,1.0,1.0);}"
+#define DEFAULT_VERTEX_SHADER                                                  \
+  "#version 330 core\nlayout(location = 0) in vec3 aPos;\nvoid "               \
+  "main(){gl_Position=vec4(aPos,1.0)}"
 
 void debug();
+
+typedef struct {
+  int num_of_files;
+  int *watcher_fds;
+  char **file_names;
+} FilesWatcher;
 
 typedef struct {
   GLuint fbo, fboTex;
@@ -68,14 +77,18 @@ typedef struct {
 } Uniforms;
 
 GLFWwindow *setup_opengl(bool disable_vsync);
-void setup_renderer(const char *shader_filename, GLuint *shader_program,
-                    int *shader_watcher_fd, RendererBuffers *rb);
+void setup_renderer(const char *vertex_shader_filename,
+                    const char *fragment_shader_filename,
+                    GLuint *shader_program, FilesWatcher *shader_watcher,
+                    RendererBuffers *rb);
 char *read_file(const char *shader_file);
-GLuint compile_shader(const char *shaderSource, GLenum shaderType);
-GLuint create_shader_program(const char *fragment_shader_source);
-bool reload_shader(int watcher_fd, GLuint *program, const char *shader_path);
-int watch_shader_file(const char *shader_path);
-void setup_back_buffer(GLuint shader_program, BackBuffer *bb, unsigned int width, unsigned int height);
+GLuint compile_shader(const char *shader_source, GLenum shader_type);
+GLuint create_shader_program(const char *vertex_shader_filename,
+                             const char *fragment_shader_filename);
+bool reload_shader(GLuint *shader_program, FilesWatcher *shader_files_watcher);
+int watch_file(const char *path);
+void setup_back_buffer(GLuint shader_program, BackBuffer *bb,
+                       unsigned int width, unsigned int height);
 void display_fps(GLFWwindow *window, unsigned int *frame_counter,
                  double *last_frame_time);
 void update_frame(GLuint shader_program, GLFWwindow *window, Uniforms *uniforms,
@@ -83,5 +96,6 @@ void update_frame(GLuint shader_program, GLFWwindow *window, Uniforms *uniforms,
                   ModelsBuffer *mb);
 
 void free_gl_buffers(RendererBuffers *rb, BackBuffer *bb, ModelsBuffer *mb);
+void delete_file_watcher(FilesWatcher *fw);
 
 #endif // RENDERER_H_

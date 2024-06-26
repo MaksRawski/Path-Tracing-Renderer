@@ -15,12 +15,13 @@
 #include <unistd.h>
 
 int main(void) {
-  GLFWwindow *window = setup_opengl(/* disable_vsync =*/false);
+  GLFWwindow *window = setup_opengl(/* disable_vsync = */ false);
 
   GLuint shader_program;
-  int shader_watcher_fd;
+  FilesWatcher shader_watcher;
   RendererBuffers rb;
-  setup_renderer("test.glsl", &shader_program, &shader_watcher_fd, &rb);
+  setup_renderer("vertex.glsl", "test.glsl", &shader_program, &shader_watcher,
+                 &rb);
 
   int width, height;
   glfwGetFramebufferSize(window, &width, &height);
@@ -43,8 +44,7 @@ int main(void) {
   load_obj_model("triangle.obj", shader_program, &mb);
 
   while (!glfwWindowShouldClose(window)) {
-    bool did_reload =
-        reload_shader(shader_watcher_fd, &shader_program, "test.glsl");
+    bool did_reload = reload_shader(&shader_program, &shader_watcher);
     if (did_reload) {
       frame_counter = 0;
       uniforms.iFrame = 0;
@@ -72,7 +72,7 @@ int main(void) {
     display_fps(window, &frame_counter, &last_frame_time);
     frame_counter++;
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT);
     update_frame(shader_program, window, &uniforms, &rb, &bb, &mb);
 
     glfwPollEvents();
@@ -80,9 +80,9 @@ int main(void) {
   }
 
   free_gl_buffers(&rb, &bb, &mb);
+  delete_file_watcher(&shader_watcher);
   glDeleteProgram(shader_program);
   glfwTerminate();
-  close(shader_watcher_fd);
 
   return 0;
 }
