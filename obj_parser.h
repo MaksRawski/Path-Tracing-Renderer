@@ -7,6 +7,6 @@ typedef struct ObjStats {
 	int v, vn, f;
 } ObjStats;
 
-void load_obj_model(const char *filename, GLuint shader_program, ModelBuffer *mb);
+void load_obj_model(const char *filename, GLuint shader_program, ModelsBuffer *mb);
 
 #endif // OBJ_PARSER_H_

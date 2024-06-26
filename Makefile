@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g -Wall -Wextra -Wno-unused -Ilib/include
+CFLAGS = -g -Wall -Wextra -Wno-unused -Ilib/include 
 LDFLAGS = -lglfw -ldl
 TARGET = bin/main
 SRC = main.c renderer.c obj_parser.c

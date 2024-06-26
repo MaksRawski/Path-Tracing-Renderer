@@ -1,3 +1,6 @@
+
+#define DEBUG
+
 #include <glad/gl.h>
 //
 #include <GLFW/glfw3.h>
@@ -12,21 +15,20 @@
 #include <unistd.h>
 
 int main(void) {
-  GLFWwindow *window = setup_opengl(/* disable_vsync =*/false);
+  GLFWwindow *window = setup_opengl(/* disable_vsync = */ false);
 
   GLuint shader_program;
-  int shader_watcher_fd;
+  FilesWatcher shader_watcher;
   RendererBuffers rb;
-  setup_renderer("renderer.glsl", &shader_program, &shader_watcher_fd, &rb);
+  setup_renderer("vertex.glsl", "renderer.glsl", &shader_program,
+                 &shader_watcher, &rb);
 
   int width, height;
   glfwGetFramebufferSize(window, &width, &height);
   glViewport(0, 0, width, height);
 
   BackBuffer bb;
-  setup_back_buffer(&bb, width, height);
-  // set the program uniform for the texture sampler
-  glUniform1i(glGetUniformLocation(shader_program, "BackBufferTexture"), 0);
+  setup_back_buffer(shader_program, &bb, width, height);
 
   Uniforms uniforms = {.camFov = PI / 2.0,
                        .camLookat = {0.0, 1.0, 0.0},
@@ -38,12 +40,11 @@ int main(void) {
   unsigned int frame_counter = 0;
   double last_frame_time = glfwGetTime();
 
-  ModelBuffer mb;
+  ModelsBuffer mb = {0};
   load_obj_model("suzanne.obj", shader_program, &mb);
 
   while (!glfwWindowShouldClose(window)) {
-    bool did_reload =
-        reload_shader(shader_watcher_fd, &shader_program, "renderer.glsl");
+    bool did_reload = reload_shader(&shader_program, &shader_watcher);
     if (did_reload) {
       frame_counter = 0;
       uniforms.iFrame = 0;
@@ -71,7 +72,7 @@ int main(void) {
     display_fps(window, &frame_counter, &last_frame_time);
     frame_counter++;
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT);
     update_frame(shader_program, window, &uniforms, &rb, &bb, &mb);
 
     glfwPollEvents();
@@ -79,9 +80,9 @@ int main(void) {
   }
 
   free_gl_buffers(&rb, &bb, &mb);
+  delete_file_watcher(&shader_watcher);
   glDeleteProgram(shader_program);
   glfwTerminate();
-  close(shader_watcher_fd);
 
   return 0;
 }
