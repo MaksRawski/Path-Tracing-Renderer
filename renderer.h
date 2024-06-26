@@ -16,7 +16,7 @@
   "#version 330 core\nvoid main(){gl_FragColor=vec4(1.0,1.0,1.0,1.0);}"
 #define DEFAULT_VERTEX_SHADER                                                  \
   "#version 330 core\nlayout(location = 0) in vec3 aPos;\nvoid "               \
-  "main(){gl_Position=vec4(aPos,1.0)}"
+  "main(){gl_Position=vec4(aPos,1.0);}"
 
 void debug();
 
@@ -77,14 +77,16 @@ typedef struct {
 } Uniforms;
 
 GLFWwindow *setup_opengl(bool disable_vsync);
-void setup_renderer(const char *vertex_shader_filename,
-                    const char *fragment_shader_filename,
+void setup_renderer(char *vertex_shader_filename,
+                    char *fragment_shader_filename,
                     GLuint *shader_program, FilesWatcher *shader_watcher,
                     RendererBuffers *rb);
 char *read_file(const char *shader_file);
 GLuint compile_shader(const char *shader_source, GLenum shader_type);
 GLuint create_shader_program(const char *vertex_shader_filename,
                              const char *fragment_shader_filename);
+GLuint create_shader_program_from_source(const char *vertex_shader_src,
+                             const char *fragment_shader_src);
 bool reload_shader(GLuint *shader_program, FilesWatcher *shader_files_watcher);
 int watch_file(const char *path);
 void setup_back_buffer(GLuint shader_program, BackBuffer *bb,

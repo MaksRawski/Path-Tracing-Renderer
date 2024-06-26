@@ -20,8 +20,8 @@ int main(void) {
   GLuint shader_program;
   FilesWatcher shader_watcher;
   RendererBuffers rb;
-  setup_renderer("vertex.glsl", "test.glsl", &shader_program, &shader_watcher,
-                 &rb);
+  setup_renderer("vertex.glsl", "renderer.glsl", &shader_program,
+                 &shader_watcher, &rb);
 
   int width, height;
   glfwGetFramebufferSize(window, &width, &height);

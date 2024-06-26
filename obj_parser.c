@@ -14,7 +14,7 @@ ObjStats get_obj_stats(const char *filename) {
   ObjStats s = {0, 0, 0};
   FILE *fp = fopen(filename, "r");
   if (fp == NULL) {
-    printf("Failed to open file %s\n", filename);
+    fprintf(stderr, "Failed to open file %s\n", filename);
     exit(EXIT_FAILURE);
   }
 
@@ -102,7 +102,7 @@ void add_triangle(Triangle triangles[], int *num_of_triangles, vec3 vertices[],
     return;
   }
 
-  printf("Failed to match on line: %s\n", line);
+  fprintf(stderr, "Failed to match on line: %s\n", line);
   exit(EXIT_FAILURE);
 }
 
@@ -237,8 +237,9 @@ void load_obj_model(const char *filename, GLuint shader_program,
                                    sizeof(Triangle));
     if (result == NULL) {
       free(mb->triangles);
-      printf("Failed to reallocate %lu bytes of memory for triangles!\n",
-             (triangles_already_loaded + num_of_triangles) * sizeof(Triangle));
+      fprintf(stderr,
+              "Failed to reallocate %lu bytes of memory for triangles!\n",
+              (triangles_already_loaded + num_of_triangles) * sizeof(Triangle));
       exit(EXIT_FAILURE);
     }
     mb->triangles = result;

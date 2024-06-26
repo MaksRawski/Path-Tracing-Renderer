@@ -50,7 +50,7 @@ GLFWwindow *setup_opengl(bool disable_vsync) {
   glfwMakeContextCurrent(window);
   int version = gladLoadGL(glfwGetProcAddress);
   if (version == 0) {
-    printf("Failed to initialize OpenGL context\n");
+    fprintf(stderr, "Failed to initialize OpenGL context\n");
     exit(EXIT_FAILURE);
   }
 
@@ -65,10 +65,9 @@ GLFWwindow *setup_opengl(bool disable_vsync) {
   return window;
 }
 
-void setup_renderer(const char *vertex_shader_filename,
-                    const char *fragment_shader_filename,
-                    GLuint *shader_program, FilesWatcher *shader_watcher,
-                    RendererBuffers *rb) {
+void setup_renderer(char *vertex_shader_filename,
+                    char *fragment_shader_filename, GLuint *shader_program,
+                    FilesWatcher *shader_watcher, RendererBuffers *rb) {
   // Define vertices for a full-screen quad
   float vertices[] = {
       -1.0f, 1.0f,  // Top left
@@ -97,12 +96,10 @@ void setup_renderer(const char *vertex_shader_filename,
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), NULL);
   glEnableVertexAttribArray(0);
 
-  const char *file_names[2] = {vertex_shader_filename,
-                               fragment_shader_filename};
   shader_watcher->num_of_files = 2;
   shader_watcher->file_names = malloc(2 * sizeof(char *));
-  shader_watcher->file_names[0] = malloc(strlen(vertex_shader_filename) + 1);
-  shader_watcher->file_names[1] = malloc(strlen(fragment_shader_filename) + 1);
+  shader_watcher->file_names[0] = vertex_shader_filename;
+  shader_watcher->file_names[1] = fragment_shader_filename;
   shader_watcher->watcher_fds = malloc(2 * sizeof(int));
   shader_watcher->watcher_fds[0] = watch_file(vertex_shader_filename);
   shader_watcher->watcher_fds[1] = watch_file(fragment_shader_filename);
@@ -134,11 +131,9 @@ void update_frame(GLuint shader_program, GLFWwindow *window, Uniforms *uniforms,
   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
   // update uniforms
-  /* glUseProgram(shader_program); */
-  /* glUniform1i(glGetUniformLocation(shader_program, "iFrame"),
-   * uniforms->iFrame); */
-  /* glUniform2f(glGetUniformLocation(shader_program, "iResolution"), */
-  /*             uniforms->iResolution[0], uniforms->iResolution[1]); */
+  glUniform1i(glGetUniformLocation(shader_program, "iFrame"), uniforms->iFrame);
+  glUniform2f(glGetUniformLocation(shader_program, "iResolution"),
+              uniforms->iResolution[0], uniforms->iResolution[1]);
 
   // make sure the models' "textures" are loaded
   glActiveTexture(GL_TEXTURE1);
@@ -148,12 +143,11 @@ void update_frame(GLuint shader_program, GLFWwindow *window, Uniforms *uniforms,
   glActiveTexture(GL_TEXTURE3);
   glBindTexture(GL_TEXTURE_BUFFER, mb->tbo_tex_materials);
 
-  /* glUniform1i(glGetUniformLocation(shader_program, "trianglesBuffer"), 1); */
-  /* glUniform1i(glGetUniformLocation(shader_program, "meshesInfoBuffer"), 2);
-   */
-  /* glUniform1i(glGetUniformLocation(shader_program, "materialsBuffer"), 3); */
-  /* glUniform1i(glGetUniformLocation(shader_program, "numOfMeshes"), */
-  /*             mb->num_of_meshes); */
+  glUniform1i(glGetUniformLocation(shader_program, "trianglesBuffer"), 1);
+  glUniform1i(glGetUniformLocation(shader_program, "meshesInfoBuffer"), 2);
+  glUniform1i(glGetUniformLocation(shader_program, "materialsBuffer"), 3);
+  glUniform1i(glGetUniformLocation(shader_program, "numOfMeshes"),
+              mb->num_of_meshes);
 
   // render the quad to the screen
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -215,7 +209,7 @@ GLuint compile_shader(const char *shader_source, GLenum shader_type) {
   if (!success) {
     GLchar infoLog[512];
     glGetShaderInfoLog(shader, 512, NULL, infoLog);
-    fprintf(stderr, "Error: Shader compilation failed\n%s\n", infoLog);
+    fprintf(stderr, "Error: Shader compilation failed\n%s", infoLog);
     return -1;
   }
 
@@ -224,15 +218,25 @@ GLuint compile_shader(const char *shader_source, GLenum shader_type) {
 
 GLuint create_shader_program(const char *vertex_shader_filename,
                              const char *fragment_shader_filename) {
+
   char *vertex_shader_src = read_file(vertex_shader_filename);
   char *fragment_shader_src = read_file(fragment_shader_filename);
+
+  GLuint shader_program =
+      create_shader_program_from_source(vertex_shader_src, fragment_shader_src);
+
+  free(vertex_shader_src);
+  free(fragment_shader_src);
+
+  return shader_program;
+}
+
+GLuint create_shader_program_from_source(const char *vertex_shader_src,
+                                         const char *fragment_shader_src) {
 
   GLuint vertex_shader = compile_shader(vertex_shader_src, GL_VERTEX_SHADER);
   GLuint fragment_shader =
       compile_shader(fragment_shader_src, GL_FRAGMENT_SHADER);
-
-  free(vertex_shader_src);
-  free(fragment_shader_src);
 
   if (vertex_shader == (GLuint)-1 || fragment_shader == (GLuint)-1)
     return -1;
@@ -271,7 +275,6 @@ bool reload_shader(GLuint *shader_program, FilesWatcher *shader_files_watcher) {
             shader_files_watcher->num_of_files);
     exit(EXIT_FAILURE);
   }
-
   // iterate through both files
   for (int i = 0; i < shader_files_watcher->num_of_files; ++i) {
     num_of_events = read(shader_files_watcher->watcher_fds[i], buffer, BUF_LEN);
@@ -300,9 +303,9 @@ bool reload_shader(GLuint *shader_program, FilesWatcher *shader_files_watcher) {
 
     if (new_program == (GLuint)-1) {
       fprintf(stderr,
-              "Failed to create a shader program, loading a default one.");
+              "Failed to create a shader program, loading the default...\n");
       new_program =
-          create_shader_program(DEFAULT_VERTEX_SHADER, DEFAULT_FRAGMENT_SHADER);
+          create_shader_program_from_source(DEFAULT_VERTEX_SHADER, DEFAULT_FRAGMENT_SHADER);
     }
     glDeleteProgram(*shader_program);
     *shader_program = new_program;
@@ -370,7 +373,6 @@ void free_gl_buffers(RendererBuffers *rb, BackBuffer *bb, ModelsBuffer *mb) {
 
 void delete_file_watcher(FilesWatcher *fw) {
   for (int i = 0; i < fw->num_of_files; ++i) {
-    free(fw->file_names[i]);
     close(fw->watcher_fds[i]);
   }
   free(fw->file_names);

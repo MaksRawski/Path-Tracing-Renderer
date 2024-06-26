@@ -468,12 +468,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 // but this is how shaders actually work
 void main() {
     vec4 fragColor;
-    // mainImage(fragColor, gl_FragCoord.xy);
-    // gl_FragColor = fragColor;
+    mainImage(fragColor, gl_FragCoord.xy);
+    gl_FragColor = fragColor;
     // TODO: getTriangle and getMaterial work!
     // get getMesh to work!!!
     // gl_FragColor = vec4(getTriangle(0).a, 1);
     // gl_FragColor = vec4(getMaterial(0).albedo, 1);
     // gl_FragColor = vec4(texelFetch(meshesInfoBuffer, 0).rgb, 1);
-    gl_FragColor = vec4(1, 0,0, 1);
 }
