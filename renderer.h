@@ -50,9 +50,11 @@ typedef struct {
 } Material;
 
 typedef struct {
-  int firstTriangleIndex;
-  int numTriangles;
-  int materialIndex;
+  // NOTE: for some reason if we specify any of those first 3 fields
+  // as ints this entire struct won't be sent to the shader?
+  float firstTriangleIndex;
+  float numTriangles;
+  float materialIndex;
   float boundsMin[3];
   float boundsMax[3];
 } MeshInfo;
@@ -78,15 +80,14 @@ typedef struct {
 
 GLFWwindow *setup_opengl(bool disable_vsync);
 void setup_renderer(char *vertex_shader_filename,
-                    char *fragment_shader_filename,
-                    GLuint *shader_program, FilesWatcher *shader_watcher,
-                    RendererBuffers *rb);
+                    char *fragment_shader_filename, GLuint *shader_program,
+                    FilesWatcher *shader_watcher, RendererBuffers *rb);
 char *read_file(const char *shader_file);
 GLuint compile_shader(const char *shader_source, GLenum shader_type);
 GLuint create_shader_program(const char *vertex_shader_filename,
                              const char *fragment_shader_filename);
 GLuint create_shader_program_from_source(const char *vertex_shader_src,
-                             const char *fragment_shader_src);
+                                         const char *fragment_shader_src);
 bool reload_shader(GLuint *shader_program, FilesWatcher *shader_files_watcher);
 int watch_file(const char *path);
 void setup_back_buffer(GLuint shader_program, BackBuffer *bb,

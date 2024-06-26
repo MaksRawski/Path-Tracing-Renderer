@@ -126,8 +126,7 @@ void update_frame(GLuint shader_program, GLFWwindow *window, Uniforms *uniforms,
   glBindFramebuffer(GL_FRAMEBUFFER, back_buffer->fbo);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, back_buffer->fboTex);
-  /* glUniform1i(glGetUniformLocation(shader_program, "BackBufferTexture"), 0);
-   */
+  glUniform1i(glGetUniformLocation(shader_program, "BackBufferTexture"), 0);
   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
   // update uniforms
@@ -304,8 +303,8 @@ bool reload_shader(GLuint *shader_program, FilesWatcher *shader_files_watcher) {
     if (new_program == (GLuint)-1) {
       fprintf(stderr,
               "Failed to create a shader program, loading the default...\n");
-      new_program =
-          create_shader_program_from_source(DEFAULT_VERTEX_SHADER, DEFAULT_FRAGMENT_SHADER);
+      new_program = create_shader_program_from_source(DEFAULT_VERTEX_SHADER,
+                                                      DEFAULT_FRAGMENT_SHADER);
     }
     glDeleteProgram(*shader_program);
     *shader_program = new_program;

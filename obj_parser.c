@@ -285,7 +285,7 @@ void load_obj_model(const char *filename, GLuint shader_program,
 
   create_gl_buffer(&mb->tbo_meshes, &mb->tbo_tex_meshes,
                    mb->num_of_meshes * sizeof(MeshInfo), mb->meshesInfo,
-                   GL_RGB32I, GL_TEXTURE2);
+                   GL_RGB32F, GL_TEXTURE2);
 
   glUniform1i(glGetUniformLocation(shader_program, "meshesInfoBuffer"), 2);
   glUniform1i(glGetUniformLocation(shader_program, "numOfMeshes"),
