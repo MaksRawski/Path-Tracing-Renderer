@@ -12,9 +12,11 @@ uniform samplerBuffer meshesInfoBuffer;
 uniform samplerBuffer materialsBuffer;
 uniform int numOfMeshes;
 
-// const vec3 camOrigin = vec3(0, 1, 0);
-// const float radius = 2.0;
-// const float speed = 100;
+const vec3 camOrigin = vec3(0, 2, 0);
+const float radius = 5.0;
+const float speed = 100;
+
+#define INFTY 1.0e30
 
 // https://raytracing.github.io/books/RayTracingInOneWeekend.html#positionablecamera (12.2)
 struct Camera {
@@ -31,6 +33,7 @@ struct Camera {
 struct Ray {
     vec3 origin;
     vec3 dir;
+    vec3 div_dir; // 1 / dir
     // used to restrict the interval at which intersections are actually useful
     // basically if something is closer than epsilon to our ray or closer than
     // epsilon to light source then we consider it to not be a useful intersection?
@@ -195,6 +198,7 @@ HitInfo RaySphereIntersection(Ray ray, Sphere s) {
     return hitInfo;
 }
 
+// using Möller-Trumbore intersection algorithm
 // https://www.youtube.com/watch?v=fK1RPmF_zjQ
 // https://cadxfem.org/inf/Fast%20MinimumStorage%20RayTriangle%20Intersection.pdf
 // Point T(u,v) = (1-u-v)A + uB + vC, where (u, v) are barycentric coordinates
@@ -305,16 +309,74 @@ HitInfo RayTriangleIntersection(Ray ray, Triangle tri) {
     return hitInfo;
 }
 
+// using slab method
+// Imagine that we put two parallel planes per each axis, such that
+// distance between those planes will be that of the bounding box.
+// We look through each of those planes and calculate the distance to
+// intersection with both planes on every axis individually.
+// To calculate whether a ray hits a plane and if so what's the distance
+// we have to consider each plane to be defined in terms of any point on it
+// and a normal vector to the plane, so we get this as an equation for a plane:
+// P . N + d = 0, where
+// P is any point on that plane,
+// N is the normal vector of the plane,
+// d is the plane's offset from origin.
+//
+// Let's assume that P is the point of intersection of the ray with the plane.
+// The ray equation is P = O + t * D, where
+// P is the destination point,
+// O is the ray's origin point,
+// t is the distance travelled by the ray to P,
+// D is the ray's direction.
+// We can transform the ray equation to instead be:
+// t = (P - O) / D,
+// which tells us that if we know the point of intersection we can easily
+// calculate the distance to that point.
+// if there is no intersection we will end up with infinities which
+// funnily enough get automagically handled
+bool RayBoundingBoxIntersection(Ray ray, MeshInfo mi) {
+    float tmin = -INFTY, tmax = INFTY;
+
+    // check the intersection at x axis
+    float tx1 = (mi.boundsMin.x - ray.origin.x) * ray.div_dir.x;
+    float tx2 = (mi.boundsMax.x - ray.origin.x) * ray.div_dir.x;
+
+    // we change the value of tmin if one of these is smaller than the current
+    tmin = max(tmin, min(tx1, tx2));
+    tmax = min(tmax, max(tx1, tx2));
+
+    // check the intersection at y axis
+    float ty1 = (mi.boundsMin.y - ray.origin.y) * ray.div_dir.y;
+    float ty2 = (mi.boundsMax.y - ray.origin.y) * ray.div_dir.y;
+
+    tmin = max(tmin, min(ty1, ty2));
+    tmax = min(tmax, max(ty1, ty2));
+
+    // check the intersection at z axis
+    float tz1 = (mi.boundsMin.z - ray.origin.z) * ray.div_dir.z;
+    float tz2 = (mi.boundsMax.z - ray.origin.z) * ray.div_dir.z;
+
+    tmin = max(tmin, min(tz1, tz2));
+    tmax = min(tmax, max(tz1, tz2));
+
+    return tmax > max(tmin, 0.0);
+}
+
 // returns info about the nearest point which the ray hits
 HitInfo CalculateRayCollision(Ray ray) {
     HitInfo closestHit;
     closestHit.didHit = false;
-    closestHit.dst = 1.0e30; // _infinity_
+    closestHit.dst = INFTY;
 
     // iterate through all triangles
     for (int i = 0; i < numOfMeshes; ++i) {
         MeshInfo mi = getMesh(i);
-        // TODO: test RayBoundingBoxIntersection, if not continue
+        // if (RayBoundingBoxIntersection(ray, mi)) {
+        //     closestHit.didHit = true;
+        //     return closestHit;
+        // }
+        if (!RayBoundingBoxIntersection(ray, mi)) continue;
+
         for (int j = 0; j < mi.numTriangles; ++j) {
             HitInfo hit = RayTriangleIntersection(ray, getTriangle(mi.firstTriangleIndex + j));
             if (hit.didHit && hit.dst < closestHit.dst) {
@@ -353,6 +415,7 @@ vec3 ReflectDirection(vec3 dir, vec3 normal) {
 }
 
 // copy pasted from sebastian's video
+// TODO: write the enviroment function on your own!
 vec3 GetEnviromentLight(Ray ray) {
     // vec3 SunLightDirection = vec3(0.0, -5.0, 0.0);
     float SunFocus = 0.1;
@@ -418,8 +481,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
     // camera
     Camera cam;
-    // cam.pos = camOrigin + vec3(cos(iFrame / speed) * radius, 0.0, sin(iFrame / speed) * radius);
-    cam.pos = vec3(1.2, 0.8, 2.2);
+    cam.pos = camOrigin + vec3(cos(iFrame / speed) * radius, 0.0, sin(iFrame / speed) * radius);
+    // cam.pos = vec3(1.2, 0.8, 2.2);
     cam.lookat = vec3(0.0, 0.8, 0.0);
     cam.up = vec3(0.0, 1.0, 0.0);
     cam.fov = C_PI / 2.0; // 90 degrees
@@ -444,6 +507,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     Ray ray;
     ray.origin = cam.pos;
     ray.dir = normalize(rayTarget - ray.origin);
+    ray.div_dir = 1.0 / ray.dir;
     ray.epsilon = 0.00001;
 
     // shooting rays
@@ -457,10 +521,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     if (iFrame == 0) lastFrameColor = c;
     // c = mix(c, lastFrameColor, 1.0 / float(iFrame + 1));
     float weight = 1.0 / (float(iFrame) + 1.0);
-    c = lastFrameColor * (1.0 - weight) + c * weight;
+    // c = lastFrameColor * (1.0 - weight) + c * weight;
 
-    // fragColor = vec4(uv, 0, 1);
-    // fragColor = vec4(c, 1);
     fragColor = vec4(c, 1.0);
 }
 
