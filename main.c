@@ -42,6 +42,13 @@ int main(void) {
 
   ModelsBuffer mb = {0};
   load_obj_model("suzanne.obj", shader_program, &mb);
+  Material gold_mat = {
+      .albedo = {1.0, 0.84, 0.0},
+      .emissionColor = {0, 0, 0},
+      .emissionStrength = 0,
+      .specularComponent = 0.9,
+  };
+  set_material(&mb, 0, &gold_mat);
 
   while (!glfwWindowShouldClose(window)) {
     bool did_reload = reload_shader(&shader_program, &shader_watcher);

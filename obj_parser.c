@@ -199,11 +199,9 @@ void load_obj_model(const char *filename, GLuint shader_program,
     if (mb == NULL)
       mb = malloc(sizeof(ModelsBuffer));
     ModelsBuffer mb_local;
-    // allocate memory for REALLOC_EVERY_N_MESHES instances of elements for
-    // these arrays, because these structs are small it's better to
-    // over-allocate memory than allocate each time
     mb_local.meshesInfo = malloc(4 * sizeof(MeshInfo));
     mb_local.materials = NULL;
+    mb_local.num_of_materials = 0;
     mb_local.triangles = triangles;
     mb_local.num_of_meshes = 1;
     *mb = mb_local;
@@ -217,8 +215,9 @@ void load_obj_model(const char *filename, GLuint shader_program,
       void *result = realloc(mb->meshesInfo,
                              2 * mb->num_of_meshes * sizeof(mb->meshesInfo));
       if (result == NULL) {
-        printf("Failed to reallocate %lu bytes of memory for meshesInfo!\n",
-               2 * mb->num_of_meshes * sizeof(mb->meshesInfo));
+        fprintf(stderr,
+                "Failed to reallocate %lu bytes of memory for meshesInfo!\n",
+                2 * mb->num_of_meshes * sizeof(mb->meshesInfo));
         free(mb->meshesInfo);
         exit(EXIT_FAILURE);
       }
@@ -266,7 +265,8 @@ void load_obj_model(const char *filename, GLuint shader_program,
   mb->meshesInfo[mb->num_of_meshes - 1] = mi;
 
   // set the default material if there are no defined
-  if (mb->materials == NULL) {
+  if (mb->materials == NULL || mb->num_of_materials == 0) {
+    mb->num_of_materials = 1;
     mb->materials = malloc(sizeof(Material));
     mb->materials[0] = default_mat;
     create_gl_buffer(&mb->tbo_materials, &mb->tbo_tex_materials,
@@ -294,4 +294,30 @@ void load_obj_model(const char *filename, GLuint shader_program,
   // unbind the texture buffer
   glBindBuffer(GL_TEXTURE_BUFFER, 0);
   // TODO: is there more to unbind?
+}
+
+void set_material(ModelsBuffer *mb, unsigned int index, Material *mat) {
+  // if we try to set a material that has a index bigger than 4
+  // that are allocated initially (or are allocated overall),
+  // we should reallocate but only when the num_of_materials
+  // is a power of 2 and then we increase the size by multiplying by 2
+  if (index > 4 && index >= mb->num_of_materials &&
+      (mb->num_of_materials & (mb->num_of_materials - 1)) == 0) {
+    void *result = realloc(mb->materials, 2 * index * sizeof(Material));
+    if (result == NULL) {
+      fprintf(stderr,
+              "Failed to realocate %lu bytes of memory for materials!\n",
+              2 * index * sizeof(Material));
+      exit(EXIT_FAILURE);
+    } else
+      mb->materials = result;
+    mb->num_of_materials = index + 1;
+  }
+  mb->materials[index] = *mat;
+  glDeleteBuffers(1, &mb->tbo_materials);
+  glDeleteTextures(1, &mb->tbo_tex_materials);
+
+  create_gl_buffer(&mb->tbo_materials, &mb->tbo_tex_materials,
+                   mb->num_of_materials * sizeof(Material), mb->materials,
+                   GL_RGBA32F, GL_TEXTURE3);
 }

@@ -65,7 +65,7 @@ typedef struct {
   Triangle *triangles;
   MeshInfo *meshesInfo;
   Material *materials;
-  unsigned int num_of_meshes;
+  unsigned int num_of_meshes, num_of_materials;
 } ModelsBuffer;
 
 typedef struct {

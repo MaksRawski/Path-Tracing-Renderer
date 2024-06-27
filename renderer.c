@@ -363,8 +363,8 @@ void free_gl_buffers(RendererBuffers *rb, BackBuffer *bb, ModelsBuffer *mb) {
   glDeleteTextures(1, &mb->tbo_tex_triangles);
   glDeleteBuffers(1, &mb->tbo_meshes);
   glDeleteTextures(1, &mb->tbo_tex_meshes);
-  glDeleteBuffers(1, &mb->tbo_meshes);
-  glDeleteTextures(1, &mb->tbo_tex_meshes);
+  glDeleteBuffers(1, &mb->tbo_materials);
+  glDeleteTextures(1, &mb->tbo_tex_materials);
   free(mb->triangles);
   free(mb->meshesInfo);
   free(mb->materials);
