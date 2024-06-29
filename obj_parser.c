@@ -301,7 +301,7 @@ void set_material(ModelsBuffer *mb, unsigned int index, Material *mat) {
   // that are allocated initially (or are allocated overall),
   // we should reallocate but only when the num_of_materials
   // is a power of 2 and then we increase the size by multiplying by 2
-  if (index > 4 && index >= mb->num_of_materials &&
+  if (index >= 4 && (unsigned int)index >= mb->num_of_materials &&
       (mb->num_of_materials & (mb->num_of_materials - 1)) == 0) {
     void *result = realloc(mb->materials, 2 * index * sizeof(Material));
     if (result == NULL) {
