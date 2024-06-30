@@ -12,8 +12,8 @@ uniform samplerBuffer meshesInfoBuffer;
 uniform samplerBuffer materialsBuffer;
 uniform int numOfMeshes;
 
-const vec3 camOrigin = vec3(0, 2, 0);
-const float radius = 5.0;
+const vec3 camOrigin = vec3(0, 1, 0);
+const float radius = 2.5;
 const float speed = 100;
 
 #define INFTY 1.0e30
