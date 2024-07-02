@@ -20,13 +20,13 @@ const float speed = 100;
 
 // https://raytracing.github.io/books/RayTracingInOneWeekend.html#positionablecamera (12.2)
 struct Camera {
-    // camera's position
+    // Pozycja kamery w świecie.
     vec3 pos;
-    // what's camera pointed at
+    // Punkt na który "patrzy" kamera.
     vec3 lookat;
-    // camera's relative up direction, shouldn't be confused with the viewport's relative up direction
+    // Relatywny dla kamery kierunek "góra".
     vec3 up;
-    // horizontal field of view in radians
+    // Field of view - pole widzenia, zapisane jako kąt w radianach.
     float fov;
 };
 
@@ -272,8 +272,9 @@ HitInfo RayTriangleIntersection(Ray ray, Triangle tri) {
     float det = dot(e1, De2);
 
     if (abs(det) < ray.epsilon) {
-        // the vectors -D, e1 and e2 are not linearly independent,
-        // meaning ray is coming in parallel to the triangle
+        // Jeśli wyznacznik jest bliski zeru (ray.epsilon przechowuje bardzo niewielką wartość)
+        // to oznacza, że wektory D, e1 i e2 nie są liniowo niezależne. Co oznacza, że promień
+        // leci równolegle do płaszczyzny, czyli nie trafia w trójkąt.
         return hitInfo;
     }
 
@@ -284,22 +285,25 @@ HitInfo RayTriangleIntersection(Ray ray, Triangle tri) {
 
     float u = dot(T, De2) * inv_det;
 
-    // the barycentric coordinate u is too far, for the point of intersection
-    // to be inside the triangle
+    // Jeśli współrzędna u w układzie współrzędnych barycentrycznych jest mniejsza od 0
+    // lub większa od 1 oznacza to, że punkt znajduje się za daleko od tego wierzchołka,
+    // aby być w trójkącie.
     if (u < 0 || u > 1) return hitInfo;
 
     float v = dot(D, Te1) * inv_det;
 
-    // the barycentric coordinate v is too far, for the point of intersection
-    // to be inside the triangle or both u and v are too far from centre
+    // Podobnie co w przypadku współrzędnej u, sprawdzamy dla v. Dodatkowo sprawdzamy
+    // czy suma tych współrzędnych jest większa od 1, punkt znajduje się w środku trójkąta
+    // tylko gdy suma wszystkich współrzędnych jest mniejsza od 1.
     if (v < 0 || u + v > 1) return hitInfo;
 
-    // finally, if we got here, it means that we did actually hit the triangle
     float t = dot(Te1, e2) * inv_det;
+    // Jeśli bylibyśmy oddaleni o tylko epsilon od trójkąta, to nie ma sensu
+    // zaliczać tego jako kolizji.
     if (t > ray.epsilon) {
         hitInfo.didHit = true;
         hitInfo.hitPoint = ray.origin + ray.dir * t;
-        // look at the right beginning of the description of this function
+
         float w = 1 - u - v;
         hitInfo.normal = normalize(w * tri.na + u * tri.nb + v * tri.nc);
         hitInfo.dst = t;
@@ -454,6 +458,12 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
             vec3 diffuseDir = DiffuseDirection(hitInfo.normal, rngState);
             vec3 reflectDir = ReflectDirection(ray.dir, hitInfo.normal);
             ray.dir = mix(diffuseDir, reflectDir, hitInfo.mat.specularComponent);
+<<<<<<< Updated upstream
+=======
+            // ray.dir = mix(ray.dir, nearestEmitter, 0.4);
+            // return hitInfo.normal;
+            return ray.dir;
+>>>>>>> Stashed changes
 
             // calculate the potential light that the object is emitting
             vec3 emittedLight = hitInfo.mat.emissionColor * hitInfo.mat.emissionStrength;
@@ -480,8 +490,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
     // camera
     Camera cam;
-    cam.pos = camOrigin + vec3(cos(iFrame / speed) * radius, 0.0, sin(iFrame / speed) * radius);
-    // cam.pos = vec3(1.2, 0.8, 2.2);
+    cam.pos = vec3(1.2, 0.8, 2.2);
     cam.lookat = vec3(0.0, 0.8, 0.0);
     cam.up = vec3(0.0, 1.0, 0.0);
     cam.fov = C_PI / 2.0; // 90 degrees
