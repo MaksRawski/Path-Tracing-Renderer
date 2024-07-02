@@ -122,7 +122,7 @@ void parse_obj(const char *filename, Triangle *triangles[],
   int num_of_vns = 0;
 
   for (char line[255]; fgets(line, sizeof(line), fp);) {
-    char type[5];
+    char type[20];
     sscanf(line, "%s", type);
 
     if (type[0] == '#')
