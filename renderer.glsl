@@ -260,7 +260,7 @@ HitInfo RaySphereIntersection(Ray ray, Sphere s) {
 // v = D . (T x E1)
 //
 // For the determinant common among the three equations, we will have:
-// det = -D . (E1 x E2)
+// det = E1 . (D x E2)
 // and that's it!
 HitInfo RayTriangleIntersection(Ray ray, Triangle tri) {
     HitInfo hitInfo;
@@ -268,8 +268,8 @@ HitInfo RayTriangleIntersection(Ray ray, Triangle tri) {
     vec3 D = ray.dir;
     vec3 e1 = tri.b - tri.a;
     vec3 e2 = tri.c - tri.a;
-    vec3 e1e2 = cross(e1, e2);
-    float det = dot(-D, e1e2);
+    vec3 De2 = cross(D, e2);
+    float det = dot(e1, De2);
 
     if (abs(det) < ray.epsilon) {
         // the vectors -D, e1 and e2 are not linearly independent,
@@ -280,10 +280,9 @@ HitInfo RayTriangleIntersection(Ray ray, Triangle tri) {
     float inv_det = 1.0 / det;
 
     vec3 T = ray.origin - tri.a;
-    vec3 Te2 = cross(T, e2);
     vec3 Te1 = cross(T, e1);
 
-    float u = dot(-D, Te2) * inv_det;
+    float u = dot(T, De2) * inv_det;
 
     // the barycentric coordinate u is too far, for the point of intersection
     // to be inside the triangle
