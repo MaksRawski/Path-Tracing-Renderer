@@ -135,10 +135,10 @@ float RandomFloat(inout uint state)
 
 const float C_PI = 3.141592653589793;
 const float C_TWOPI = 6.283185307179586;
-const int MAX_BOUNCE_COUNT = 4;
-const int SAMPLES_PER_PIXEL = 2;
+const int MAX_BOUNCE_COUNT = 10;
+const int SAMPLES_PER_PIXEL = 8;
 
-const int NUM_OF_SPHERES = 8;
+const int NUM_OF_SPHERES = 9;
 const Sphere SPHERES[NUM_OF_SPHERES] = Sphere[NUM_OF_SPHERES](
         Sphere(vec3(0.0, -1002.0, 0.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0), 0.1)), // ground
         Sphere(vec3(0.0, 0.0, -1001.8), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 0.0, 0.0), 0.1)), // back
@@ -146,7 +146,8 @@ const Sphere SPHERES[NUM_OF_SPHERES] = Sphere[NUM_OF_SPHERES](
         Sphere(vec3(-1003.5, 0.0, 0.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 1.0, 0.0), 0.1)), // left
         Sphere(vec3(1002.5, 0.0, 0.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 0.0, 1.0), 0.1)), // right
         Sphere(vec3(0.0, 1003.0, 0.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0), 0.1)), // ceiling
-        Sphere(vec3(-1.6, -0.4, -0.5), 0.8, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0), 1)), // mirror
+        Sphere(vec3(-2.2, -1.2, -0.5), 0.8, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0), 1)), // mirror
+        Sphere(vec3(-0.6, -1.2, -0.5), 0.8, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0), 1)), // mirror
         Sphere(vec3(-1.0, 101.971, 1.0), 100.0, Material(vec3(1.0, 1.0, 0.96), 1.2, vec3(1.0, 0.0, 0.0), 0.0)) // sun
     );
 
