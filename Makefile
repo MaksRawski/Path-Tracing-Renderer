@@ -1,10 +1,10 @@
 CC = gcc
 CFLAGS = -g -Wall -Wextra -Wno-unused -Ilib/include 
-LDFLAGS = -lglfw -ldl
-TARGET = bin/main
+LDFLAGS = -Llib/src -lglfw3 -lopengl32 -lgdi32 -lwinmm -static 
+TARGET = bin/main.exe
 SRC = main.c renderer.c obj_parser.c
 OBJ = $(patsubst %.c, bin/%.o, $(SRC))
-GLAD_SRC = ./lib/src/gl.c
+GLAD_SRC = lib/src/gl.c
 
 all: $(TARGET)
 

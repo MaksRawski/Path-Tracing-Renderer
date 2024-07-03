@@ -9,9 +9,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-// for hot reloading
-#include <fcntl.h>
-#include <sys/inotify.h>
 
 #define WINDOW_TITLE "LAK - Projekt zaliczeniowy"
 
@@ -67,7 +64,7 @@ GLFWwindow *setup_opengl(bool disable_vsync) {
 
 void setup_renderer(char *vertex_shader_filename,
                     char *fragment_shader_filename, GLuint *shader_program,
-                    FilesWatcher *shader_watcher, RendererBuffers *rb) {
+                    RendererBuffers *rb) {
   // Define vertices for a full-screen quad
   float vertices[] = {
       -1.0f, 1.0f,  // Top left
@@ -95,14 +92,6 @@ void setup_renderer(char *vertex_shader_filename,
   // stride, space between every vertex
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), NULL);
   glEnableVertexAttribArray(0);
-
-  shader_watcher->num_of_files = 2;
-  shader_watcher->file_names = malloc(2 * sizeof(char *));
-  shader_watcher->file_names[0] = vertex_shader_filename;
-  shader_watcher->file_names[1] = fragment_shader_filename;
-  shader_watcher->watcher_fds = malloc(2 * sizeof(int));
-  shader_watcher->watcher_fds[0] = watch_file(vertex_shader_filename);
-  shader_watcher->watcher_fds[1] = watch_file(fragment_shader_filename);
 
   *shader_program =
       create_shader_program(vertex_shader_filename, fragment_shader_filename);
@@ -179,25 +168,6 @@ char *read_file(const char *filename) {
   return buffer;
 }
 
-int watch_file(const char *path) {
-  int fd = inotify_init();
-  if (fd < 0) {
-    perror("inotify_init");
-    exit(EXIT_FAILURE);
-  }
-
-  int wd = inotify_add_watch(fd, path, IN_MODIFY);
-  if (wd == -1) {
-    fprintf(stderr, "Cannot watch '%s'\n", path);
-    exit(EXIT_FAILURE);
-  }
-
-  int flags = fcntl(fd, F_GETFL, 0);
-  fcntl(fd, F_SETFL, flags | O_NONBLOCK);
-
-  return fd;
-}
-
 GLuint compile_shader(const char *shader_source, GLenum shader_type) {
   GLuint shader = glCreateShader(shader_type);
   glShaderSource(shader, 1, &shader_source, NULL);
@@ -260,58 +230,6 @@ GLuint create_shader_program_from_source(const char *vertex_shader_src,
   return shaderProgram;
 }
 
-// expects two files to be in shader_files_watcher structure
-// first must be a vertex shader and second one a fragment shader
-bool reload_shader(GLuint *shader_program, FilesWatcher *shader_files_watcher) {
-  char buffer[BUF_LEN];
-  int num_of_events;
-  bool did_reload = false;
-
-  if (shader_files_watcher->num_of_files != 2) {
-    fprintf(stderr,
-            "reload_shader expects a list of two files (vertex shader, "
-            "fragment shader) but got %d files\n",
-            shader_files_watcher->num_of_files);
-    exit(EXIT_FAILURE);
-  }
-  // iterate through both files
-  for (int i = 0; i < shader_files_watcher->num_of_files; ++i) {
-    num_of_events = read(shader_files_watcher->watcher_fds[i], buffer, BUF_LEN);
-    if (num_of_events < 0 && errno != EAGAIN) {
-      fprintf(stderr, "Failed to read file %s, %s\n",
-              shader_files_watcher->file_names[i], strerror(errno));
-      exit(EXIT_FAILURE);
-    } else if (num_of_events > 0) {
-      // iterate through all events
-      for (int j = 0; j < num_of_events; ++j) {
-        struct inotify_event *event = (struct inotify_event *)&buffer[j];
-        if (event->mask & IN_MODIFY) {
-          printf("%s modified, recompiling...\n",
-                 shader_files_watcher->file_names[i]);
-          did_reload = true;
-        }
-        j += EVENT_SIZE + event->len;
-      }
-    }
-  }
-
-  if (did_reload) {
-    GLuint new_program =
-        create_shader_program(shader_files_watcher->file_names[0],
-                              shader_files_watcher->file_names[1]);
-
-    if (new_program == (GLuint)-1) {
-      fprintf(stderr,
-              "Failed to create a shader program, loading the default...\n");
-      new_program = create_shader_program_from_source(DEFAULT_VERTEX_SHADER,
-                                                      DEFAULT_FRAGMENT_SHADER);
-    }
-    glDeleteProgram(*shader_program);
-    *shader_program = new_program;
-  }
-  return did_reload;
-}
-
 void setup_back_buffer(GLuint shader_program, BackBuffer *bb,
                        unsigned int width, unsigned int height) {
   glGenFramebuffers(1, &bb->fbo);
@@ -370,10 +288,3 @@ void free_gl_buffers(RendererBuffers *rb, BackBuffer *bb, ModelsBuffer *mb) {
   free(mb->materials);
 }
 
-void delete_file_watcher(FilesWatcher *fw) {
-  for (int i = 0; i < fw->num_of_files; ++i) {
-    close(fw->watcher_fds[i]);
-  }
-  free(fw->file_names);
-  free(fw->watcher_fds);
-}

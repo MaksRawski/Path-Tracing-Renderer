@@ -21,12 +21,6 @@
 void debug();
 
 typedef struct {
-  int num_of_files;
-  int *watcher_fds;
-  char **file_names;
-} FilesWatcher;
-
-typedef struct {
   GLuint fbo, fboTex;
 } BackBuffer;
 
@@ -81,14 +75,13 @@ typedef struct {
 GLFWwindow *setup_opengl(bool disable_vsync);
 void setup_renderer(char *vertex_shader_filename,
                     char *fragment_shader_filename, GLuint *shader_program,
-                    FilesWatcher *shader_watcher, RendererBuffers *rb);
+                    RendererBuffers *rb);
 char *read_file(const char *shader_file);
 GLuint compile_shader(const char *shader_source, GLenum shader_type);
 GLuint create_shader_program(const char *vertex_shader_filename,
                              const char *fragment_shader_filename);
 GLuint create_shader_program_from_source(const char *vertex_shader_src,
                                          const char *fragment_shader_src);
-bool reload_shader(GLuint *shader_program, FilesWatcher *shader_files_watcher);
 int watch_file(const char *path);
 void setup_back_buffer(GLuint shader_program, BackBuffer *bb,
                        unsigned int width, unsigned int height);
@@ -99,6 +92,5 @@ void update_frame(GLuint shader_program, GLFWwindow *window, Uniforms *uniforms,
                   ModelsBuffer *mb);
 
 void free_gl_buffers(RendererBuffers *rb, BackBuffer *bb, ModelsBuffer *mb);
-void delete_file_watcher(FilesWatcher *fw);
 
 #endif // RENDERER_H_

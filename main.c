@@ -18,10 +18,8 @@ int main(void) {
   GLFWwindow *window = setup_opengl(/* disable_vsync = */ false);
 
   GLuint shader_program;
-  FilesWatcher shader_watcher;
   RendererBuffers rb;
-  setup_renderer("vertex.glsl", "renderer.glsl", &shader_program,
-                 &shader_watcher, &rb);
+  setup_renderer("vertex.glsl", "renderer.glsl", &shader_program, &rb);
 
   int width, height;
   glfwGetFramebufferSize(window, &width, &height);
@@ -53,13 +51,6 @@ int main(void) {
   set_model_material(&mb, suzanne_id, 0);
 
   while (!glfwWindowShouldClose(window)) {
-    bool did_reload = reload_shader(&shader_program, &shader_watcher);
-    if (did_reload) {
-      frame_counter = 0;
-      uniforms.iFrame = 0;
-      display_fps(window, &frame_counter, &last_frame_time);
-    }
-
     // recalculate window dimensions
     int new_width, new_height;
     glfwGetFramebufferSize(window, &new_width, &new_height);
@@ -89,7 +80,6 @@ int main(void) {
   }
 
   free_gl_buffers(&rb, &bb, &mb);
-  delete_file_watcher(&shader_watcher);
   glDeleteProgram(shader_program);
   glfwTerminate();
 
