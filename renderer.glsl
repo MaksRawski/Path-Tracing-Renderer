@@ -135,18 +135,20 @@ float RandomFloat(inout uint state)
 
 const float C_PI = 3.141592653589793;
 const float C_TWOPI = 6.283185307179586;
-const int MAX_BOUNCE_COUNT = 2;
-const int SAMPLES_PER_PIXEL = 1;
+const int MAX_BOUNCE_COUNT = 4;
+const int SAMPLES_PER_PIXEL = 2;
 
-// const int NUM_OF_SPHERES = 6;
-// const Sphere SPHERES[NUM_OF_SPHERES] = Sphere[NUM_OF_SPHERES](
-//         Sphere(vec3(25.0, 0.0, -20.0), 6.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0))), // white ball
-//         Sphere(vec3(20.0, -1.4, -10.0), 4.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 0.0, 0.0))), // red ball
-//         Sphere(vec3(18.0, -2.4, -4.0), 3.5, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 1.0, 0.0))), // green ball
-//         Sphere(vec3(16.0, -2.4, 4.0), 3.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 0.0, 1.0))), // blue ball
-//         Sphere(vec3(65.0, 21.0, 9.0), 16.0, Material(vec3(0.8, 0.8, 0.8), 15.0, vec3(0.8, 0.8, 0.0))), // sun
-//         Sphere(vec3(-5.0, -1005.0, 10.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.5, 0.5, 0.5))) // ground
-//     );
+const int NUM_OF_SPHERES = 8;
+const Sphere SPHERES[NUM_OF_SPHERES] = Sphere[NUM_OF_SPHERES](
+        Sphere(vec3(0.0, -1002.0, 0.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0), 0.1)), // ground
+        Sphere(vec3(0.0, 0.0, -1001.8), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 0.0, 0.0), 0.1)), // back
+        Sphere(vec3(0.0, 0.0, 1002.8), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 0.0, 1.0), 0.1)), // front
+        Sphere(vec3(-1003.5, 0.0, 0.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 1.0, 0.0), 0.1)), // left
+        Sphere(vec3(1002.5, 0.0, 0.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 0.0, 1.0), 0.1)), // right
+        Sphere(vec3(0.0, 1003.0, 0.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0), 0.1)), // ceiling
+        Sphere(vec3(-1.6, -0.4, -0.5), 0.8, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0), 1)), // mirror
+        Sphere(vec3(-1.0, 101.971, 1.0), 100.0, Material(vec3(1.0, 1.0, 0.96), 1.2, vec3(1.0, 0.0, 0.0), 0.0)) // sun
+    );
 
 // const int NUM_OF_TRIANGLES = 1;
 // const Triangle TRIANGLES[NUM_OF_TRIANGLES] = Triangle[NUM_OF_TRIANGLES](
@@ -376,10 +378,6 @@ HitInfo CalculateRayCollision(Ray ray) {
     // iterate through all triangles
     for (int i = 0; i < numOfMeshes; ++i) {
         MeshInfo mi = getMesh(i);
-        // if (RayBoundingBoxIntersection(ray, mi)) {
-        //     closestHit.didHit = true;
-        //     return closestHit;
-        // }
         if (!RayBoundingBoxIntersection(ray, mi)) continue;
 
         for (int j = 0; j < mi.numTriangles; ++j) {
@@ -392,13 +390,13 @@ HitInfo CalculateRayCollision(Ray ray) {
     }
 
     // iterate through all the spheres
-    // for (int i = 0; i < NUM_OF_SPHERES; ++i) {
-    //     HitInfo hit = RaySphereIntersection(ray, SPHERES[i]);
-    //     if (hit.didHit && hit.dst < closestHit.dst) {
-    //         closestHit = hit;
-    //         closestHit.mat = SPHERES[i].mat;
-    //     }
-    // }
+    for (int i = 0; i < NUM_OF_SPHERES; ++i) {
+        HitInfo hit = RaySphereIntersection(ray, SPHERES[i]);
+        if (hit.didHit && hit.dst < closestHit.dst) {
+            closestHit = hit;
+            closestHit.mat = SPHERES[i].mat;
+        }
+    }
 
     return closestHit;
 }
@@ -493,8 +491,8 @@ void main() {
 
     // Inicjalizacja kamery.
     Camera cam;
-    cam.pos = vec3(1.2, 0.8, 2.2);
-    cam.lookat = vec3(0.0, 0.8, 0.0);
+    cam.pos = vec3(-2.2, 0.8, 4.5);
+    cam.lookat = vec3(-2.2, 0.8, 0.0);
     cam.up = vec3(0.0, 1.0, 0.0);
     cam.fov = C_PI / 2.0; // 90 stopni
 
