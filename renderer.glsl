@@ -31,13 +31,15 @@ struct Camera {
 };
 
 struct Ray {
+    // Punkt z którego promień wychodzi.
     vec3 origin;
+    // Kierunek w jakim promień się porusza.
     vec3 dir;
-    vec3 div_dir; // 1 / dir
-    // used to restrict the interval at which intersections are actually useful
-    // basically if something is closer than epsilon to our ray or closer than
-    // epsilon to light source then we consider it to not be a useful intersection?
-    // and we might as well just ignore that ray then?
+    // Odwrotność kierunku w jakim promień się porusza,
+    // obliczamy ją raz aby później móc ją łatwo wykorzystywać.
+    vec3 inv_dir;
+    // Wartość bardzo zbliżona do zera, będziemy uważać wszystkie liczby
+    // co do modułu mniejsze od niej jako 0.
     float epsilon;
 };
 
@@ -341,23 +343,23 @@ bool RayBoundingBoxIntersection(Ray ray, MeshInfo mi) {
     float tmin = -INFTY, tmax = INFTY;
 
     // check the intersection at x axis
-    float tx1 = (mi.boundsMin.x - ray.origin.x) * ray.div_dir.x;
-    float tx2 = (mi.boundsMax.x - ray.origin.x) * ray.div_dir.x;
+    float tx1 = (mi.boundsMin.x - ray.origin.x) * ray.inv_dir.x;
+    float tx2 = (mi.boundsMax.x - ray.origin.x) * ray.inv_dir.x;
 
     // we change the value of tmin if one of these is smaller than the current
     tmin = max(tmin, min(tx1, tx2));
     tmax = min(tmax, max(tx1, tx2));
 
     // check the intersection at y axis
-    float ty1 = (mi.boundsMin.y - ray.origin.y) * ray.div_dir.y;
-    float ty2 = (mi.boundsMax.y - ray.origin.y) * ray.div_dir.y;
+    float ty1 = (mi.boundsMin.y - ray.origin.y) * ray.inv_dir.y;
+    float ty2 = (mi.boundsMax.y - ray.origin.y) * ray.inv_dir.y;
 
     tmin = max(tmin, min(ty1, ty2));
     tmax = min(tmax, max(ty1, ty2));
 
     // check the intersection at z axis
-    float tz1 = (mi.boundsMin.z - ray.origin.z) * ray.div_dir.z;
-    float tz2 = (mi.boundsMax.z - ray.origin.z) * ray.div_dir.z;
+    float tz1 = (mi.boundsMin.z - ray.origin.z) * ray.inv_dir.z;
+    float tz2 = (mi.boundsMax.z - ray.origin.z) * ray.inv_dir.z;
 
     tmin = max(tmin, min(tz1, tz2));
     tmax = min(tmax, max(tz1, tz2));
@@ -458,12 +460,9 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
             vec3 diffuseDir = DiffuseDirection(hitInfo.normal, rngState);
             vec3 reflectDir = ReflectDirection(ray.dir, hitInfo.normal);
             ray.dir = mix(diffuseDir, reflectDir, hitInfo.mat.specularComponent);
-<<<<<<< Updated upstream
-=======
             // ray.dir = mix(ray.dir, nearestEmitter, 0.4);
             // return hitInfo.normal;
-            return ray.dir;
->>>>>>> Stashed changes
+            // return ray.dir;
 
             // calculate the potential light that the object is emitting
             vec3 emittedLight = hitInfo.mat.emissionColor * hitInfo.mat.emissionStrength;
@@ -479,43 +478,52 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
     return incomingLight;
 }
 
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+void main() {
     // init seed
-    uint rngState = uint(uint(fragCoord.x) * uint(1973) + uint(fragCoord.y) * uint(9277) + uint(iFrame) * uint(26699)) | uint(1);
+    uint rngState = uint(uint(gl_FragCoord.x) * uint(1973) + uint(gl_FragCoord.y) * uint(9277) + uint(iFrame) * uint(26699)) | uint(1);
 
-    // fragCoord stores the pixel coordinates [0.5, resolution-0.5]
-    vec2 uv = fragCoord.xy / iResolution.xy; // normalized coordinates [0, 1]
-    uv = 2.0 * uv - 1.0; // normalized coordinates [-1, 1]
+    // Znormalizowane koordynaty piksela obecnie rozpatrywanego przez shader.
+    // Są w przedziale [0,1]x[0,1]
+    vec2 uv = gl_FragCoord.xy / iResolution.xy;
+    // Wygodniej jednak będzie używać takich z przedziału [-1,1]x[-1,1].
+    // Środek ekranu będzie mieć wtedy punkt (0,0).
+    uv = 2.0 * uv - 1.0;
+    // Stosunek wymiarów "fizycznego" okna, utowrzonego przez użytkownika.
     float aspectRatio = iResolution.x / iResolution.y;
 
-    // camera
+    // Inicjalizacja kamery.
     Camera cam;
     cam.pos = vec3(1.2, 0.8, 2.2);
     cam.lookat = vec3(0.0, 0.8, 0.0);
     cam.up = vec3(0.0, 1.0, 0.0);
-    cam.fov = C_PI / 2.0; // 90 degrees
+    cam.fov = C_PI / 2.0; // 90 stopni
 
+    // Kierunek w jaki patrzy kamera.
     vec3 cameraDirection = normalize(cam.lookat - cam.pos);
-    vec3 viewportRight = cross(cameraDirection, cam.up); // cross calculates the vector perpendicular to both its arguments
-    vec3 viewportUp = cross(viewportRight, cameraDirection); // use the right-hand rule to see why it makes sense :)
-    float cameraDistanceFromViewport = length(cam.lookat - cam.pos); // AKA focal length
+    // Wektor mówiący, gdzie jest "prawo" naszego obszaru widocznego.
+    vec3 viewportRight = cross(cameraDirection, cam.up);
+    // Wektor mówiący, gdzie jest "góra" naszego obszaru widocznego.
+    vec3 viewportUp = cross(viewportRight, cameraDirection);
+    // Odległość kamery w lini prostej od naszego Viewportu, który
+    // możemy sobie wyobrazić jako siatka pomiędzy kamerą a sceną.
+    float cameraDistanceFromViewport = length(cam.lookat - cam.pos);
 
+    // Szerokość viewportu obliczamy poprzez zauważenie, że tangensem połowy kąta
+    // fov będzie stosunek połowy szerokości ekranu do odległości kamery od viewportu.
     float viewportWidth = 2.0 * cameraDistanceFromViewport * tan(cam.fov / 2.0);
+    // Wysokość możemy obliczyć za pomocą wcześniej ustalonego aspectRatio.
     float viewportHeight = viewportWidth / aspectRatio;
-    // float viewportHeight = 2 * cameraDistanceFromViewport * tan(cam.fov / 2);
-    // float viewportWidth = viewportHeight * aspectRatio;
 
+    // Punkt we viewport'cie w jaki powinien lecieć promień z danego piksela.
     vec3 rayTarget = cameraDirection * cameraDistanceFromViewport +
             viewportWidth * viewportRight * uv.x +
             viewportHeight * viewportUp * uv.y;
 
-    // rays
-    // imagine that the camera is just a point that shoots rays
-    // but is behind the viewport and each ray has to travel through a different pixel
+    // Inicjalizacja promienia dla obecnie rozpatrywanego piksela.
     Ray ray;
     ray.origin = cam.pos;
     ray.dir = normalize(rayTarget - ray.origin);
-    ray.div_dir = 1.0 / ray.dir;
+    ray.inv_dir = 1.0 / ray.dir;
     ray.epsilon = 0.00001;
 
     // shooting rays
@@ -525,20 +533,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     }
     c /= float(SAMPLES_PER_PIXEL);
 
-    vec3 lastFrameColor = texture(backBufferTexture, fragCoord / iResolution.xy).rgb;
+    vec3 lastFrameColor = texture(backBufferTexture, gl_FragCoord.xy / iResolution.xy).rgb;
     if (iFrame == 0) lastFrameColor = c;
     // c = mix(c, lastFrameColor, 1.0 / float(iFrame + 1));
     float weight = 1.0 / (float(iFrame) + 1.0);
-    // c = lastFrameColor * (1.0 - weight) + c * weight;
+    c = lastFrameColor * (1.0 - weight) + c * weight;
 
-    fragColor = vec4(c, 1.0);
-}
-
-// mainImage is what shadertoy requires
-// but this is how shaders actually work
-void main() {
-    vec4 fragColor;
-    mainImage(fragColor, gl_FragCoord.xy);
-    gl_FragColor = fragColor;
-    // gl_FragColor = vec4(texelFetch(meshesInfoBuffer, 0).rgb, 1);
+    gl_FragColor = vec4(c, 1.0);
 }
