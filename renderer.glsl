@@ -16,6 +16,11 @@ const vec3 camOrigin = vec3(0, 1, 0);
 const float radius = 2.5;
 const float speed = 100;
 
+const float C_PI = 3.141592653589793;
+const float C_TWOPI = 6.283185307179586;
+const int MAX_BOUNCE_COUNT = 5;
+const int SAMPLES_PER_PIXEL = 3;
+
 #define INFTY 1.0e30
 
 // https://raytracing.github.io/books/RayTracingInOneWeekend.html#positionablecamera (12.2)
@@ -131,29 +136,6 @@ float RandomFloat(inout uint state)
     return float(wang_hash(state)) / 4294967296.0;
 }
 
-const float C_PI = 3.141592653589793;
-const float C_TWOPI = 6.283185307179586;
-const int MAX_BOUNCE_COUNT = 2;
-const int SAMPLES_PER_PIXEL = 1;
-
-// const int NUM_OF_SPHERES = 6;
-// const Sphere SPHERES[NUM_OF_SPHERES] = Sphere[NUM_OF_SPHERES](
-//         Sphere(vec3(25.0, 0.0, -20.0), 6.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0))), // white ball
-//         Sphere(vec3(20.0, -1.4, -10.0), 4.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 0.0, 0.0))), // red ball
-//         Sphere(vec3(18.0, -2.4, -4.0), 3.5, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 1.0, 0.0))), // green ball
-//         Sphere(vec3(16.0, -2.4, 4.0), 3.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 0.0, 1.0))), // blue ball
-//         Sphere(vec3(65.0, 21.0, 9.0), 16.0, Material(vec3(0.8, 0.8, 0.8), 15.0, vec3(0.8, 0.8, 0.0))), // sun
-//         Sphere(vec3(-5.0, -1005.0, 10.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.5, 0.5, 0.5))) // ground
-//     );
-
-// const int NUM_OF_TRIANGLES = 1;
-// const Triangle TRIANGLES[NUM_OF_TRIANGLES] = Triangle[NUM_OF_TRIANGLES](
-//         Triangle(
-//             vec3(20.0, -1.0, -5.0), vec3(17.5, 5.0, 10.0), vec3(10.0, 1.0, 10.0),
-//             vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0)
-//         )
-//     );
-
 vec3 RandomUnitVector(inout uint state)
 {
     float z = RandomFloat(state) * 2.0f - 1.0f;
@@ -163,6 +145,29 @@ vec3 RandomUnitVector(inout uint state)
     float y = r * sin(a);
     return vec3(x, y, z);
 }
+
+
+const int NUM_OF_SPHERES = 9;
+const Sphere SPHERES[NUM_OF_SPHERES] = Sphere[NUM_OF_SPHERES](
+        Sphere(vec3(0.0, -1002.0, 0.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0), 0.1)), // podłoga
+        Sphere(vec3(0.0, 0.0, -1001.8), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 0.0, 0.0), 0.1)), // tylnia ściana
+        Sphere(vec3(0.0, 0.0, 1002.8), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 0.0, 1.0), 0.1)), // ściana z przodu (za kamerą)
+        Sphere(vec3(-1003.5, 0.0, 0.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 1.0, 0.0), 0.1)), // lewa ściana
+        Sphere(vec3(1002.5, 0.0, 0.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 0.0, 1.0), 0.1)), // prawa ściana
+        Sphere(vec3(-2.2, -1.2, -0.5), 0.8, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0), 1.0)), // lewa kulka lustrzana
+        Sphere(vec3(-0.5, -1.2, -0.5), 0.8, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0), 1.0)), // prawa kulka lustrzana
+        Sphere(vec3(0.6, -1.6, 0.1), 0.4, Material(vec3(1.0, 1.0, 0.0), 0.4, vec3(1.0, 1.0, 1.0), 0.4)), // świecąca się kulka
+        Sphere(vec3(-1.0, 101.971, 1.0), 100.0, Material(vec3(1.0, 1.0, 0.96), 1.0, vec3(1.0, 0.0, 0.0), 0.0)) // sufit (świecący)
+    );
+
+
+// const int NUM_OF_TRIANGLES = 1;
+// const Triangle TRIANGLES[NUM_OF_TRIANGLES] = Triangle[NUM_OF_TRIANGLES](
+//         Triangle(
+//             vec3(20.0, -1.0, -5.0), vec3(17.5, 5.0, 10.0), vec3(10.0, 1.0, 10.0),
+//             vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0)
+//         )
+//     );
 
 // we hit the sphere if ||ray.origin + ray.dir * distance||² = r²
 // o := ray.origin, d := ray.dir, s := distance
@@ -386,13 +391,13 @@ HitInfo CalculateRayCollision(Ray ray) {
     }
 
     // iterate through all the spheres
-    // for (int i = 0; i < NUM_OF_SPHERES; ++i) {
-    //     HitInfo hit = RaySphereIntersection(ray, SPHERES[i]);
-    //     if (hit.didHit && hit.dst < closestHit.dst) {
-    //         closestHit = hit;
-    //         closestHit.mat = SPHERES[i].mat;
-    //     }
-    // }
+    for (int i = 0; i < NUM_OF_SPHERES; ++i) {
+        HitInfo hit = RaySphereIntersection(ray, SPHERES[i]);
+        if (hit.didHit && hit.dst < closestHit.dst) {
+            closestHit = hit;
+            closestHit.mat = SPHERES[i].mat;
+        }
+    }
 
     return closestHit;
 }
@@ -469,20 +474,21 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
     return incomingLight;
 }
 
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+// void mainImage(out vec4 gl_FragColor, in vec2 gl_FragCoord) {
+void main() {
     // init seed
-    uint rngState = uint(uint(fragCoord.x) * uint(1973) + uint(fragCoord.y) * uint(9277) + uint(iFrame) * uint(26699)) | uint(1);
+    uint rngState = uint(uint(gl_FragCoord.x) * uint(1973) + uint(gl_FragCoord.y) * uint(9277) + uint(iFrame) * uint(26699)) | uint(1);
 
-    // fragCoord stores the pixel coordinates [0.5, resolution-0.5]
-    vec2 uv = fragCoord.xy / iResolution.xy; // normalized coordinates [0, 1]
+    // gl_FragCoord stores the pixel coordinates [0.5, resolution-0.5]
+    vec2 uv = gl_FragCoord.xy / iResolution.xy; // normalized coordinates [0, 1]
     uv = 2.0 * uv - 1.0; // normalized coordinates [-1, 1]
     float aspectRatio = iResolution.x / iResolution.y;
 
     // camera
     Camera cam;
-    cam.pos = camOrigin + vec3(cos(iFrame / speed) * radius, 0.0, sin(iFrame / speed) * radius);
-    // cam.pos = vec3(1.2, 0.8, 2.2);
-    cam.lookat = vec3(0.0, 0.8, 0.0);
+    // cam.pos = camOrigin + vec3(cos(iFrame / speed) * radius, 0.0, sin(iFrame / speed) * radius);
+    cam.pos = vec3(-2.0, -0.8, 3.0);
+    cam.lookat = vec3(-2.0, -1.0, 0.0);
     cam.up = vec3(0.0, 1.0, 0.0);
     cam.fov = C_PI / 2.0; // 90 degrees
 
@@ -516,20 +522,10 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     }
     c /= float(SAMPLES_PER_PIXEL);
 
-    vec3 lastFrameColor = texture(backBufferTexture, fragCoord / iResolution.xy).rgb;
+    vec3 lastFrameColor = texture(backBufferTexture, gl_FragCoord.xy / iResolution.xy).rgb;
     if (iFrame == 0) lastFrameColor = c;
-    // c = mix(c, lastFrameColor, 1.0 / float(iFrame + 1));
     float weight = 1.0 / (float(iFrame) + 1.0);
-    // c = lastFrameColor * (1.0 - weight) + c * weight;
+    c = lastFrameColor * (1.0 - weight) + c * weight;
 
-    fragColor = vec4(c, 1.0);
-}
-
-// mainImage is what shadertoy requires
-// but this is how shaders actually work
-void main() {
-    vec4 fragColor;
-    mainImage(fragColor, gl_FragCoord.xy);
-    gl_FragColor = fragColor;
-    // gl_FragColor = vec4(texelFetch(meshesInfoBuffer, 0).rgb, 1);
+    gl_FragColor = vec4(c, 1.0);
 }
