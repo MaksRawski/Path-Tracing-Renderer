@@ -424,11 +424,13 @@ void set_obj_pos(ModelsBuffer *mb, int model_id, vec3 pos) {
 }
 
 void set_material_slot(ModelsBuffer *mb, int index, const Material *mat) {
+  if (mb->num_of_materials == 0) mb->materials = malloc(4 * sizeof(Material));
+
   // if we try to set a material that has a index bigger than 4
   // that are allocated initially (or are allocated overall),
   // we should reallocate but only when the num_of_materials
   // is a power of 2 and then we increase the size by multiplying by 2
-  if (index >= 4 && (unsigned int)index >= mb->num_of_materials &&
+  else if (index >= 4 && (unsigned int)index >= mb->num_of_materials &&
       (mb->num_of_materials & (mb->num_of_materials - 1)) == 0) {
     void *result = realloc(mb->materials, 2 * index * sizeof(Material));
     if (result == NULL) {
