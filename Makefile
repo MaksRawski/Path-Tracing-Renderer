@@ -13,12 +13,12 @@ all: $(SHADERS_H) $(TARGET)
 $(TARGET): $(OBJ) $(GLAD_SRC)
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $(TARGET)
 
-bin/%.o: %.c
+bin/%.o: %.c $(SHADERS)
 	mkdir -p bin
 	$(CC) $(CFLAGS) -c $< -o $@
 
 %.h: %.glsl
-	xxd -i $^ $@
+	xxd -i $< $@
 
 zip: projekt.zip
 

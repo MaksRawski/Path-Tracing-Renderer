@@ -36,16 +36,16 @@ int main(void) {
   double last_frame_time = glfwGetTime();
 
   ModelsBuffer mb = {0};
-  int suzanne_id = load_obj_model("suzanne.obj", shader_program, &mb, NULL);
+  /* int suzanne_id = load_obj_model("suzanne.obj", shader_program, &mb, NULL); */
 
-  Material gold_mat = {
-      .albedo = {1.0, 0.84, 0.0},
-      .emissionColor = {0, 0, 0},
-      .emissionStrength = 0,
-      .specularComponent = 0.4,
-  };
-  set_material_slot(&mb, 0, &gold_mat);
-  set_model_material(&mb, suzanne_id, 0);
+  /* Material gold_mat = { */
+  /*     .albedo = {1.0, 0.84, 0.0}, */
+  /*     .emissionColor = {0, 0, 0}, */
+  /*     .emissionStrength = 0, */
+  /*     .specularComponent = 0.4, */
+  /* }; */
+  /* set_material_slot(&mb, 0, &gold_mat); */
+  /* set_model_material(&mb, suzanne_id, 0); */
 
   while (!glfwWindowShouldClose(window)) {
     // recalculate window dimensions

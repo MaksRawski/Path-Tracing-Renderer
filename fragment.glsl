@@ -1,7 +1,3 @@
-// overall resources:
-// - https://www.youtube.com/watch?v=Qz0KTGYJtUk
-// - https://github.com/ssloy/tinyraytracer/wiki/Part-1:-understandable-raytracing (FOV, reflection stuff)
-
 #version 330 core
 
 uniform int iFrame;
