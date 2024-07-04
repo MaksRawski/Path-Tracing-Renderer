@@ -1,6 +1,6 @@
-CC = gcc
-CFLAGS = -g -Wall -Wextra -Wno-unused -Ilib/include 
-LDFLAGS = -Llib/src -lglfw3 -lopengl32 -lgdi32 -lwinmm -static 
+CC = zig cc
+CFLAGS = -g -Wall -Wextra -Wno-unused -Ilib/include --target=x86_64-windows
+LDFLAGS = -Llib/src -lglfw3 -lopengl32 -lgdi32 -lwinmm -static
 TARGET = bin/main.exe
 SRC = main.c renderer.c obj_parser.c
 OBJ = $(patsubst %.c, bin/%.o, $(SRC))
