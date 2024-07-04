@@ -62,9 +62,7 @@ GLFWwindow *setup_opengl(bool disable_vsync) {
   return window;
 }
 
-void setup_renderer(char *vertex_shader_filename,
-                    char *fragment_shader_filename, GLuint *shader_program,
-                    RendererBuffers *rb) {
+void setup_renderer(GLuint *shader_program, RendererBuffers *rb) {
   // Define vertices for a full-screen quad
   float vertices[] = {
       -1.0f, 1.0f,  // Top left
@@ -93,8 +91,7 @@ void setup_renderer(char *vertex_shader_filename,
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), NULL);
   glEnableVertexAttribArray(0);
 
-  *shader_program =
-      create_shader_program(vertex_shader_filename, fragment_shader_filename);
+  *shader_program = create_shader_program();
 
   // unbind the vbo
   glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -185,11 +182,11 @@ GLuint compile_shader(const char *shader_source, GLenum shader_type) {
   return shader;
 }
 
-GLuint create_shader_program(const char *vertex_shader_filename,
-                             const char *fragment_shader_filename) {
-
-  char *vertex_shader_src = read_file(vertex_shader_filename);
-  char *fragment_shader_src = read_file(fragment_shader_filename);
+GLuint create_shader_program() {
+#include "fragment.h"
+#include "vertex.h"
+  char *vertex_shader_src = (char*)vertex_glsl;
+  char *fragment_shader_src = (char*)fragment_glsl;
 
   GLuint shader_program =
       create_shader_program_from_source(vertex_shader_src, fragment_shader_src);

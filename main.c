@@ -1,6 +1,3 @@
-
-#define DEBUG
-
 #include <glad/gl.h>
 //
 #include <GLFW/glfw3.h>
@@ -19,7 +16,7 @@ int main(void) {
 
   GLuint shader_program;
   RendererBuffers rb;
-  setup_renderer("vertex.glsl", "renderer.glsl", &shader_program, &rb);
+  setup_renderer(&shader_program, &rb);
 
   int width, height;
   glfwGetFramebufferSize(window, &width, &height);

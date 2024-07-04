@@ -73,13 +73,10 @@ typedef struct {
 } Uniforms;
 
 GLFWwindow *setup_opengl(bool disable_vsync);
-void setup_renderer(char *vertex_shader_filename,
-                    char *fragment_shader_filename, GLuint *shader_program,
-                    RendererBuffers *rb);
+void setup_renderer(GLuint *shader_program, RendererBuffers *rb);
 char *read_file(const char *shader_file);
 GLuint compile_shader(const char *shader_source, GLenum shader_type);
-GLuint create_shader_program(const char *vertex_shader_filename,
-                             const char *fragment_shader_filename);
+GLuint create_shader_program();
 GLuint create_shader_program_from_source(const char *vertex_shader_src,
                                          const char *fragment_shader_src);
 int watch_file(const char *path);
