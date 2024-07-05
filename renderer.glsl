@@ -12,14 +12,18 @@ uniform samplerBuffer meshesInfoBuffer;
 uniform samplerBuffer materialsBuffer;
 uniform int numOfMeshes;
 
-const vec3 camOrigin = vec3(0, 1, 0);
-const float radius = 2.5;
-const float speed = 100;
+// How blurry should the image be
+const float DivergeStrength = 20.0;
+
+// used for rotating camera
+// const vec3 camOrigin = vec3(0, 1, 0);
+// const float radius = 2.5;
+// const float speed = 100;
 
 const float C_PI = 3.141592653589793;
 const float C_TWOPI = 6.283185307179586;
-const int MAX_BOUNCE_COUNT = 5;
-const int SAMPLES_PER_PIXEL = 3;
+const int MAX_BOUNCE_COUNT = 6;
+const int SAMPLES_PER_PIXEL = 15;
 
 #define INFTY 1.0e30
 
@@ -172,16 +176,15 @@ vec2 RandomPointInCircle(inout uint state)
 const int NUM_OF_SPHERES = 9;
 const Sphere SPHERES[NUM_OF_SPHERES] = Sphere[NUM_OF_SPHERES](
         Sphere(vec3(0.0, -1002.0, 0.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0), 0.1)), // floor
-        Sphere(vec3(0.0, 0.0, -1003.8), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 0.0, 0.0), 0.1)), // back wall
-        Sphere(vec3(0.0, 0.0, 1003.8), 1000.0,  Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 0.0, 1.0), 0.1)), // front wall (behind the camera)
-        Sphere(vec3(-1004.5, 0.0, 0.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 1.0, 0.0), 0.1)), // left wall
-        Sphere(vec3(1003.5, 0.0, 0.0), 1000.0,  Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 0.0, 1.0), 0.1)), // right wall
-        Sphere(vec3(-3.2, -1.2, -1.5), 0.8,     Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0), 1.0)), // left mirror ball
-        Sphere(vec3(-1.5, -1.2, -1.5), 0.8,     Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0), 1.0)), // prawa kulka lustrzana
-        Sphere(vec3(-0.4, -1.4, 0.9), 0.6,       Material(vec3(1.0, 1.0, 0.0), 0.4, vec3(1.0, 1.0, 1.0), 0.4)), // świecąca się kulka
-        Sphere(vec3(-1.0, 101.971, 1.0), 100.0, Material(vec3(1.0, 1.0, 0.96),1.0, vec3(1.0, 0.0, 0.0), 0.0)) // sufit (świecący)
+        Sphere(vec3(0.0, 0.0, -1002.2), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 0.0, 0.0), 0.1)), // back wall
+        Sphere(vec3(0.0, 0.0, 1002.8), 1000.0,  Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 0.0, 1.0), 0.1)), // front wall (behind camera)
+        Sphere(vec3(-1003.5, 0.0, 0.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 1.0, 0.0), 0.1)), // left wall
+        Sphere(vec3(1002.5, 0.0, 0.0), 1000.0,  Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 0.0, 1.0), 0.1)), // right wall
+        Sphere(vec3(-2.2, -1.2, -0.5), 0.8,     Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0), 1.0)), // left mirror ball
+        Sphere(vec3(-0.5, -1.2, -0.5), 0.8,     Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0), 1.0)), // right mirror ball
+        Sphere(vec3(0.0, -1.49, 1.0), 0.5,      Material(vec3(1.0, 1.0, 0.0), 0.4, vec3(1.0, 1.0, 1.0), 0.4)), // emitting ball
+        Sphere(vec3(-1.0, 101.971, 1.0), 100.0, Material(vec3(1.0, 1.0, 0.96), 1.0,vec3(1.0, 0.0, 0.0), 0.0)) // ceiling emitter
     );
-
 // we hit the sphere if ||ray.origin + ray.dir * distance||² = r²
 // o := ray.origin, d := ray.dir, s := distance
 // ||o + d * s||² = r²
@@ -494,7 +497,7 @@ void main(){
     Camera cam;
     // cam.pos = camOrigin + vec3(cos(iFrame / speed) * radius, 0.0, sin(iFrame / speed) * radius);
     cam.pos = vec3(-2.0, -0.8, 3.0);
-    cam.lookat = vec3(-2.0, -1.0, 0.0);
+    cam.lookat = vec3(-2.0, -1.0, -1.0);
     cam.up = vec3(0.0, 1.0, 0.0);
     cam.fov = C_PI / 2.0; // 90 degrees
 
@@ -512,26 +515,27 @@ void main(){
             viewportWidth * viewportRight * uv.x +
             viewportHeight * viewportUp * uv.y;
 
-    // rays
-    // imagine that the camera is just a point that shoots rays
-    // but is behind the viewport and each ray has to travel through a different pixel
-    Ray ray;
-    ray.origin = cam.pos;
-    ray.dir = normalize(rayTarget - ray.origin);
-    ray.div_dir = 1.0 / ray.dir;
-    ray.epsilon = 0.00001;
 
-    // shooting rays
-    vec3 c = vec3(0.0, 0.0, 0.0);
+    vec3 totalIncomingLight = vec3(0.0, 0.0, 0.0);
     for (int i = 0; i < SAMPLES_PER_PIXEL; ++i) {
-        c += GetColorForRay(ray, rngState);
+        Ray ray;
+        ray.origin = cam.pos;
+        vec2 jitter = RandomPointInCircle(rngState) * DivergeStrength / iResolution.x;
+        vec3 jitteredRayTarget = rayTarget + viewportRight * jitter.x + viewportUp * jitter.y;
+        ray.dir = normalize(jitteredRayTarget - ray.origin);
+
+        ray.inv_dir = 1.0 / ray.dir;
+        ray.epsilon = 0.00001;
+        totalIncomingLight += GetColorForRay(ray, rngState);
     }
-    c /= float(SAMPLES_PER_PIXEL);
+    totalIncomingLight /= float(SAMPLES_PER_PIXEL);
+
+    // totalIncomingLight = abs(RandomUnitVector(rngState));
 
     vec3 lastFrameColor = texture(backBufferTexture, gl_FragCoord.xy / iResolution.xy).rgb;
-    if (iFrame == 0) lastFrameColor = c;
+    if (iFrame == 0) lastFrameColor = totalIncomingLight;
     float weight = 1.0 / (float(iFrame) + 1.0);
-    c = lastFrameColor * (1.0 - weight) + c * weight;
+    totalIncomingLight = lastFrameColor * (1.0 - weight) + totalIncomingLight * weight;
 
-    gl_FragColor = vec4(c, 1.0);
+    gl_FragColor = vec4(totalIncomingLight, 1.0);
 }
