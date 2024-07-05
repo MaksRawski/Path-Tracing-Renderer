@@ -303,7 +303,7 @@ int load_obj_model(const char *filename, GLuint shader_program,
           realloc(mb->meshesInfo, 2 * mb->num_of_meshes * sizeof(MeshInfo));
       if (result == NULL) {
         fprintf(stderr,
-                "Failed to reallocate %lu bytes of memory for meshesInfo!\n",
+                "Failed to reallocate %zu bytes of memory for meshesInfo!\n",
                 2 * mb->num_of_meshes * sizeof(MeshInfo));
         free(mb->meshesInfo);
         exit(EXIT_FAILURE);
@@ -320,7 +320,7 @@ int load_obj_model(const char *filename, GLuint shader_program,
     if (result == NULL) {
       free(mb->triangles);
       fprintf(stderr,
-              "Failed to reallocate %lu bytes of memory for triangles!\n",
+              "Failed to reallocate %zu bytes of memory for triangles!\n",
               (triangles_already_loaded + num_of_triangles) * sizeof(Triangle));
       exit(EXIT_FAILURE);
     } else
@@ -433,7 +433,7 @@ void set_material_slot(ModelsBuffer *mb, int index, const Material *mat) {
     void *result = realloc(mb->materials, 2 * index * sizeof(Material));
     if (result == NULL) {
       fprintf(stderr,
-              "Failed to realocate %lu bytes of memory for materials!\n",
+              "Failed to realocate %zu bytes of memory for materials!\n",
               2 * index * sizeof(Material));
       exit(EXIT_FAILURE);
     } else

@@ -1,5 +1,5 @@
 CC = zig cc
-CFLAGS = -Wall -Wextra -Wno-unused -Ilib/include --target=x86_64-windows
+CFLAGS = -g -Wall -Wextra -Wno-unused -Ilib/include --target=x86_64-windows
 LDFLAGS = -Llib/src -lglfw3 -lopengl32 -lgdi32 -lwinmm -static
 TARGET = bin/main.exe
 SRC = main.c renderer.c obj_parser.c
@@ -18,7 +18,7 @@ bin/%.o: %.c $(SHADERS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 %.h: %.glsl
-	xxd -i $< $@
+	xxd -i $< | head -n-1 | sed 's/}/,0}/' > $@
 
 zip: projekt.zip
 

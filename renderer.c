@@ -12,16 +12,8 @@
 
 #define WINDOW_TITLE "LAK - Projekt zaliczeniowy"
 
-int debug_fn_counter = 0;
-
-void debug() {
-  GLenum error = glGetError();
-  if (error != GL_NO_ERROR)
-    fprintf(stderr, "%d. OpenGL Error: %x\n", ++debug_fn_counter, error);
-  else
-    printf("%d. all good\n", ++debug_fn_counter);
-}
-
+#include "fragment.h"
+#include "vertex.h"
 // Function to handle glfw errors
 void glfw_error_callback(int error, const char *description) {
   fprintf(stderr, "Error (%d): %s\n", error, description);
@@ -183,16 +175,9 @@ GLuint compile_shader(const char *shader_source, GLenum shader_type) {
 }
 
 GLuint create_shader_program() {
-#include "fragment.h"
-#include "vertex.h"
-  char *vertex_shader_src = (char*)vertex_glsl;
-  char *fragment_shader_src = (char*)fragment_glsl;
 
   GLuint shader_program =
-      create_shader_program_from_source(vertex_shader_src, fragment_shader_src);
-
-  free(vertex_shader_src);
-  free(fragment_shader_src);
+      create_shader_program_from_source((char*)vertex_glsl, (char*)fragment_glsl);
 
   return shader_program;
 }
@@ -284,4 +269,3 @@ void free_gl_buffers(RendererBuffers *rb, BackBuffer *bb, ModelsBuffer *mb) {
   free(mb->meshesInfo);
   free(mb->materials);
 }
-
