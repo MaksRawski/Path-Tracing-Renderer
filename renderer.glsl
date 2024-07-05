@@ -38,7 +38,7 @@ struct Camera {
 struct Ray {
     vec3 origin;
     vec3 dir;
-    vec3 div_dir; // 1 / dir
+    vec3 inv_dir; // 1 / dir
     // used to restrict the interval at which intersections are actually useful
     // basically if something is closer than epsilon to our ray or closer than
     // epsilon to light source then we consider it to not be a useful intersection?
@@ -121,19 +121,18 @@ struct HitInfo {
     Material mat;
 };
 
-uint wang_hash(inout uint seed)
+// RNG
+uint pcg_hash(inout uint seed)
 {
-    seed = uint(seed ^ uint(61)) ^ uint(seed >> uint(16));
-    seed *= uint(9);
-    seed = seed ^ (seed >> 4);
-    seed *= uint(0x27d4eb2d);
-    seed = seed ^ (seed >> 15);
-    return seed;
+    seed = seed * 747796405u + 2891336453u;
+    uint result = ((seed >> ((seed >> 28u) + 4u)) ^ seed) * 277803737u;
+    result = (result >> 22) ^ result;
+    return result;
 }
 
 float RandomFloat(inout uint state)
 {
-    return float(wang_hash(state)) / 4294967296.0;
+    return float(pcg_hash(state)) / 4294967296.0;
 }
 
 vec3 RandomUnitVector(inout uint state)
@@ -146,28 +145,42 @@ vec3 RandomUnitVector(inout uint state)
     return vec3(x, y, z);
 }
 
+// https://stackoverflow.com/a/6178290
+float RandomFloatNormalDistribution(inout uint state)
+{
+    float theta = C_TWOPI * RandomFloat(state);
+    float rho = sqrt(-2 * log(RandomFloat(state)));
+    return rho * cos(theta);
+}
+
+// https://math.stackexchange.com/a/1585996
+// vec3 RandomUnitVector(inout uint state)
+// {
+//     float x = RandomFloatNormalDistribution(state);
+//     float y = RandomFloatNormalDistribution(state);
+//     float z = RandomFloatNormalDistribution(state);
+//     return normalize(vec3(x, y, z));
+// }
+
+vec2 RandomPointInCircle(inout uint state)
+{
+    float angle = RandomFloat(state) * C_TWOPI;
+    vec2 pointOnCircle = vec2(cos(angle), sin(angle));
+    return pointOnCircle * sqrt(RandomFloat(state));
+}
 
 const int NUM_OF_SPHERES = 9;
 const Sphere SPHERES[NUM_OF_SPHERES] = Sphere[NUM_OF_SPHERES](
-        Sphere(vec3(0.0, -1002.0, 0.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0), 0.1)), // podłoga
-        Sphere(vec3(0.0, 0.0, -1001.8), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 0.0, 0.0), 0.1)), // tylnia ściana
-        Sphere(vec3(0.0, 0.0, 1002.8), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 0.0, 1.0), 0.1)), // ściana z przodu (za kamerą)
-        Sphere(vec3(-1003.5, 0.0, 0.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 1.0, 0.0), 0.1)), // lewa ściana
-        Sphere(vec3(1002.5, 0.0, 0.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 0.0, 1.0), 0.1)), // prawa ściana
-        Sphere(vec3(-2.2, -1.2, -0.5), 0.8, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0), 1.0)), // lewa kulka lustrzana
-        Sphere(vec3(-0.5, -1.2, -0.5), 0.8, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0), 1.0)), // prawa kulka lustrzana
-        Sphere(vec3(0.6, -1.6, 0.1), 0.4, Material(vec3(1.0, 1.0, 0.0), 0.4, vec3(1.0, 1.0, 1.0), 0.4)), // świecąca się kulka
-        Sphere(vec3(-1.0, 101.971, 1.0), 100.0, Material(vec3(1.0, 1.0, 0.96), 1.0, vec3(1.0, 0.0, 0.0), 0.0)) // sufit (świecący)
+        Sphere(vec3(0.0, -1002.0, 0.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0), 0.1)), // floor
+        Sphere(vec3(0.0, 0.0, -1003.8), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 0.0, 0.0), 0.1)), // back wall
+        Sphere(vec3(0.0, 0.0, 1003.8), 1000.0,  Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 0.0, 1.0), 0.1)), // front wall (behind the camera)
+        Sphere(vec3(-1004.5, 0.0, 0.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 1.0, 0.0), 0.1)), // left wall
+        Sphere(vec3(1003.5, 0.0, 0.0), 1000.0,  Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 0.0, 1.0), 0.1)), // right wall
+        Sphere(vec3(-3.2, -1.2, -1.5), 0.8,     Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0), 1.0)), // left mirror ball
+        Sphere(vec3(-1.5, -1.2, -1.5), 0.8,     Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0), 1.0)), // prawa kulka lustrzana
+        Sphere(vec3(-0.4, -1.4, 0.9), 0.6,       Material(vec3(1.0, 1.0, 0.0), 0.4, vec3(1.0, 1.0, 1.0), 0.4)), // świecąca się kulka
+        Sphere(vec3(-1.0, 101.971, 1.0), 100.0, Material(vec3(1.0, 1.0, 0.96),1.0, vec3(1.0, 0.0, 0.0), 0.0)) // sufit (świecący)
     );
-
-
-// const int NUM_OF_TRIANGLES = 1;
-// const Triangle TRIANGLES[NUM_OF_TRIANGLES] = Triangle[NUM_OF_TRIANGLES](
-//         Triangle(
-//             vec3(20.0, -1.0, -5.0), vec3(17.5, 5.0, 10.0), vec3(10.0, 1.0, 10.0),
-//             vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0)
-//         )
-//     );
 
 // we hit the sphere if ||ray.origin + ray.dir * distance||² = r²
 // o := ray.origin, d := ray.dir, s := distance
@@ -342,23 +355,23 @@ bool RayBoundingBoxIntersection(Ray ray, MeshInfo mi) {
     float tmin = -INFTY, tmax = INFTY;
 
     // check the intersection at x axis
-    float tx1 = (mi.boundsMin.x - ray.origin.x) * ray.div_dir.x;
-    float tx2 = (mi.boundsMax.x - ray.origin.x) * ray.div_dir.x;
+    float tx1 = (mi.boundsMin.x - ray.origin.x) * ray.inv_dir.x;
+    float tx2 = (mi.boundsMax.x - ray.origin.x) * ray.inv_dir.x;
 
     // we change the value of tmin if one of these is smaller than the current
     tmin = max(tmin, min(tx1, tx2));
     tmax = min(tmax, max(tx1, tx2));
 
     // check the intersection at y axis
-    float ty1 = (mi.boundsMin.y - ray.origin.y) * ray.div_dir.y;
-    float ty2 = (mi.boundsMax.y - ray.origin.y) * ray.div_dir.y;
+    float ty1 = (mi.boundsMin.y - ray.origin.y) * ray.inv_dir.y;
+    float ty2 = (mi.boundsMax.y - ray.origin.y) * ray.inv_dir.y;
 
     tmin = max(tmin, min(ty1, ty2));
     tmax = min(tmax, max(ty1, ty2));
 
     // check the intersection at z axis
-    float tz1 = (mi.boundsMin.z - ray.origin.z) * ray.div_dir.z;
-    float tz2 = (mi.boundsMax.z - ray.origin.z) * ray.div_dir.z;
+    float tz1 = (mi.boundsMin.z - ray.origin.z) * ray.inv_dir.z;
+    float tz2 = (mi.boundsMax.z - ray.origin.z) * ray.inv_dir.z;
 
     tmin = max(tmin, min(tz1, tz2));
     tmax = min(tmax, max(tz1, tz2));
@@ -401,14 +414,6 @@ HitInfo CalculateRayCollision(Ray ray) {
 
     return closestHit;
 }
-
-// random direction in the same hemisphere the normal vector is in
-// for diffuse reflection
-// vec3 RandomHemisphereDirection(vec3 normal, inout uint rngState) {
-//     // dot product is negative if the vectors are more than 90 degrees apart
-//     vec3 randomVector = RandomUnitVector(rngState);
-//     return sign(dot(normal, randomVector)) * randomVector;
-// }
 
 vec3 DiffuseDirection(vec3 normal, inout uint rngState) {
     return normalize(normal + RandomUnitVector(rngState));
@@ -474,10 +479,11 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
     return incomingLight;
 }
 
-// void mainImage(out vec4 gl_FragColor, in vec2 gl_FragCoord) {
-void main() {
-    // init seed
-    uint rngState = uint(uint(gl_FragCoord.x) * uint(1973) + uint(gl_FragCoord.y) * uint(9277) + uint(iFrame) * uint(26699)) | uint(1);
+// void mainImage(out vec4 gl_FragColor, in vec2 gl_FragCcoord) {
+void main(){
+    // uint rngState = uint(uint(gl_FragCoord.x) * uint(1973) + uint(gl_FragCoord.y) * uint(9277) + uint(iFrame) * uint(26699)) | uint(1);
+    uint pixelIndex = uint(gl_FragCoord.x) + uint(gl_FragCoord.y) * uint(iResolution.x);
+    uint rngState = uint(pixelIndex + uint(iFrame * 719393));
 
     // gl_FragCoord stores the pixel coordinates [0.5, resolution-0.5]
     vec2 uv = gl_FragCoord.xy / iResolution.xy; // normalized coordinates [0, 1]
