@@ -12,13 +12,7 @@ uniform samplerBuffer meshesInfoBuffer;
 uniform samplerBuffer materialsBuffer;
 uniform int numOfMeshes;
 
-// How blurry should the image be
 const float DivergeStrength = 20.0;
-
-// used for rotating camera
-// const vec3 camOrigin = vec3(0, 1, 0);
-// const float radius = 2.5;
-// const float speed = 100;
 
 const float C_PI = 3.141592653589793;
 const float C_TWOPI = 6.283185307179586;
@@ -484,7 +478,6 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
 
 // void mainImage(out vec4 gl_FragColor, in vec2 gl_FragCcoord) {
 void main(){
-    // uint rngState = uint(uint(gl_FragCoord.x) * uint(1973) + uint(gl_FragCoord.y) * uint(9277) + uint(iFrame) * uint(26699)) | uint(1);
     uint pixelIndex = uint(gl_FragCoord.x) + uint(gl_FragCoord.y) * uint(iResolution.x);
     uint rngState = uint(pixelIndex + uint(iFrame * 719393));
 
@@ -495,7 +488,6 @@ void main(){
 
     // camera
     Camera cam;
-    // cam.pos = camOrigin + vec3(cos(iFrame / speed) * radius, 0.0, sin(iFrame / speed) * radius);
     cam.pos = vec3(-2.0, -0.8, 3.0);
     cam.lookat = vec3(-2.0, -1.0, -1.0);
     cam.up = vec3(0.0, 1.0, 0.0);
@@ -522,15 +514,13 @@ void main(){
         ray.origin = cam.pos;
         vec2 jitter = RandomPointInCircle(rngState) * DivergeStrength / iResolution.x;
         vec3 jitteredRayTarget = rayTarget + viewportRight * jitter.x + viewportUp * jitter.y;
-        ray.dir = normalize(jitteredRayTarget - ray.origin);
 
+        ray.dir = normalize(jitteredRayTarget - ray.origin);
         ray.inv_dir = 1.0 / ray.dir;
         ray.epsilon = 0.00001;
         totalIncomingLight += GetColorForRay(ray, rngState);
     }
     totalIncomingLight /= float(SAMPLES_PER_PIXEL);
-
-    // totalIncomingLight = abs(RandomUnitVector(rngState));
 
     vec3 lastFrameColor = texture(backBufferTexture, gl_FragCoord.xy / iResolution.xy).rgb;
     if (iFrame == 0) lastFrameColor = totalIncomingLight;
