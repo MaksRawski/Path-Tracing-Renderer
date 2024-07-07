@@ -14,6 +14,7 @@ uniform int numOfMeshes;
 
 const float DivergeStrength = 20.0;
 
+const float EPSILON = 0.00001;
 const float C_PI = 3.141592653589793;
 const float C_TWOPI = 6.283185307179586;
 const int MAX_BOUNCE_COUNT = 6;
@@ -37,11 +38,6 @@ struct Ray {
     vec3 origin;
     vec3 dir;
     vec3 inv_dir; // 1 / dir
-    // used to restrict the interval at which intersections are actually useful
-    // basically if something is closer than epsilon to our ray or closer than
-    // epsilon to light source then we consider it to not be a useful intersection?
-    // and we might as well just ignore that ray then?
-    float epsilon;
 };
 
 struct Triangle {
@@ -198,11 +194,9 @@ HitInfo RaySphereIntersection(Ray ray, Sphere s) {
 
     float d = b * b - 4.0 * a * c;
     if (d >= 0.0) {
-        float d1 = (-b - sqrt(d)) / (2.0 * a);
-        float d2 = (-b + sqrt(d)) / (2.0 * a);
-        hitInfo.dst = min(d1, d2); // TODO: d1 will always be smaller?
+        hitInfo.dst = (-b - sqrt(d)) / (2.0 * a);
 
-        if (hitInfo.dst > ray.epsilon) {
+        if (hitInfo.dst > EPSILON) {
             hitInfo.didHit = true;
             hitInfo.hitPoint = ray.origin + hitInfo.dst * ray.dir;
             hitInfo.normal = normalize(hitInfo.hitPoint - s.pos);
@@ -286,7 +280,7 @@ HitInfo RayTriangleIntersection(Ray ray, Triangle tri) {
     vec3 De2 = cross(D, e2);
     float det = dot(e1, De2);
 
-    if (abs(det) < ray.epsilon) {
+    if (abs(det) < EPSILON) {
         // the vectors -D, e1 and e2 are not linearly independent,
         // meaning ray is coming in parallel to the triangle
         return hitInfo;
@@ -311,7 +305,7 @@ HitInfo RayTriangleIntersection(Ray ray, Triangle tri) {
 
     // finally, if we got here, it means that we did actually hit the triangle
     float t = dot(Te1, e2) * inv_det;
-    if (t > ray.epsilon) {
+    if (t > EPSILON) {
         hitInfo.didHit = true;
         hitInfo.hitPoint = ray.origin + ray.dir * t;
         // look at the right beginning of the description of this function
@@ -517,7 +511,6 @@ void main(){
 
         ray.dir = normalize(jitteredRayTarget - ray.origin);
         ray.inv_dir = 1.0 / ray.dir;
-        ray.epsilon = 0.00001;
         totalIncomingLight += GetColorForRay(ray, rngState);
     }
     totalIncomingLight /= float(SAMPLES_PER_PIXEL);
