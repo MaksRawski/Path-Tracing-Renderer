@@ -41,7 +41,7 @@ GLFWwindow *setup_opengl(bool disable_vsync) {
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-  GLFWwindow *window = glfwCreateWindow(800, 800, WINDOW_TITLE, NULL, NULL);
+  GLFWwindow *window = glfwCreateWindow(600, 600, WINDOW_TITLE, NULL, NULL);
   if (!window) {
     glfwTerminate();
     exit(EXIT_FAILURE);

@@ -74,6 +74,7 @@ void parse_cli(int argc, char *argv[], char *model_path[], vec3 *offset,
                 argv[i]);
         exit(EXIT_FAILURE);
       }
+      printf("Using %s material.\n", argv[i]);
       break;
     default:
       break;

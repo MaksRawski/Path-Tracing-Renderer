@@ -12,15 +12,14 @@ uniform samplerBuffer meshesInfoBuffer;
 uniform samplerBuffer materialsBuffer;
 uniform int numOfMeshes;
 
+const int MAX_BOUNCE_COUNT = 4;
+const int SAMPLES_PER_PIXEL = 3;
 const float DivergeStrength = 20.0;
 
 const float EPSILON = 0.00001;
+const float INFINITY = 1.0e30;
 const float C_PI = 3.141592653589793;
 const float C_TWOPI = 6.283185307179586;
-const int MAX_BOUNCE_COUNT = 6;
-const int SAMPLES_PER_PIXEL = 15;
-
-#define INFTY 1.0e30
 
 // https://raytracing.github.io/books/RayTracingInOneWeekend.html#positionablecamera (12.2)
 struct Camera {
@@ -147,15 +146,6 @@ float RandomFloatNormalDistribution(inout uint state)
     return rho * cos(theta);
 }
 
-// https://math.stackexchange.com/a/1585996
-// vec3 RandomUnitVector(inout uint state)
-// {
-//     float x = RandomFloatNormalDistribution(state);
-//     float y = RandomFloatNormalDistribution(state);
-//     float z = RandomFloatNormalDistribution(state);
-//     return normalize(vec3(x, y, z));
-// }
-
 vec2 RandomPointInCircle(inout uint state)
 {
     float angle = RandomFloat(state) * C_TWOPI;
@@ -163,18 +153,16 @@ vec2 RandomPointInCircle(inout uint state)
     return pointOnCircle * sqrt(RandomFloat(state));
 }
 
-const int NUM_OF_SPHERES = 9;
+const int NUM_OF_SPHERES = 6;
 const Sphere SPHERES[NUM_OF_SPHERES] = Sphere[NUM_OF_SPHERES](
         Sphere(vec3(0.0, -1002.0, 0.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0), 0.1)), // floor
         Sphere(vec3(0.0, 0.0, -1002.2), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 0.0, 0.0), 0.1)), // back wall
         Sphere(vec3(0.0, 0.0, 1002.8), 1000.0,  Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 0.0, 1.0), 0.1)), // front wall (behind camera)
         Sphere(vec3(-1003.5, 0.0, 0.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 1.0, 0.0), 0.1)), // left wall
         Sphere(vec3(1002.5, 0.0, 0.0), 1000.0,  Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 0.0, 1.0), 0.1)), // right wall
-        Sphere(vec3(-2.2, -1.2, -0.5), 0.8,     Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0), 1.0)), // left mirror ball
-        Sphere(vec3(-0.5, -1.2, -0.5), 0.8,     Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0), 1.0)), // right mirror ball
-        Sphere(vec3(0.0, -1.49, 1.0), 0.5,      Material(vec3(1.0, 1.0, 0.0), 0.4, vec3(1.0, 1.0, 1.0), 0.4)), // emitting ball
         Sphere(vec3(-1.0, 101.971, 1.0), 100.0, Material(vec3(1.0, 1.0, 0.96), 1.0,vec3(1.0, 0.0, 0.0), 0.0)) // ceiling emitter
     );
+
 // we hit the sphere if ||ray.origin + ray.dir * distance||² = r²
 // o := ray.origin, d := ray.dir, s := distance
 // ||o + d * s||² = r²
@@ -343,7 +331,7 @@ HitInfo RayTriangleIntersection(Ray ray, Triangle tri) {
 // if there is no intersection we will end up with infinities which
 // funnily enough get automagically handled
 bool RayBoundingBoxIntersection(Ray ray, MeshInfo mi) {
-    float tmin = -INFTY, tmax = INFTY;
+    float tmin = -INFINITY, tmax = INFINITY;
 
     // check the intersection at x axis
     float tx1 = (mi.boundsMin.x - ray.origin.x) * ray.inv_dir.x;
@@ -374,15 +362,11 @@ bool RayBoundingBoxIntersection(Ray ray, MeshInfo mi) {
 HitInfo CalculateRayCollision(Ray ray) {
     HitInfo closestHit;
     closestHit.didHit = false;
-    closestHit.dst = INFTY;
+    closestHit.dst = INFINITY;
 
     // iterate through all triangles
     for (int i = 0; i < numOfMeshes; ++i) {
         MeshInfo mi = getMesh(i);
-        // if (RayBoundingBoxIntersection(ray, mi)) {
-        //     closestHit.didHit = true;
-        //     return closestHit;
-        // }
         if (!RayBoundingBoxIntersection(ray, mi)) continue;
 
         for (int j = 0; j < mi.numTriangles; ++j) {
@@ -414,27 +398,6 @@ vec3 ReflectDirection(vec3 dir, vec3 normal) {
     return dir - 2 * dot(dir, normal) * normal;
 }
 
-// copy pasted from sebastian's video
-// TODO: write the enviroment function on your own!
-vec3 GetEnviromentLight(Ray ray) {
-    // vec3 SunLightDirection = vec3(0.0, -5.0, 0.0);
-    float SunFocus = 0.1;
-    float SunIntensivity = 0.5;
-    vec3 SkyColorHorizon = vec3(0.8, 0.8, 0.8);
-    vec3 SkyColorZenith = vec3(0.3, 0.6, 0.8);
-    vec3 GroundColor = vec3(0.7, 0.7, 0.7);
-    vec3 SunLightDirection = vec3(0.0, -2.0, 0.0);
-
-    float skyGradientT = pow(smoothstep(0.0, 0.4, ray.dir.y), 0.35);
-    vec3 skyGradient = mix(SkyColorHorizon, SkyColorZenith, skyGradientT);
-    float sun = pow(max(0.0, dot(ray.dir, -SunLightDirection)), SunFocus) * SunIntensivity;
-
-    // combine ground sky and sun
-    float groundToSkyT = smoothstep(-0.01, 0.0, ray.dir.y);
-    float sunMask = groundToSkyT >= 1.0 ? 1.0 : 0.0;
-    return mix(GroundColor, skyGradient, groundToSkyT) + sun * sunMask;
-}
-
 vec3 GetColorForRay(Ray ray, inout uint rngState) {
     // we start with pure white
     // as we (ig?) assume that the potential light source emits just that
@@ -462,8 +425,6 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
             incomingLight += emittedLight * c;
             c *= hitInfo.mat.albedo;
         } else {
-            // we could sample enviroment here
-            incomingLight += GetEnviromentLight(ray) * c;
             break;
         }
     }
@@ -482,8 +443,8 @@ void main(){
 
     // camera
     Camera cam;
-    cam.pos = vec3(-2.0, -0.8, 3.0);
-    cam.lookat = vec3(-2.0, -1.0, -1.0);
+    cam.pos = vec3(-2.0, 0.8, -1.0);
+    cam.lookat = vec3(0.0, 0.0, 0.0);
     cam.up = vec3(0.0, 1.0, 0.0);
     cam.fov = C_PI / 2.0; // 90 degrees
 
@@ -494,8 +455,6 @@ void main(){
 
     float viewportWidth = 2.0 * cameraDistanceFromViewport * tan(cam.fov / 2.0);
     float viewportHeight = viewportWidth / aspectRatio;
-    // float viewportHeight = 2 * cameraDistanceFromViewport * tan(cam.fov / 2);
-    // float viewportWidth = viewportHeight * aspectRatio;
 
     vec3 rayTarget = cameraDirection * cameraDistanceFromViewport +
             viewportWidth * viewportRight * uv.x +
