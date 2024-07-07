@@ -72,12 +72,12 @@ struct MeshInfo {
 
 MeshInfo getMesh(int i) {
     MeshInfo mi;
-    vec3 t = texelFetch(meshesInfoBuffer, 9 * i).rgb;
+    vec3 t = texelFetch(meshesInfoBuffer, 3 * i).rgb;
     mi.firstTriangleIndex = int(t.r);
     mi.numTriangles = int(t.g);
     mi.materialIndex = int(t.b);
-    mi.boundsMin = texelFetch(meshesInfoBuffer, 9 * i + 1).rgb;
-    mi.boundsMax = texelFetch(meshesInfoBuffer, 9 * i + 2).rgb;
+    mi.boundsMin = texelFetch(meshesInfoBuffer, 3 * i + 1).rgb;
+    mi.boundsMax = texelFetch(meshesInfoBuffer, 3 * i + 2).rgb;
     return mi;
 }
 
