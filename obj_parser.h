@@ -17,6 +17,12 @@ static const Material white_mat = {
     .emissionStrength = 0,
     .specularComponent = 0.0,
 };
+static const Material mirror_mat = {
+    .albedo = {1.0, 1.0, 1.0},
+    .emissionColor = {0, 0, 0},
+    .emissionStrength = 0,
+    .specularComponent = 1.0,
+};
 static const Material red_mat = {
     .albedo = {1.0, 0.0, 0.0},
     .emissionColor = {0, 0, 0},
@@ -34,6 +40,18 @@ static const Material blue_mat = {
     .emissionColor = {0, 0, 0},
     .emissionStrength = 0,
     .specularComponent = 0.2,
+};
+static const Material gold_mat = {
+    .albedo = {1.0, 0.84, 0.0},
+    .emissionColor = {0, 0, 0},
+    .emissionStrength = 0,
+    .specularComponent = 0.4,
+};
+static const Material black_mat = {
+    .albedo = {0.0, 0.0, 0.0},
+    .emissionColor = {0, 0, 0},
+    .emissionStrength = 0,
+    .specularComponent = 0.0,
 };
 
 int load_obj_model(const char *filename, GLuint shader_program,
