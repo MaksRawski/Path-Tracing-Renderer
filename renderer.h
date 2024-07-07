@@ -45,13 +45,10 @@ typedef struct {
   float emissionColor[3];
   float emissionStrength;
   float albedo[3];
-  // NOTE: its value should be normalized
   float specularComponent;
 } Material;
 
 typedef struct {
-  // NOTE: for some reason if we specify any of those first 3 fields
-  // as ints this entire struct won't be sent to the shader?
   float firstTriangleIndex;
   float numTriangles;
   float materialIndex;
@@ -65,7 +62,7 @@ typedef struct {
   Triangle *triangles;
   MeshInfo *meshesInfo;
   Material *materials;
-  unsigned int num_of_meshes, num_of_materials;
+  unsigned int num_of_meshes, num_of_materials, materials_capacity;
 } ModelsBuffer;
 
 typedef struct {
