@@ -12,14 +12,99 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
-int main(void) {
+const char help_str[] =
+    "Usage: %s MODEL POSITION MATERIAL\n"
+    "Renders MODEL at a POSITION using one of the builtin MATERIALs.\n\n"
+    "MODEL can be either a path to triangulated obj file or a special keyword\n"
+    "SPHERER, where R should be replaced with the radius of the sphere e.g. "
+    "SPHERE1.5\n"
+    "POSITION should be specified as x,y,z e.g. 0,1.5,-2.1\n"
+    "MATERIAL should be a name of one of the builtin materials: WHITE, MIRROR, "
+    "RED, GREEN, BLUE, GOLD, BLACK.\n\n"
+    "Example: %s SPHERE1.75 2,0,2 MIRROR, SPHERE1.75 -2,0,2 MIRROR\n"
+    "Note: camera will always be at 0,0,0 and will look at a point 0,0,2\n";
+
+void parse_cli(int argc, char *argv[], char *model_path[], vec3 *offset,
+               int *mat_index) {
+  // 0 -> MODEL
+  // 1 -> POSITION
+  // 2 -> MATERIAL
+  // 3 -> DONE
+  int arg_type = 0;
+  offset = NULL;
+  *mat_index = 0;
+  *model_path = NULL;
+  for (int i = 1; i < argc; ++i) {
+    if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
+      printf(help_str, argv[0], argv[0]);
+      exit(EXIT_SUCCESS);
+    }
+
+    switch (arg_type++) {
+    case 0:
+      *model_path = malloc((strlen(argv[i]) + 1) * sizeof(char));
+      strcpy(*model_path, argv[i]);
+      break;
+    case 1:
+      offset = malloc(sizeof(vec3));
+      sscanf(argv[i], "%f,%f,%f", &offset->l[0], &offset->l[1], &offset->l[2]);
+      break;
+    case 2:
+      if (strcmp(argv[i], "WHITE"))
+        *mat_index = 0;
+      else if (strcmp(argv[i], "MIRROR"))
+        *mat_index = 1;
+      else if (strcmp(argv[i], "RED"))
+        *mat_index = 2;
+      else if (strcmp(argv[i], "GREEN"))
+        *mat_index = 3;
+      else if (strcmp(argv[i], "BLUE"))
+        *mat_index = 4;
+      else if (strcmp(argv[i], "GOLD"))
+        *mat_index = 5;
+      else if (strcmp(argv[i], "BLACK"))
+        *mat_index = 6;
+      else {
+        fprintf(stderr,
+                "Unknown material: %s\nCan only be one of: WHITE, MIRROR, RED, "
+                "GREEN, BLUE, GOLD, BLACK.",
+                argv[i]);
+        exit(EXIT_FAILURE);
+      }
+      break;
+    default:
+      break;
+    }
+  }
+}
+
+void load_model(char model_path[], vec3 offset, int mat_index, ModelsBuffer *mb,
+                int shader_program) {
+  if (strncmp(model_path, "SPHERE", 6) == 7) {
+    // TODO: handle SPHERER
+    fprintf(stderr, "SPHERE model type not yet implemented!\n");
+    exit(EXIT_FAILURE);
+  } else {
+    int model_id = load_obj_model(model_path, shader_program, mb, &offset);
+    set_model_material(mb, model_id, mat_index);
+  }
+}
+
+int main(int argc, char *argv[]) {
+  char *model_path = NULL;
+  vec3 offset;
+  int mat_index;
+  parse_cli(argc, argv, &model_path, &offset, &mat_index);
+
   GLFWwindow *window = setup_opengl(/* disable_vsync = */ false);
 
   GLuint shader_program;
   FilesWatcher shader_watcher;
   RendererBuffers rb;
+  // TODO: replace with just renderer.glsl
   setup_renderer("vertex.glsl", "renderer.glsl", &shader_program,
                  &shader_watcher, &rb);
 
@@ -41,16 +126,29 @@ int main(void) {
   double last_frame_time = glfwGetTime();
 
   ModelsBuffer mb = {0};
-  /* int suzanne_id = load_obj_model("suzanne.obj", shader_program, &mb, NULL); */
 
-  Material gold_mat = {
-      .albedo = {1.0, 0.84, 0.0},
-      .emissionColor = {0, 0, 0},
-      .emissionStrength = 0,
-      .specularComponent = 0.4,
-  };
-  set_material_slot(&mb, 0, &gold_mat);
-  /* set_model_material(&mb, suzanne_id, 0); */
+  set_material_slot(&mb, 0, &white_mat);
+  set_material_slot(&mb, 1, &mirror_mat);
+  set_material_slot(&mb, 2, &red_mat);
+  set_material_slot(&mb, 3, &green_mat);
+  set_material_slot(&mb, 4, &blue_mat);
+  set_material_slot(&mb, 5, &gold_mat);
+  set_material_slot(&mb, 6, &black_mat);
+  printf("mat0 = %f %f %f\n", mb.materials[0].albedo[0], mb.materials[0].albedo[1], mb.materials[0].albedo[2]);
+  printf("mat1 = %f %f %f\n", mb.materials[1].albedo[0], mb.materials[1].albedo[1], mb.materials[1].albedo[2]);
+  printf("mat2 = %f %f %f\n", mb.materials[2].albedo[0], mb.materials[2].albedo[1], mb.materials[2].albedo[2]);
+  printf("mat3 = %f %f %f\n", mb.materials[3].albedo[0], mb.materials[3].albedo[1], mb.materials[3].albedo[2]);
+  printf("mat4 = %f %f %f\n", mb.materials[4].albedo[0], mb.materials[4].albedo[1], mb.materials[4].albedo[2]);
+  printf("mat5 = %f %f %f\n", mb.materials[5].albedo[0], mb.materials[5].albedo[1], mb.materials[5].albedo[2]);
+  printf("mat6 = %f %f %f\n", mb.materials[6].albedo[0], mb.materials[6].albedo[1], mb.materials[6].albedo[2]);
+
+  if (model_path != NULL) {
+    printf("Loading model %s\n", model_path);
+    load_model(model_path, offset, mat_index, &mb, shader_program);
+    free(model_path);
+  } else {
+    printf("Loading default scene...\n");
+  }
 
   while (!glfwWindowShouldClose(window)) {
     bool did_reload = reload_shader(&shader_program, &shader_watcher);
