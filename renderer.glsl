@@ -11,6 +11,7 @@ uniform samplerBuffer trianglesBuffer;
 uniform samplerBuffer meshesInfoBuffer;
 uniform samplerBuffer materialsBuffer;
 uniform int numOfMeshes;
+uniform vec3 cPos;
 
 const int MAX_BOUNCE_COUNT = 4;
 const int SAMPLES_PER_PIXEL = 3;
@@ -32,6 +33,7 @@ struct Camera {
     // horizontal field of view in radians
     float fov;
 };
+
 
 struct Ray {
     vec3 origin;
@@ -443,7 +445,7 @@ void main(){
 
     // camera
     Camera cam;
-    cam.pos = vec3(-2.0, 0.8, -1.0);
+    cam.pos = cPos;
     cam.lookat = vec3(0.0, 0.0, 0.0);
     cam.up = vec3(0.0, 1.0, 0.0);
     cam.fov = C_PI / 2.0; // 90 degrees

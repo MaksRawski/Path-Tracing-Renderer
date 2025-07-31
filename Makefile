@@ -1,18 +1,18 @@
 CC = gcc
 CFLAGS = -g -Wall -Wextra -Wno-unused -Ilib/include 
-LDFLAGS = -lglfw -ldl
+LDFLAGS = -lglfw -ldl -lm
 TARGET = bin/main
-SRC = main.c renderer.c obj_parser.c
+SRC = main.c renderer.c inputs.c obj_parser.c
 OBJ = $(patsubst %.c, bin/%.o, $(SRC))
 GLAD_SRC = ./lib/src/gl.c
 
 all: $(TARGET)
 
 $(TARGET): $(OBJ) $(GLAD_SRC)
+	mkdir -p bin
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $(TARGET)
 
 bin/%.o: %.c
-	mkdir -p bin
 	$(CC) $(CFLAGS) -c $< -o $@
 
 zip: projekt.zip

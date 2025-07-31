@@ -5,10 +5,10 @@
 //
 #include <GLFW/glfw3.h>
 //
+#include "inputs.h"
 #include "obj_parser.h"
 #include "renderer.h"
 //
-#include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -135,13 +135,20 @@ int main(int argc, char *argv[]) {
   set_material_slot(&mb, 4, &blue_mat);
   set_material_slot(&mb, 5, &gold_mat);
   set_material_slot(&mb, 6, &black_mat);
-  printf("mat0 = %f %f %f\n", mb.materials[0].albedo[0], mb.materials[0].albedo[1], mb.materials[0].albedo[2]);
-  printf("mat1 = %f %f %f\n", mb.materials[1].albedo[0], mb.materials[1].albedo[1], mb.materials[1].albedo[2]);
-  printf("mat2 = %f %f %f\n", mb.materials[2].albedo[0], mb.materials[2].albedo[1], mb.materials[2].albedo[2]);
-  printf("mat3 = %f %f %f\n", mb.materials[3].albedo[0], mb.materials[3].albedo[1], mb.materials[3].albedo[2]);
-  printf("mat4 = %f %f %f\n", mb.materials[4].albedo[0], mb.materials[4].albedo[1], mb.materials[4].albedo[2]);
-  printf("mat5 = %f %f %f\n", mb.materials[5].albedo[0], mb.materials[5].albedo[1], mb.materials[5].albedo[2]);
-  printf("mat6 = %f %f %f\n", mb.materials[6].albedo[0], mb.materials[6].albedo[1], mb.materials[6].albedo[2]);
+  printf("mat0 = %f %f %f\n", mb.materials[0].albedo[0],
+         mb.materials[0].albedo[1], mb.materials[0].albedo[2]);
+  printf("mat1 = %f %f %f\n", mb.materials[1].albedo[0],
+         mb.materials[1].albedo[1], mb.materials[1].albedo[2]);
+  printf("mat2 = %f %f %f\n", mb.materials[2].albedo[0],
+         mb.materials[2].albedo[1], mb.materials[2].albedo[2]);
+  printf("mat3 = %f %f %f\n", mb.materials[3].albedo[0],
+         mb.materials[3].albedo[1], mb.materials[3].albedo[2]);
+  printf("mat4 = %f %f %f\n", mb.materials[4].albedo[0],
+         mb.materials[4].albedo[1], mb.materials[4].albedo[2]);
+  printf("mat5 = %f %f %f\n", mb.materials[5].albedo[0],
+         mb.materials[5].albedo[1], mb.materials[5].albedo[2]);
+  printf("mat6 = %f %f %f\n", mb.materials[6].albedo[0],
+         mb.materials[6].albedo[1], mb.materials[6].albedo[2]);
 
   if (model_path != NULL) {
     printf("Loading model %s\n", model_path);
@@ -153,6 +160,9 @@ int main(int argc, char *argv[]) {
 
   while (!glfwWindowShouldClose(window)) {
     bool did_reload = reload_shader(&shader_program, &shader_watcher);
+    if (update_uniforms(window, &uniforms)) {
+      did_reload = true;
+    }
     if (did_reload) {
       frame_counter = 0;
       uniforms.iFrame = 0;

@@ -2,6 +2,7 @@
 //
 #include <GLFW/glfw3.h>
 //
+#include "inputs.h"
 #include "renderer.h"
 #include <errno.h>
 #include <stdbool.h>
@@ -12,6 +13,7 @@
 // for hot reloading
 #include <fcntl.h>
 #include <sys/inotify.h>
+
 
 #define WINDOW_TITLE "LAK - Projekt zaliczeniowy"
 
@@ -28,6 +30,32 @@ void debug() {
 // Function to handle glfw errors
 void glfw_error_callback(int error, const char *description) {
   fprintf(stderr, "Error (%d): %s\n", error, description);
+}
+void key_callback(GLFWwindow *window, int key, int scancode, int action,
+                  int mods) {
+  GLFWUserData *userPtr = glfwGetWindowUserPointer(window);
+
+  if (action == GLFW_PRESS) {
+    if (key == GLFW_KEY_W) {
+      userPtr->movingForward = 1;
+    } else if (key == GLFW_KEY_S) {
+      userPtr->movingForward = -1;
+    } if (key == GLFW_KEY_A) {
+      userPtr->movingLeft = 1;
+    } else if (key == GLFW_KEY_D) {
+      userPtr->movingLeft = -1;
+    }
+  } else if (action == GLFW_RELEASE) {
+    if (key == GLFW_KEY_W) {
+      userPtr->movingForward = 0;
+    } else if (key == GLFW_KEY_S) {
+      userPtr->movingForward = 0;
+    } if (key == GLFW_KEY_A) {
+      userPtr->movingLeft = 0;
+    } else if (key == GLFW_KEY_D) {
+      userPtr->movingLeft = 0;
+    }
+  }
 }
 
 GLFWwindow *setup_opengl(bool disable_vsync) {
@@ -53,6 +81,9 @@ GLFWwindow *setup_opengl(bool disable_vsync) {
     fprintf(stderr, "Failed to initialize OpenGL context\n");
     exit(EXIT_FAILURE);
   }
+  void *userDataPtr = calloc(1, sizeof(GLFWUserData));
+  glfwSetWindowUserPointer(window, userDataPtr);
+  glfwSetKeyCallback(window, key_callback);
 
   // disable vsync to see the full speed
   if (disable_vsync)
@@ -134,6 +165,12 @@ void update_frame(GLuint shader_program, GLFWwindow *window, Uniforms *uniforms,
   glUniform2f(glGetUniformLocation(shader_program, "iResolution"),
               uniforms->iResolution[0], uniforms->iResolution[1]);
 
+  glUniform3f(glGetUniformLocation(shader_program, "cPos"), uniforms->camPos[0],
+              uniforms->camPos[1], uniforms->camPos[2]);
+  /* glUniform3f(glGetUniformLocation(shader_program, "cLookat"),
+   * uniforms->camPos[0], */
+  /*             uniforms->camPos[1], uniforms->camPos[2]); */
+
   // make sure the models' "textures" are loaded
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_BUFFER, mb->tbo_tex_triangles);
@@ -153,6 +190,7 @@ void update_frame(GLuint shader_program, GLFWwindow *window, Uniforms *uniforms,
   glBindVertexArray(rb->vao);
   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
   glfwSwapBuffers(window);
+  glfwPollEvents();
 }
 
 char *read_file(const char *filename) {
