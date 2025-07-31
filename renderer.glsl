@@ -11,7 +11,7 @@ uniform samplerBuffer trianglesBuffer;
 uniform samplerBuffer meshesInfoBuffer;
 uniform samplerBuffer materialsBuffer;
 uniform int numOfMeshes;
-uniform vec3 cPos;
+uniform vec3 cPos, cLookat;
 
 const int MAX_BOUNCE_COUNT = 4;
 const int SAMPLES_PER_PIXEL = 3;
@@ -446,7 +446,7 @@ void main(){
     // camera
     Camera cam;
     cam.pos = cPos;
-    cam.lookat = vec3(0.0, 0.0, 0.0);
+    cam.lookat = cLookat;
     cam.up = vec3(0.0, 1.0, 0.0);
     cam.fov = C_PI / 2.0; // 90 degrees
 
