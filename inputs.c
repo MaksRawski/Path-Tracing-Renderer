@@ -34,6 +34,14 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action,
     } else if (key == GLFW_KEY_D) {
       userPtr->movingLeft = 0;
     }
+    if (key == GLFW_KEY_R) {
+      userPtr->resetPosition = true;
+    }
+    // NOTE: I have caps lock and escape swapped but GLFW takes
+    // hardware keys so leaving this hack in so I don't go crazy
+    if (key == GLFW_KEY_ESCAPE || key == GLFW_KEY_CAPS_LOCK) {
+      userPtr->releaseCursor = true;
+    }
   }
 }
 
@@ -90,6 +98,7 @@ void moveLeft(Uniforms *uniforms, float dir) {
 
 void cursor_callback(GLFWwindow *window, double xPos, double yPos) {
   GLFWUserData *userPtr = glfwGetWindowUserPointer(window);
+  if (userPtr->paused) return;
   float x = xPos - userPtr->lastMouseX;
   float y = yPos - userPtr->lastMouseY;
 
@@ -103,10 +112,17 @@ void cursor_callback(GLFWwindow *window, double xPos, double yPos) {
   if (pitch > -90 && pitch < 90)
     userPtr->pitchDeg = pitch;
 
-  printf("CURSOR %f %f\n", xPos, yPos);
-
   userPtr->lastMouseX = xPos;
   userPtr->lastMouseY = yPos;
+}
+
+void cursor_enter_callback(GLFWwindow *window, int entered) {
+  GLFWUserData *ptr = (GLFWUserData *)glfwGetWindowUserPointer(window);
+  if (entered) {
+    // hide cursor
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    ptr->paused = false;
+  }
 }
 
 bool update_uniforms(GLFWwindow *window, Uniforms *uniforms) {
@@ -120,13 +136,29 @@ bool update_uniforms(GLFWwindow *window, Uniforms *uniforms) {
     moveLeft(uniforms, (float)ptr->movingLeft);
     return true;
   }
+  if (ptr->resetPosition) {
+    uniforms->camPos[0] = 0.0;
+    uniforms->camPos[1] = 1;
+    uniforms->camPos[2] = 0;
+    ptr->yawDeg = 0.0;
+    ptr->pitchDeg = 0.0;
+    /* uniforms->camLookat[0] = 0; */
+    /* uniforms->camLookat[1] = 1; */
+    /* uniforms->camLookat[2] = 0; */
+    ptr->resetPosition = false;
+  }
+  if (ptr->releaseCursor) {
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    ptr->releaseCursor = false;
+    ptr->paused = true;
+  }
 
   float lookatX =
       uniforms->camPos[0] + FOCAL_LENGTH * cos(ptr->yawDeg / 180.0 * PI);
   float lookatZ =
       uniforms->camPos[2] + FOCAL_LENGTH * sin(ptr->yawDeg / 180.0 * PI);
   float lookatY =
-      uniforms->camPos[1] + FOCAL_LENGTH * sin(ptr->pitchDeg / 180.0 * PI);
+      uniforms->camPos[1] + FOCAL_LENGTH * tan(ptr->pitchDeg / 180.0 * PI);
 
   bool changed =
       (lookatX != uniforms->camLookat[0] || lookatY != uniforms->camLookat[1] ||

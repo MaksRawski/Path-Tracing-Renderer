@@ -62,6 +62,7 @@ GLFWwindow *setup_opengl(bool disable_vsync) {
     glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
   glfwSetCursorPosCallback(window, cursor_callback);
+  glfwSetCursorEnterCallback(window, cursor_enter_callback);
 
   // disable vsync to see the full speed
   if (disable_vsync)

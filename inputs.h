@@ -12,6 +12,7 @@ typedef struct GLFWUserData {
   // yaw = 360 should point at the same point as yaw = 0
   // pitch = 0 means lookAt.y = cam.pos.y
   float yawDeg, pitchDeg;
+  bool resetPosition, releaseCursor, paused;
 } GLFWUserData;
 
 typedef struct float3 {
@@ -19,6 +20,7 @@ typedef struct float3 {
 } float3;
 
 void cursor_callback(GLFWwindow *window, double xPos, double yPos);
+void cursor_enter_callback(GLFWwindow *window, int entered);
 void key_callback(GLFWwindow *window, int key, int scancode, int action,
                   int mods);
 bool update_uniforms(GLFWwindow *window, Uniforms *uniforms);

@@ -117,8 +117,8 @@ int main(int argc, char *argv[]) {
   setup_back_buffer(shader_program, &bb, width, height);
 
   Uniforms uniforms = {.camFov = PI / 2.0,
-                       .camLookat = {0.0, 1.0, 0.0},
-                       .camPos = {-5.0, 1.0, 0.0},
+                       .camLookat = {1.0, 1.0, 0.0},
+                       .camPos = {0.0, 1.0, 0.0},
                        .camUp = {0.0, 1.0, 0.0},
                        .iResolution = {width, height},
                        .iFrame = 0};
