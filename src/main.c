@@ -28,6 +28,7 @@ const char help_str[] =
     "Example: %s SPHERE1.75 2,0,2 MIRROR, SPHERE1.75 -2,0,2 MIRROR\n"
     "Note: camera will always be at 0,0,0 and will look at a point 0,0,2\n";
 
+// offset should be zero initialized
 void parse_cli(int argc, char *argv[], char *model_path[], vec3 *offset,
                int *mat_index) {
   // 0 -> MODEL
@@ -35,7 +36,6 @@ void parse_cli(int argc, char *argv[], char *model_path[], vec3 *offset,
   // 2 -> MATERIAL
   // 3 -> DONE
   int arg_type = 0;
-  offset = NULL;
   *mat_index = 0;
   *model_path = NULL;
   for (int i = 1; i < argc; ++i) {
@@ -45,28 +45,30 @@ void parse_cli(int argc, char *argv[], char *model_path[], vec3 *offset,
     }
 
     switch (arg_type++) {
-    case 0:
+    case 0: {
       *model_path = malloc((strlen(argv[i]) + 1) * sizeof(char));
       strcpy(*model_path, argv[i]);
       break;
-    case 1:
-      offset = malloc(sizeof(vec3));
+    }
+    case 1: {
       sscanf(argv[i], "%f,%f,%f", &offset->l[0], &offset->l[1], &offset->l[2]);
       break;
-    case 2:
-      if (strcmp(argv[i], "WHITE"))
+    }
+
+    case 2: {
+      if (strcmp(argv[i], "WHITE") == 0)
         *mat_index = 0;
-      else if (strcmp(argv[i], "MIRROR"))
+      else if (strcmp(argv[i], "MIRROR") == 0)
         *mat_index = 1;
-      else if (strcmp(argv[i], "RED"))
+      else if (strcmp(argv[i], "RED") == 0)
         *mat_index = 2;
-      else if (strcmp(argv[i], "GREEN"))
+      else if (strcmp(argv[i], "GREEN") == 0)
         *mat_index = 3;
-      else if (strcmp(argv[i], "BLUE"))
+      else if (strcmp(argv[i], "BLUE") == 0)
         *mat_index = 4;
-      else if (strcmp(argv[i], "GOLD"))
+      else if (strcmp(argv[i], "GOLD") == 0)
         *mat_index = 5;
-      else if (strcmp(argv[i], "BLACK"))
+      else if (strcmp(argv[i], "BLACK") == 0)
         *mat_index = 6;
       else {
         fprintf(stderr,
@@ -77,28 +79,30 @@ void parse_cli(int argc, char *argv[], char *model_path[], vec3 *offset,
       }
       printf("Using %s material.\n", argv[i]);
       break;
+    }
+
     default:
       break;
     }
   }
 }
 
-// expects mb to be initialized with `mb_init`
-void load_model(char model_path[], vec3 offset, int mat_index, ModelsBuffer *mb) {
+void load_model(char model_path[], vec3 offset, int mat_index,
+                ModelsBuffer *mb) {
   if (strncmp(model_path, "SPHERE", 6) == 7) {
     // TODO: handle SPHERER
     fprintf(stderr, "SPHERE model type not yet implemented!\n");
     exit(EXIT_FAILURE);
   } else {
-    int model_id = load_obj_model(model_path, mb, &offset);
+    int model_id = load_obj_model(model_path, mb, offset);
     set_model_material(mb, model_id, mat_index);
   }
 }
 
 int main(int argc, char *argv[]) {
   char *model_path = NULL;
-  vec3 offset;
-  int mat_index;
+  vec3 offset = {0};
+  int mat_index = 0;
   parse_cli(argc, argv, &model_path, &offset, &mat_index);
 
   GLFWwindow *window = setup_opengl(/* disable_vsync = */ false);

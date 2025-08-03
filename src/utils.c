@@ -95,7 +95,7 @@ void mb_realloc_materials(ModelsBuffer *mb) {
 int mb_add_triangles(ModelsBuffer *mb, Triangle *triangles,
                      int num_of_triangles) {
   mb_realloc_triangles(mb, num_of_triangles);
-  memcpy(mb->triangles + mb->num_of_triangles, triangles, num_of_triangles);
+  memcpy(mb->triangles + mb->num_of_triangles, triangles, num_of_triangles * sizeof(Triangle));
 
   int index = mb->num_of_triangles;
   mb->num_of_triangles += num_of_triangles;

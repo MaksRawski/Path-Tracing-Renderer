@@ -144,11 +144,11 @@ void add_triangle(Triangle *triangles, vec3 vertices[], vec3 vns[],
 }
 
 // loads obj from filename into triangles array and return info about the obj
-ObjInfo parse_obj(const char *filename, Triangle *triangles[]) {
+ObjInfo load_obj(const char *filename, Triangle *triangles[]) {
   ObjInfo info = get_obj_info_basic(filename);
   FILE *fp = fopen(filename, "r");
   if (fp == NULL) {
-    printf("Failed to open file %s\n", filename);
+    fprintf(stderr, "Failed to open file %s\n", filename);
     exit(EXIT_FAILURE);
   }
 
@@ -156,8 +156,8 @@ ObjInfo parse_obj(const char *filename, Triangle *triangles[]) {
   vec3 *vs = malloc(info.v * sizeof(vec3));
   vec3 *vns = malloc(info.vn * sizeof(vec3));
 
-  int ti = 0; // triangles counter
-  int vi = 0; // vertices counter
+  int ti = 0;  // triangles counter
+  int vi = 0;  // vertices counter
   int vni = 0; // vns counter
 
   for (char line[255]; fgets(line, sizeof(line), fp);) {
@@ -179,7 +179,6 @@ ObjInfo parse_obj(const char *filename, Triangle *triangles[]) {
       /*        vns[num_of_vns - 1].l[1], vns[num_of_vns - 1].l[2]); */
     } else if (line[0] == 'f') {
       add_triangle(*triangles + ti++, vs, vns, line + 2);
-      printf("num of triangles = %d\n", info.f);
     }
   }
   calculate_bounds(vs, vi, &info);
@@ -217,23 +216,24 @@ void offset_triangles(Triangle *triangles, int num_of_triangles, vec3 offset) {
     triangles[i].nc[2] += offset.l[2];
   }
 }
+bool is_vec3_zero(vec3 v) { return v.l[0] == 0 && v.l[1] == 0 && v.l[2] == 0; }
 
 // returns index to meshes info
 // expects mb to be initialized with `models_buffer_init`
 int load_obj_model(const char *filename, ModelsBuffer *mb,
-                   vec3 *offset_from_origin) {
+                   vec3 offset_from_origin) {
   Triangle *triangles = NULL;
-  ObjInfo info = parse_obj(filename, &triangles);
+  ObjInfo info = load_obj(filename, &triangles);
 
-  if (offset_from_origin != NULL) {
-    offset_triangles(triangles, info.f, *offset_from_origin);
-    info.bounds_min.l[0] += offset_from_origin->l[0];
-    info.bounds_min.l[1] += offset_from_origin->l[1];
-    info.bounds_min.l[2] += offset_from_origin->l[2];
+  if (!is_vec3_zero(offset_from_origin)) {
+    offset_triangles(triangles, info.f, offset_from_origin);
+    info.bounds_min.l[0] += offset_from_origin.l[0];
+    info.bounds_min.l[1] += offset_from_origin.l[1];
+    info.bounds_min.l[2] += offset_from_origin.l[2];
 
-    info.bounds_max.l[0] += offset_from_origin->l[0];
-    info.bounds_max.l[1] += offset_from_origin->l[1];
-    info.bounds_max.l[2] += offset_from_origin->l[2];
+    info.bounds_max.l[0] += offset_from_origin.l[0];
+    info.bounds_max.l[1] += offset_from_origin.l[1];
+    info.bounds_max.l[2] += offset_from_origin.l[2];
   }
 
   /* #ifdef DEBUG_OBJ_LOADING */

@@ -55,7 +55,8 @@ static const Material black_mat = {
     .specularComponent = 0.0,
 };
 
-int load_obj_model(const char *filename, ModelsBuffer *mb, vec3 *origin);
+bool is_vec3_zero(vec3 v);
+int load_obj_model(const char *filename, ModelsBuffer *mb, vec3 origin);
 void set_obj_pos(ModelsBuffer *mb, int model_id, vec3 pos);
 void set_model_material(ModelsBuffer *mb, int model_id, int mat_index);
 
