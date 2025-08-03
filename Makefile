@@ -1,31 +1,21 @@
 CC = gcc
-CFLAGS = -g -Wall -Wextra -Wno-unused -Ilib/include 
+CFLAGS = -g -Wall -Wextra -Wno-unused -Werror -Ilib/include
 LDFLAGS = -lglfw -ldl -lm
 TARGET = bin/main
-SRC = main.c renderer.c inputs.c obj_parser.c
-OBJ = $(patsubst %.c, bin/%.o, $(SRC))
+SRC := $(wildcard src/*.c)
+OBJ := $(SRC:src/%.c=bin/%.o)
 GLAD_SRC = ./lib/src/gl.c
 
 all: $(TARGET)
 
 $(TARGET): $(OBJ) $(GLAD_SRC)
-	mkdir -p bin
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $(TARGET)
 
-bin/%.o: %.c
+bin/%.o: src/%.c
+	@mkdir -p bin
 	$(CC) $(CFLAGS) -c $< -o $@
 
-zip: projekt.zip
-
-projekt.zip: $(TARGET) $(SRC)
-	mkdir -p projekt
-	rm -rf projekt/*
-	rsync -qa . --exclude projekt projekt/
-	cd projekt && git clean -fx && rm -rf .git .gitignore
-	zip -r projekt.zip projekt
-	rm -rf projekt
-
 clean:
-	rm -rf bin/* projekt.zip
+	rm -rf bin/*
 
-.PHONY: all clean zip
+.PHONY: all clean

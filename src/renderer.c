@@ -3,16 +3,15 @@
 #include <GLFW/glfw3.h>
 //
 #include "inputs.h"
+#include "utils.h"
 #include "renderer.h"
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-// for hot reloading
-#include <fcntl.h>
 #include <sys/inotify.h>
+#include <unistd.h>
 
 #define WINDOW_TITLE "LAK - Projekt zaliczeniowy"
 
@@ -146,8 +145,9 @@ void update_frame(GLuint shader_program, GLFWwindow *window, Uniforms *uniforms,
 
   glUniform3f(glGetUniformLocation(shader_program, "cPos"), uniforms->camPos[0],
               uniforms->camPos[1], uniforms->camPos[2]);
-  glUniform3f(glGetUniformLocation(shader_program, "cLookat"), uniforms->camLookat[0],
-              uniforms->camLookat[1], uniforms->camLookat[2]);
+  glUniform3f(glGetUniformLocation(shader_program, "cLookat"),
+              uniforms->camLookat[0], uniforms->camLookat[1],
+              uniforms->camLookat[2]);
 
   // make sure the models' "textures" are loaded
   glActiveTexture(GL_TEXTURE1);
@@ -169,49 +169,6 @@ void update_frame(GLuint shader_program, GLFWwindow *window, Uniforms *uniforms,
   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
   glfwSwapBuffers(window);
   glfwPollEvents();
-}
-
-char *read_file(const char *filename) {
-  FILE *file = fopen(filename, "r");
-  if (!file) {
-    fprintf(stderr, "Error: Could not open file %s\n", filename);
-    exit(EXIT_FAILURE);
-  }
-
-  fseek(file, 0, SEEK_END);
-  long length = ftell(file);
-  fseek(file, 0, SEEK_SET);
-
-  char *buffer = (char *)malloc(length + 1);
-  if (!buffer) {
-    fprintf(stderr, "Error: Could not allocate memory for file %s\n", filename);
-    exit(EXIT_FAILURE);
-  }
-
-  fread(buffer, 1, length, file);
-  buffer[length] = '\0';
-
-  fclose(file);
-  return buffer;
-}
-
-int watch_file(const char *path) {
-  int fd = inotify_init();
-  if (fd < 0) {
-    perror("inotify_init");
-    exit(EXIT_FAILURE);
-  }
-
-  int wd = inotify_add_watch(fd, path, IN_MODIFY);
-  if (wd == -1) {
-    fprintf(stderr, "Cannot watch '%s'\n", path);
-    exit(EXIT_FAILURE);
-  }
-
-  int flags = fcntl(fd, F_GETFL, 0);
-  fcntl(fd, F_SETFL, flags | O_NONBLOCK);
-
-  return fd;
 }
 
 GLuint compile_shader(const char *shader_source, GLenum shader_type) {
@@ -368,28 +325,4 @@ void display_fps(GLFWwindow *window, unsigned int *frame_counter,
     *frame_counter = 0;
     *last_frame_time = current_time;
   }
-}
-
-void free_gl_buffers(RendererBuffers *rb, BackBuffer *bb, ModelsBuffer *mb) {
-  glDeleteVertexArrays(1, &rb->vao);
-  glDeleteBuffers(1, &rb->vbo);
-  glDeleteFramebuffers(1, &bb->fbo);
-  glDeleteTextures(1, &bb->fboTex);
-  glDeleteBuffers(1, &mb->tbo_triangles);
-  glDeleteTextures(1, &mb->tbo_tex_triangles);
-  glDeleteBuffers(1, &mb->tbo_meshes);
-  glDeleteTextures(1, &mb->tbo_tex_meshes);
-  glDeleteBuffers(1, &mb->tbo_materials);
-  glDeleteTextures(1, &mb->tbo_tex_materials);
-  free(mb->triangles);
-  free(mb->meshesInfo);
-  free(mb->materials);
-}
-
-void delete_file_watcher(FilesWatcher *fw) {
-  for (int i = 0; i < fw->num_of_files; ++i) {
-    close(fw->watcher_fds[i]);
-  }
-  free(fw->file_names);
-  free(fw->watcher_fds);
 }

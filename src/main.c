@@ -1,4 +1,5 @@
 
+#include "utils.h"
 #define DEBUG
 
 #include <glad/gl.h>
@@ -82,14 +83,14 @@ void parse_cli(int argc, char *argv[], char *model_path[], vec3 *offset,
   }
 }
 
-void load_model(char model_path[], vec3 offset, int mat_index, ModelsBuffer *mb,
-                int shader_program) {
+// expects mb to be initialized with `mb_init`
+void load_model(char model_path[], vec3 offset, int mat_index, ModelsBuffer *mb) {
   if (strncmp(model_path, "SPHERE", 6) == 7) {
     // TODO: handle SPHERER
     fprintf(stderr, "SPHERE model type not yet implemented!\n");
     exit(EXIT_FAILURE);
   } else {
-    int model_id = load_obj_model(model_path, shader_program, mb, &offset);
+    int model_id = load_obj_model(model_path, mb, &offset);
     set_model_material(mb, model_id, mat_index);
   }
 }
@@ -106,7 +107,7 @@ int main(int argc, char *argv[]) {
   FilesWatcher shader_watcher;
   RendererBuffers rb;
   // TODO: replace with just renderer.glsl
-  setup_renderer("vertex.glsl", "renderer.glsl", &shader_program,
+  setup_renderer("src/vertex.glsl", "src/renderer.glsl", &shader_program,
                  &shader_watcher, &rb);
 
   int width, height;
@@ -126,7 +127,7 @@ int main(int argc, char *argv[]) {
   unsigned int frame_counter = 0;
   double last_frame_time = glfwGetTime();
 
-  ModelsBuffer mb = {0};
+  ModelsBuffer mb = mb_init();
 
   set_material_slot(&mb, 0, &white_mat);
   set_material_slot(&mb, 1, &mirror_mat);
@@ -135,28 +136,29 @@ int main(int argc, char *argv[]) {
   set_material_slot(&mb, 4, &blue_mat);
   set_material_slot(&mb, 5, &gold_mat);
   set_material_slot(&mb, 6, &black_mat);
-  printf("mat0 = %f %f %f\n", mb.materials[0].albedo[0],
-         mb.materials[0].albedo[1], mb.materials[0].albedo[2]);
-  printf("mat1 = %f %f %f\n", mb.materials[1].albedo[0],
-         mb.materials[1].albedo[1], mb.materials[1].albedo[2]);
-  printf("mat2 = %f %f %f\n", mb.materials[2].albedo[0],
-         mb.materials[2].albedo[1], mb.materials[2].albedo[2]);
-  printf("mat3 = %f %f %f\n", mb.materials[3].albedo[0],
-         mb.materials[3].albedo[1], mb.materials[3].albedo[2]);
-  printf("mat4 = %f %f %f\n", mb.materials[4].albedo[0],
-         mb.materials[4].albedo[1], mb.materials[4].albedo[2]);
-  printf("mat5 = %f %f %f\n", mb.materials[5].albedo[0],
-         mb.materials[5].albedo[1], mb.materials[5].albedo[2]);
-  printf("mat6 = %f %f %f\n", mb.materials[6].albedo[0],
-         mb.materials[6].albedo[1], mb.materials[6].albedo[2]);
+  /* printf("mat0 = %f %f %f\n", mb.materials[0].albedo[0], */
+  /*        mb.materials[0].albedo[1], mb.materials[0].albedo[2]); */
+  /* printf("mat1 = %f %f %f\n", mb.materials[1].albedo[0], */
+  /*        mb.materials[1].albedo[1], mb.materials[1].albedo[2]); */
+  /* printf("mat2 = %f %f %f\n", mb.materials[2].albedo[0], */
+  /*        mb.materials[2].albedo[1], mb.materials[2].albedo[2]); */
+  /* printf("mat3 = %f %f %f\n", mb.materials[3].albedo[0], */
+  /*        mb.materials[3].albedo[1], mb.materials[3].albedo[2]); */
+  /* printf("mat4 = %f %f %f\n", mb.materials[4].albedo[0], */
+  /*        mb.materials[4].albedo[1], mb.materials[4].albedo[2]); */
+  /* printf("mat5 = %f %f %f\n", mb.materials[5].albedo[0], */
+  /*        mb.materials[5].albedo[1], mb.materials[5].albedo[2]); */
+  /* printf("mat6 = %f %f %f\n", mb.materials[6].albedo[0], */
+  /*        mb.materials[6].albedo[1], mb.materials[6].albedo[2]); */
 
   if (model_path != NULL) {
     printf("Loading model %s\n", model_path);
-    load_model(model_path, offset, mat_index, &mb, shader_program);
+    load_model(model_path, offset, mat_index, &mb);
     free(model_path);
   } else {
     printf("Loading default scene...\n");
   }
+  setup_gl_buffers(&mb, shader_program);
 
   while (!glfwWindowShouldClose(window)) {
     bool did_reload = reload_shader(&shader_program, &shader_watcher);

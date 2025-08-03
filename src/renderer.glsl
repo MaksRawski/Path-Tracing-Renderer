@@ -34,7 +34,6 @@ struct Camera {
     float fov;
 };
 
-
 struct Ray {
     vec3 origin;
     vec3 dir;
@@ -153,48 +152,6 @@ vec2 RandomPointInCircle(inout uint state)
     float angle = RandomFloat(state) * C_TWOPI;
     vec2 pointOnCircle = vec2(cos(angle), sin(angle));
     return pointOnCircle * sqrt(RandomFloat(state));
-}
-
-const int NUM_OF_SPHERES = 6;
-const Sphere SPHERES[NUM_OF_SPHERES] = Sphere[NUM_OF_SPHERES](
-        Sphere(vec3(0.0, -1002.0, 0.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0), 0.1)), // floor
-        Sphere(vec3(0.0, 0.0, -1002.2), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 0.0, 0.0), 0.1)), // back wall
-        Sphere(vec3(0.0, 0.0, 1002.8), 1000.0,  Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 0.0, 1.0), 0.1)), // front wall (behind camera)
-        Sphere(vec3(-1003.5, 0.0, 0.0), 1000.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 1.0, 0.0), 0.1)), // left wall
-        Sphere(vec3(1002.5, 0.0, 0.0), 1000.0,  Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 0.0, 1.0), 0.1)), // right wall
-        Sphere(vec3(-1.0, 101.971, 1.0), 100.0, Material(vec3(1.0, 1.0, 0.96), 1.0,vec3(1.0, 0.0, 0.0), 0.0)) // ceiling emitter
-    );
-
-// we hit the sphere if ||ray.origin + ray.dir * distance||² = r²
-// o := ray.origin, d := ray.dir, s := distance
-// ||o + d * s||² = r²
-// sqrt((o_1 + s * d_1)² + (o_2 + s * d_2)² + (o_3 + s * d_3)²)² = r²
-// (o_1 + s * d_1)² + (o_2 + s * d_2)² + (o_3 + s * d_3)² = r²
-// (o_1² + 2*s*o_1*d_1 + s²d_1²) + (o_2² + 2*s*o_2*d_2 + s²d_2²) + (o_3² + 2*s*o_3*d_3 + s²d_3²) = r²
-// s²(d_1² + d_2² + d_3²) + 2s(o_1*d_1 + o_2*d_2 + o_3*d_3) + (o_1²+o_2²+0_3²) = r²
-// s² * dot(d, d) + 2s * dot(d, o), + dot(o,o) = r²
-// quadratic equation for s
-HitInfo RaySphereIntersection(Ray ray, Sphere s) {
-    HitInfo hitInfo;
-    hitInfo.didHit = false;
-    vec3 offsetRay = ray.origin - s.pos;
-    float a = dot(ray.dir, ray.dir);
-    float b = 2.0 * dot(ray.dir, offsetRay);
-    float c = dot(offsetRay, offsetRay) - s.r * s.r;
-
-    float d = b * b - 4.0 * a * c;
-    if (d >= 0.0) {
-        hitInfo.dst = (-b - sqrt(d)) / (2.0 * a);
-
-        if (hitInfo.dst > EPSILON) {
-            hitInfo.didHit = true;
-            hitInfo.hitPoint = ray.origin + hitInfo.dst * ray.dir;
-            hitInfo.normal = normalize(hitInfo.hitPoint - s.pos);
-            hitInfo.mat = s.mat;
-        }
-    }
-
-    return hitInfo;
 }
 
 // using Möller-Trumbore intersection algorithm
@@ -380,15 +337,6 @@ HitInfo CalculateRayCollision(Ray ray) {
         }
     }
 
-    // iterate through all the spheres
-    for (int i = 0; i < NUM_OF_SPHERES; ++i) {
-        HitInfo hit = RaySphereIntersection(ray, SPHERES[i]);
-        if (hit.didHit && hit.dst < closestHit.dst) {
-            closestHit = hit;
-            closestHit.mat = SPHERES[i].mat;
-        }
-    }
-
     return closestHit;
 }
 
@@ -405,6 +353,8 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
     // as we (ig?) assume that the potential light source emits just that
     vec3 c = vec3(1.0, 1.0, 1.0);
     vec3 incomingLight = vec3(0.0, 0.0, 0.0);
+    HitInfo hitInfo = CalculateRayCollision(ray);
+    return hitInfo.didHit ? vec3(1.0, 0, 0) : vec3(0, 0, 0);
 
     for (int i = 0; i <= MAX_BOUNCE_COUNT; ++i) {
         HitInfo hitInfo = CalculateRayCollision(ray);
@@ -427,6 +377,8 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
             incomingLight += emittedLight * c;
             c *= hitInfo.mat.albedo;
         } else {
+            // get color from environment
+            incomingLight += vec3(116, 139, 151) / 255 * c;
             break;
         }
     }
@@ -434,7 +386,7 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
 }
 
 // void mainImage(out vec4 gl_FragColor, in vec2 gl_FragCcoord) {
-void main(){
+void main() {
     uint pixelIndex = uint(gl_FragCoord.x) + uint(gl_FragCoord.y) * uint(iResolution.x);
     uint rngState = uint(pixelIndex + uint(iFrame * 719393));
 
@@ -461,7 +413,6 @@ void main(){
     vec3 rayTarget = cameraDirection * cameraDistanceFromViewport +
             viewportWidth * viewportRight * uv.x +
             viewportHeight * viewportUp * uv.y;
-
 
     vec3 totalIncomingLight = vec3(0.0, 0.0, 0.0);
     for (int i = 0; i < SAMPLES_PER_PIXEL; ++i) {

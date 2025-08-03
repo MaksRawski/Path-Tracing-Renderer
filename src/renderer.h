@@ -62,7 +62,8 @@ typedef struct {
   Triangle *triangles;
   MeshInfo *meshesInfo;
   Material *materials;
-  unsigned int num_of_meshes, num_of_materials, materials_capacity;
+  unsigned int num_of_triangles, num_of_meshes, num_of_materials;
+  unsigned int triangles_capacity, meshes_capacity, materials_capacity;
 } ModelsBuffer;
 
 typedef struct {
@@ -79,14 +80,12 @@ GLFWwindow *setup_opengl(bool disable_vsync);
 void setup_renderer(char *vertex_shader_filename,
                     char *fragment_shader_filename, GLuint *shader_program,
                     FilesWatcher *shader_watcher, RendererBuffers *rb);
-char *read_file(const char *shader_file);
 GLuint compile_shader(const char *shader_source, GLenum shader_type);
 GLuint create_shader_program(const char *vertex_shader_filename,
                              const char *fragment_shader_filename);
 GLuint create_shader_program_from_source(const char *vertex_shader_src,
                                          const char *fragment_shader_src);
 bool reload_shader(GLuint *shader_program, FilesWatcher *shader_files_watcher);
-int watch_file(const char *path);
 void setup_back_buffer(GLuint shader_program, BackBuffer *bb,
                        unsigned int width, unsigned int height);
 void display_fps(GLFWwindow *window, unsigned int *frame_counter,
@@ -94,8 +93,5 @@ void display_fps(GLFWwindow *window, unsigned int *frame_counter,
 void update_frame(GLuint shader_program, GLFWwindow *window, Uniforms *uniforms,
                   RendererBuffers *rb, BackBuffer *back_buffer,
                   ModelsBuffer *mb);
-
-void free_gl_buffers(RendererBuffers *rb, BackBuffer *bb, ModelsBuffer *mb);
-void delete_file_watcher(FilesWatcher *fw);
 
 #endif // RENDERER_H_

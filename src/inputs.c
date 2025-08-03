@@ -2,14 +2,17 @@
 #include "renderer.h"
 #include <GLFW/glfw3.h>
 #include <math.h>
-#include <stdio.h>
 
 const float STEP_SIZE_PER_FRAME = 0.05;
 const float CURSOR_SENSITIVITY = 0.1;
 const float FOCAL_LENGTH = 10.0;
 
+#define UNUSED(x) (void)(x)
+
 void key_callback(GLFWwindow *window, int key, int scancode, int action,
                   int mods) {
+  UNUSED(scancode);
+  UNUSED(mods);
   GLFWUserData *userPtr = glfwGetWindowUserPointer(window);
 
   if (action == GLFW_PRESS) {
@@ -98,7 +101,8 @@ void moveLeft(Uniforms *uniforms, float dir) {
 
 void cursor_callback(GLFWwindow *window, double xPos, double yPos) {
   GLFWUserData *userPtr = glfwGetWindowUserPointer(window);
-  if (userPtr->paused) return;
+  if (userPtr->paused)
+    return;
   float x = xPos - userPtr->lastMouseX;
   float y = yPos - userPtr->lastMouseY;
 
