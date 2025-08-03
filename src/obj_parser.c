@@ -35,22 +35,21 @@ ObjInfo get_obj_info_basic(const char *filename) {
   return s;
 }
 
-vec3 extract_ve3_from_line(char *line) {
+vec3 extract_vec3_from_line(char *line) {
   vec3 res;
   sscanf(line, "%f %f %f", &res.l[0], &res.l[1], &res.l[2]);
   return res;
 }
 
-void add_vertex(vec3 vertices[], int *num_of_vertices, char line[]) {
+void add_vertex(vec3 *v, char line[]) {
   /* printf("Adding vertex for line = %s", line); */
-  vec3 v = extract_ve3_from_line(line);
-  vertices[*num_of_vertices].l[0] = v.l[0];
-  vertices[*num_of_vertices].l[1] = v.l[1];
-  vertices[*num_of_vertices].l[2] = v.l[2];
+  vec3 vl = extract_vec3_from_line(line);
+  v->l[0] = vl.l[0];
+  v->l[1] = vl.l[1];
+  v->l[2] = vl.l[2];
   /* printf("vertices = %f %f %f\n", vertices[*num_of_vertices].l[0], */
   /*        vertices[*num_of_vertices].l[1], vertices[*num_of_vertices].l[2]);
    */
-  (*num_of_vertices)++;
 }
 
 vec3 min(const vec3 a, const vec3 b) {
@@ -93,8 +92,8 @@ void calculate_bounds(vec3 vertices[], int num_of_vertices, ObjInfo *info) {
 }
 
 // parses line and fills all the other parameters with information from it
-void add_triangle(Triangle triangles[], int *num_of_triangles, vec3 vertices[],
-                  vec3 vns[], char line[]) {
+void add_triangle(Triangle *triangles, vec3 vertices[], vec3 vns[],
+                  char line[]) {
   Triangle t;
   int v[3], vt[3], vn[3];
   int s;
@@ -103,7 +102,7 @@ void add_triangle(Triangle triangles[], int *num_of_triangles, vec3 vertices[],
     t.a[0] = vertices[v[0] - 1].l[0];
     t.a[1] = vertices[v[0] - 1].l[1];
     t.a[2] = vertices[v[0] - 1].l[2];
-    triangles[(*num_of_triangles)++] = t;
+    *triangles = t;
     return;
   }
   s = sscanf(line, "%d/%d/%d %d/%d/%d %d/%d/%d", //
@@ -136,7 +135,7 @@ void add_triangle(Triangle triangles[], int *num_of_triangles, vec3 vertices[],
     t.nc[1] = vns[vn[2] - 1].l[1];
     t.nc[2] = vns[vn[2] - 1].l[2];
 
-    triangles[(*num_of_triangles)++] = t;
+    *triangles = t;
     return;
   }
 
@@ -154,10 +153,12 @@ ObjInfo parse_obj(const char *filename, Triangle *triangles[]) {
   }
 
   *triangles = malloc(info.f * sizeof(Triangle));
-  vec3 *vertices = malloc(info.v * sizeof(vec3));
-  int num_of_vertices = 0;
+  vec3 *vs = malloc(info.v * sizeof(vec3));
   vec3 *vns = malloc(info.vn * sizeof(vec3));
-  int num_of_vns = 0;
+
+  int ti = 0; // triangles counter
+  int vi = 0; // vertices counter
+  int vni = 0; // vns counter
 
   for (char line[255]; fgets(line, sizeof(line), fp);) {
     char type[5];
@@ -166,22 +167,23 @@ ObjInfo parse_obj(const char *filename, Triangle *triangles[]) {
     if (type[0] == '#')
       continue;
     else if (type[0] == 'v' && type[1] == 0) {
-      add_vertex(vertices, &num_of_vertices, line + 2);
+      add_vertex(vs + vi++, line + 2);
       /* printf("Added vertex = %f %f %f\n", vertices[num_of_vertices - 1].l[0],
        */
       /*        vertices[num_of_vertices - 1].l[1], */
       /*        vertices[num_of_vertices - 1].l[2]); */
     } else if (type[0] == 'v' && type[1] == 'n') {
       /* printf("NORMAL\n"); */
-      add_vertex(vns, &num_of_vns, line + 2);
+      add_vertex(vns + vni++, line + 2);
       /* printf("Added vertex NORMAL = %f %f %f\n", vns[num_of_vns - 1].l[0], */
       /*        vns[num_of_vns - 1].l[1], vns[num_of_vns - 1].l[2]); */
     } else if (line[0] == 'f') {
-      add_triangle(*triangles, &info.f, vertices, vns, line + 2);
+      add_triangle(*triangles + ti++, vs, vns, line + 2);
+      printf("num of triangles = %d\n", info.f);
     }
   }
-  calculate_bounds(vertices, num_of_vertices, &info);
-  free(vertices);
+  calculate_bounds(vs, vi, &info);
+  free(vs);
   free(vns);
 
   fclose(fp);
@@ -269,24 +271,24 @@ int load_obj_model(const char *filename, ModelsBuffer *mb,
 }
 
 void set_obj_pos(ModelsBuffer *mb, int model_id, vec3 pos) {
-  if ((unsigned int)model_id >= mb->num_of_meshes) {
+  if (model_id >= mb->num_of_meshes) {
     fprintf(stderr, "Tried to modify model %d but there are only %d models!\n",
             model_id, mb->num_of_meshes);
     exit(EXIT_FAILURE);
   }
 
   offset_triangles(mb->triangles +
-                       (int)mb->meshesInfo[model_id].firstTriangleIndex,
-                   mb->meshesInfo[model_id].numTriangles, pos);
+                       (int)mb->meshes_info[model_id].firstTriangleIndex,
+                   mb->meshes_info[model_id].numTriangles, pos);
 
   // TODO: if we had BVH we would also offset it here
-  mb->meshesInfo[model_id].boundsMin[0] += pos.l[0];
-  mb->meshesInfo[model_id].boundsMin[1] += pos.l[1];
-  mb->meshesInfo[model_id].boundsMin[2] += pos.l[2];
+  mb->meshes_info[model_id].boundsMin[0] += pos.l[0];
+  mb->meshes_info[model_id].boundsMin[1] += pos.l[1];
+  mb->meshes_info[model_id].boundsMin[2] += pos.l[2];
 
-  mb->meshesInfo[model_id].boundsMax[0] += pos.l[0];
-  mb->meshesInfo[model_id].boundsMax[1] += pos.l[1];
-  mb->meshesInfo[model_id].boundsMax[2] += pos.l[2];
+  mb->meshes_info[model_id].boundsMax[0] += pos.l[0];
+  mb->meshes_info[model_id].boundsMax[1] += pos.l[1];
+  mb->meshes_info[model_id].boundsMax[2] += pos.l[2];
 
   /* int overall_num_of_triangles = */
   /*     mb->meshesInfo[mb->num_of_meshes - 1].firstTriangleIndex + */
@@ -296,6 +298,7 @@ void set_obj_pos(ModelsBuffer *mb, int model_id, vec3 pos) {
   /* glDeleteTextures(1, &mb->tbo_tex_triangles); */
 
   /* create_gl_buffer(&mb->tbo_triangles, &mb->tbo_tex_triangles, */
-  /*                  overall_num_of_triangles * sizeof(Triangle), mb->triangles, */
+  /*                  overall_num_of_triangles * sizeof(Triangle),
+   * mb->triangles, */
   /*                  GL_RGB32F, GL_TEXTURE1); */
 }

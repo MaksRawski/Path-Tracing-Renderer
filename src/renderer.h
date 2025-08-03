@@ -60,10 +60,10 @@ typedef struct {
   GLuint tbo_triangles, tbo_meshes, tbo_materials;
   GLuint tbo_tex_triangles, tbo_tex_meshes, tbo_tex_materials;
   Triangle *triangles;
-  MeshInfo *meshesInfo;
+  MeshInfo *meshes_info;
   Material *materials;
-  unsigned int num_of_triangles, num_of_meshes, num_of_materials;
-  unsigned int triangles_capacity, meshes_capacity, materials_capacity;
+  int num_of_triangles, num_of_meshes, num_of_materials;
+  long int triangles_capacity, meshes_capacity, materials_capacity;
 } ModelsBuffer;
 
 typedef struct {
