@@ -3,7 +3,6 @@
 #include "vec3.h"
 #include <GLFW/glfw3.h>
 #include <math.h>
-#include <stdio.h>
 
 const float STEP_SIZE_PER_FRAME = 0.05;
 const float CURSOR_SENSITIVITY = 0.1;
@@ -96,7 +95,6 @@ void cursor_callback(GLFWwindow *window, double xPos, double yPos) {
 
   userPtr->lastMouseX = xPos;
   userPtr->lastMouseY = yPos;
-  printf("yaw: %f, pitch: %f\n", userPtr->yawDeg, userPtr->pitchDeg);
 }
 
 void cursor_enter_callback(GLFWwindow *window, int entered) {
@@ -118,9 +116,6 @@ bool update_inputs_uniforms(GLFWwindow *window, RUniforms *uniforms) {
     uniforms->cPos.z = 0;
     ptr->yawDeg = 0.0;
     ptr->pitchDeg = 0.0;
-    /* uniforms->cLookat.x = 0; */
-    /* uniforms->cLookat.y = 1; */
-    /* uniforms->cLookat.z = 0; */
     ptr->resetPosition = false;
   }
   if (ptr->releaseCursor) {
