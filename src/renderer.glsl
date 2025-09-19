@@ -2,34 +2,39 @@
 // - https://www.youtube.com/watch?v=Qz0KTGYJtUk
 // - https://github.com/ssloy/tinyraytracer/wiki/Part-1:-understandable-raytracing (FOV, reflection stuff)
 
-#version 330 core
+#version 460
 
 uniform int iFrame;
 uniform vec2 iResolution;
 uniform sampler2D backBufferTexture;
-uniform samplerBuffer trianglesBuffer;
-uniform samplerBuffer meshesInfoBuffer;
-uniform samplerBuffer materialsBuffer;
-uniform int numOfMeshes;
+uniform int bvhNodeCount;
 uniform vec3 cPos, cLookat;
+uniform float cFov;
 
-const int MAX_BOUNCE_COUNT = 4;
-const int SAMPLES_PER_PIXEL = 3;
+const int MAX_BOUNCE_COUNT = 2;
+const int SAMPLES_PER_PIXEL = 1;
 const float DivergeStrength = 20.0;
 
-const float EPSILON = 0.001;
+const float EPSILON = 0.00001;
 const float INFINITY = 1.0e30;
 const float C_PI = 3.141592653589793;
 const float C_TWOPI = 6.283185307179586;
+const vec3 UP = vec3(0, 1, 0);
 
-// https://raytracing.github.io/books/RayTracingInOneWeekend.html#positionablecamera (12.2)
+out vec4 FragColor;
+
+// comment out if culling is desired
+#define DOUBLE_SIDED_TRIANGLES
+
+#define STACK_SIZE 40
+#define MAX_ITERATIONS 200
+
+// https : //raytracing.github.io/books/RayTracingInOneWeekend.html#positionablecamera (12.2)
 struct Camera {
     // camera's position
     vec3 pos;
     // what's camera pointed at
     vec3 lookat;
-    // camera's relative up direction, shouldn't be confused with the viewport's relative up direction
-    vec3 up;
     // horizontal field of view in radians
     float fov;
 };
@@ -40,42 +45,19 @@ struct Ray {
     vec3 inv_dir; // 1 / dir
 };
 
+// NOTE: these are just `vec3`s but because they come from a buffer-backed
+// blocks which have layouts that pad them to 16 bytes turning `vec3`s in to `vec4`s
 struct Triangle {
-    vec3 a, b, c;
-    vec3 na, nb, nc;
+    vec4 a, b, c;
+    vec4 na, nb, nc;
 };
 
-Triangle getTriangle(int i) {
-    vec3 a = texelFetch(trianglesBuffer, 6 * i).rgb;
-    vec3 b = texelFetch(trianglesBuffer, 6 * i + 1).rgb;
-    vec3 c = texelFetch(trianglesBuffer, 6 * i + 2).rgb;
-    vec3 na = texelFetch(trianglesBuffer, 6 * i + 3).rgb;
-    vec3 nb = texelFetch(trianglesBuffer, 6 * i + 4).rgb;
-    vec3 nc = texelFetch(trianglesBuffer, 6 * i + 5).rgb;
-    return Triangle(a, b, c, na, nb, nc);
-}
-
-struct MeshInfo {
-    // index of the first triangle in trianglesBuffer
-    int firstTriangleIndex;
-    int numTriangles;
-    // index of the material in materialsBuffer
-    int materialIndex;
-    // bounding box
-    vec3 boundsMin;
-    vec3 boundsMax;
+// NOTE: same as above
+struct BVHnode {
+    vec4 boundsMin, boundsMax;
+    int first, count;
+    int _, _1; // padding so that this struct's size is a multiple of 16 bytes
 };
-
-MeshInfo getMesh(int i) {
-    MeshInfo mi;
-    vec3 t = texelFetch(meshesInfoBuffer, 3 * i).rgb;
-    mi.firstTriangleIndex = int(t.r);
-    mi.numTriangles = int(t.g);
-    mi.materialIndex = int(t.b);
-    mi.boundsMin = texelFetch(meshesInfoBuffer, 3 * i + 1).rgb;
-    mi.boundsMax = texelFetch(meshesInfoBuffer, 3 * i + 2).rgb;
-    return mi;
-}
 
 struct Material {
     // what color it emits
@@ -90,16 +72,25 @@ struct Material {
     float specularComponent;
 };
 
-Material getMaterial(int i) {
-    Material mat;
-    vec4 emission = texelFetch(materialsBuffer, 2 * i).rgba;
-    vec4 rest = texelFetch(materialsBuffer, 2 * i + 1).rgba;
-    mat.emissionColor = emission.rgb;
-    mat.emissionStrength = emission.a;
-    mat.albedo = rest.rgb;
-    mat.specularComponent = rest.a;
-    return mat;
-}
+struct Primitive {
+    // // index of the triangle in trianglesBuffer
+    // int tri;
+    // index of the material in materialsBuffer
+    int mat;
+};
+
+layout(std430, binding = 1) readonly buffer trianglesBuffer {
+    Triangle triangles[];
+};
+layout(std430, binding = 2) readonly buffer bvhNodes {
+    BVHnode nodes[];
+};
+layout(std430, binding = 3) readonly buffer materialsBuffer {
+    Material mats[];
+};
+layout(std430, binding = 4) readonly buffer primitivesBuffer {
+    Primitive primitives[];
+};
 
 struct Sphere {
     vec3 pos;
@@ -153,7 +144,6 @@ vec2 RandomPointInCircle(inout uint state)
     vec2 pointOnCircle = vec2(cos(angle), sin(angle));
     return pointOnCircle * sqrt(RandomFloat(state));
 }
-
 // using Möller-Trumbore intersection algorithm
 // https://www.youtube.com/watch?v=fK1RPmF_zjQ
 // https://cadxfem.org/inf/Fast%20MinimumStorage%20RayTriangle%20Intersection.pdf
@@ -222,8 +212,8 @@ HitInfo RayTriangleIntersection(Ray ray, Triangle tri) {
     HitInfo hitInfo;
     hitInfo.didHit = false;
     vec3 D = ray.dir;
-    vec3 e1 = tri.b - tri.a;
-    vec3 e2 = tri.c - tri.a;
+    vec3 e1 = (tri.b - tri.a).xyz;
+    vec3 e2 = (tri.c - tri.a).xyz;
     vec3 De2 = cross(D, e2);
     float det = dot(e1, De2);
 
@@ -235,20 +225,20 @@ HitInfo RayTriangleIntersection(Ray ray, Triangle tri) {
 
     float inv_det = 1.0 / det;
 
-    vec3 T = ray.origin - tri.a;
+    vec3 T = ray.origin - tri.a.xyz;
     vec3 Te1 = cross(T, e1);
 
     float u = dot(T, De2) * inv_det;
 
     // the barycentric coordinate u is too far, for the point of intersection
     // to be inside the triangle
-    if (u < 0 || u > 1) return hitInfo;
+    if ((u < 0 && abs(u) > EPSILON) || (u > 1 && abs(u - 1.0) > EPSILON)) return hitInfo;
 
     float v = dot(D, Te1) * inv_det;
 
     // the barycentric coordinate v is too far, for the point of intersection
     // to be inside the triangle or both u and v are too far from centre
-    if (v < 0 || u + v > 1) return hitInfo;
+    if ((v < 0 && abs(v) > EPSILON) || (u + v > 1 && abs(u + v - 1.0) > EPSILON)) return hitInfo;
 
     // finally, if we got here, it means that we did actually hit the triangle
     float t = dot(Te1, e2) * inv_det;
@@ -257,7 +247,10 @@ HitInfo RayTriangleIntersection(Ray ray, Triangle tri) {
         hitInfo.hitPoint = ray.origin + ray.dir * t;
         // look at the right beginning of the description of this function
         float w = 1 - u - v;
-        hitInfo.normal = normalize(w * tri.na + u * tri.nb + v * tri.nc);
+        hitInfo.normal = normalize(w * tri.na.xyz + u * tri.nb.xyz + v * tri.nc.xyz);
+        #ifdef DOUBLE_SIDED_TRIANGLES
+        if (dot(hitInfo.normal, D) > EPSILON) hitInfo.normal *= -1;
+        #endif
         hitInfo.dst = t;
     }
 
@@ -338,70 +331,79 @@ HitInfo RaySphereIntersection(Ray ray, Sphere s) {
 // calculate the distance to that point.
 // if there is no intersection we will end up with infinities which
 // funnily enough get automagically handled
-bool RayBoundingBoxIntersection(Ray ray, MeshInfo mi) {
-    float tmin = -INFINITY, tmax = INFINITY;
+bool RayBVHnodeIntersection(Ray ray, BVHnode bb) {
+    float tx1 = (bb.boundsMin.x - ray.origin.x) * ray.inv_dir.x, tx2 = (bb.boundsMax.x - ray.origin.x) * ray.inv_dir.x;
+    float tmin = min(tx1, tx2), tmax = max(tx1, tx2);
+    float ty1 = (bb.boundsMin.y - ray.origin.y) * ray.inv_dir.y, ty2 = (bb.boundsMax.y - ray.origin.y) * ray.inv_dir.y;
+    tmin = max(tmin, min(ty1, ty2)), tmax = min(tmax, max(ty1, ty2));
+    float tz1 = (bb.boundsMin.z - ray.origin.z) * ray.inv_dir.z, tz2 = (bb.boundsMax.z - ray.origin.z) * ray.inv_dir.z;
+    tmin = max(tmin, min(tz1, tz2)), tmax = min(tmax, max(tz1, tz2));
+    return tmax >= tmin && tmax > 0;
+}
 
-    // check the intersection at x axis
-    float tx1 = (mi.boundsMin.x - ray.origin.x) * ray.inv_dir.x;
-    float tx2 = (mi.boundsMax.x - ray.origin.x) * ray.inv_dir.x;
-
-    // we change the value of tmin if one of these is smaller than the current
-    tmin = max(tmin, min(tx1, tx2));
-    tmax = min(tmax, max(tx1, tx2));
-
-    // check the intersection at y axis
-    float ty1 = (mi.boundsMin.y - ray.origin.y) * ray.inv_dir.y;
-    float ty2 = (mi.boundsMax.y - ray.origin.y) * ray.inv_dir.y;
-
-    tmin = max(tmin, min(ty1, ty2));
-    tmax = min(tmax, max(ty1, ty2));
-
-    // check the intersection at z axis
-    float tz1 = (mi.boundsMin.z - ray.origin.z) * ray.inv_dir.z;
-    float tz2 = (mi.boundsMax.z - ray.origin.z) * ray.inv_dir.z;
-
-    tmin = max(tmin, min(tz1, tz2));
-    tmax = min(tmax, max(tz1, tz2));
-
-    return tmax > max(tmin, EPSILON);
+// TODO: this is just for debugging
+vec3 hsv2rgb(vec3 c)
+{
+    vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+    return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 }
 
 // returns info about the nearest point which the ray hits
 HitInfo CalculateRayCollision(Ray ray) {
     HitInfo closestHit;
     closestHit.didHit = false;
+    // TODO: with finite camera projection this will be zfar
     closestHit.dst = INFINITY;
 
+    int stack[STACK_SIZE], stack_ptr = 0;
+    stack[stack_ptr++] = 0;
+    int max_iterations = MAX_ITERATIONS;
+    while (stack_ptr > 0 && max_iterations-- > 0) {
+        BVHnode node = nodes[stack[--stack_ptr]];
+
+        if (!RayBVHnodeIntersection(ray, node))
+        {
+            if (stack_ptr == 0) return closestHit;
+            else continue;
+        }
+        // if node is a leaf
+        if (node.count > 0) {
+            for (int i = 0; i < node.count; ++i) {
+                int t_index = node.first + i;
+                Triangle t = triangles[t_index];
+                HitInfo hit = RayTriangleIntersection(ray, t);
+                if (hit.didHit && hit.dst < closestHit.dst) {
+                    closestHit = hit;
+                    closestHit.mat = mats[primitives[t_index].mat];
+                    // closestHit.mat = Material(vec3(0.0, 0.0, 0.0), 0.0, hsv2rgb(vec3(float(stack_ptr) / float(bvhNodeCount), 0.5, 0.5)), 0.0);
+                }
+            }
+        } else {
+            // left will be checked first, so must push the right one first
+            stack[stack_ptr++] = node.first + 1;
+            stack[stack_ptr++] = node.first + 0;
+        }
+    }
+
     // iterate through all triangles
-    // for (int i = 0; i < numOfMeshes; ++i) {
-    //     MeshInfo mi = getMesh(i);
-    //     if (!RayBoundingBoxIntersection(ray, mi)) continue;
-
-    //     for (int j = 0; j < mi.numTriangles; ++j) {
-    //         HitInfo hit = R(ray, getTriangle(mi.firstTriangleIndex + j));
-    //         // HitInfo hit = RayTriangleIntersection(ray, getTriangle(mi.firstTriangleIndex + j));
-    //         if (hit.didHit && hit.dst < closestHit.dst) {
-    //             closestHit = hit;
-    //             closestHit.mat = getMaterial(mi.materialIndex);
-    //             // TODO: DEBUG:
-    //             // 0  1  2
-    //             // R  G  B
-    //             // RG GB BR
-
-    //             closestHit.mat.albedo.r = j % 6 == 0 ? 1.0 : 0.0;
-    //             closestHit.mat.albedo.g = j % 6 == 1 ? 1.0 : 0.0;
-    //             closestHit.mat.albedo.b = j % 6 == 2 ? 1.0 : 0.0;
-    //         }
+    // for (int i = 0; i < 10; ++i) {
+    //     // BVHnode node = getNode(i);
+    //     Triangle t = triangles[i];
+    //     HitInfo hit = RayTriangleIntersection(ray, t);
+    //     if (hit.didHit && hit.dst < closestHit.dst) {
+    //         closestHit = hit;
+    //         closestHit.mat = Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 0.0, 0.0), 0.0);
     //     }
     // }
 
     // iterate through all the spheres
-    for (int i = 0; i < NUM_OF_SPHERES; ++i) {
-        HitInfo hit = RaySphereIntersection(ray, SPHERES[i]);
-        if (hit.didHit && hit.dst < closestHit.dst) {
-            closestHit = hit;
-        }
-    }
+    // for (int i = 0; i < NUM_OF_SPHERES; ++i) {
+    //     HitInfo hit = RaySphereIntersection(ray, SPHERES[i]);
+    //     if (hit.didHit && hit.dst < closestHit.dst) {
+    //         closestHit = hit;
+    //     }
+    // }
 
     return closestHit;
 }
@@ -420,9 +422,7 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
     vec3 c = vec3(1.0, 1.0, 1.0);
     vec3 incomingLight = vec3(0.0, 0.0, 0.0);
     HitInfo hitInfo = CalculateRayCollision(ray);
-    // TODO: REMOVE THIS DEBUG
-    // return hitInfo.didHit ? vec3(1.0, 0, 0) : vec3(0, 0, 0);
-    // return hitInfo.didHit ? hitInfo.mat.albedo : vec3(0, 0, 0);
+    // return hitInfo.didHit ? hitInfo.mat.albedo : vec3(0.0, 0.0, 0.0);
 
     for (int i = 0; i <= MAX_BOUNCE_COUNT; ++i) {
         HitInfo hitInfo = CalculateRayCollision(ray);
@@ -436,9 +436,10 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
             // the result to get any point at a hemisphere
             // ray.dir = RandomHemisphereDirection(hitInfo.normal, rngState);
             vec3 diffuseDir = DiffuseDirection(hitInfo.normal, rngState);
-            // return abs(diffuseDir);
             vec3 reflectDir = ReflectDirection(ray.dir, hitInfo.normal);
+
             ray.dir = mix(diffuseDir, reflectDir, hitInfo.mat.specularComponent);
+            ray.inv_dir = 1.0 / ray.dir;
 
             // calculate the potential light that the object is emitting
             vec3 emittedLight = hitInfo.mat.emissionColor * hitInfo.mat.emissionStrength;
@@ -454,7 +455,7 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
     return incomingLight;
 }
 
-// void mainImage(out vec4 gl_FragColor, in vec2 gl_FragCcoord) {
+// void mainImage(out vec4 FragColor, in vec2 gl_FragCcoord) {
 void main() {
     uint pixelIndex = uint(gl_FragCoord.x) + uint(gl_FragCoord.y) * uint(iResolution.x);
     uint rngState = uint(pixelIndex + uint(iFrame * 719393));
@@ -468,11 +469,10 @@ void main() {
     Camera cam;
     cam.pos = cPos;
     cam.lookat = cLookat;
-    cam.up = vec3(0.0, 1.0, 0.0);
-    cam.fov = C_PI / 2.0; // 90 degrees
+    cam.fov = cFov;
 
     vec3 cameraDirection = normalize(cam.lookat - cam.pos);
-    vec3 viewportRight = cross(cameraDirection, cam.up); // cross calculates the vector perpendicular to both its arguments
+    vec3 viewportRight = cross(cameraDirection, UP); // cross calculates the vector perpendicular to both its arguments
     vec3 viewportUp = cross(viewportRight, cameraDirection); // use the right-hand rule to see why it makes sense :)
     float cameraDistanceFromViewport = length(cam.lookat - cam.pos); // AKA focal length
 
@@ -501,6 +501,5 @@ void main() {
     float weight = 1.0 / (float(iFrame) + 1.0);
     totalIncomingLight = lastFrameColor * (1.0 - weight) + totalIncomingLight * weight;
 
-    gl_FragColor = vec4(totalIncomingLight, 1.0);
-    // gl_FragColor = vec4(getMesh(0).materialIndex / 6, 0.0, 0.0, 1.0);
+    FragColor = vec4(totalIncomingLight, 1.0);
 }

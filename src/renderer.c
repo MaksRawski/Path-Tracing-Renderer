@@ -1,10 +1,6 @@
-#include <glad/gl.h>
-//
-#include <GLFW/glfw3.h>
-//
+#include "renderer.h"
 #include "inputs.h"
 #include "utils.h"
-#include "renderer.h"
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -13,7 +9,7 @@
 #include <sys/inotify.h>
 #include <unistd.h>
 
-#define WINDOW_TITLE "LAK - Projekt zaliczeniowy"
+#define WINDOW_TITLE "Path Tracing Renderer"
 
 int debug_fn_counter = 0;
 
@@ -30,7 +26,7 @@ void glfw_error_callback(int error, const char *description) {
   fprintf(stderr, "Error (%d): %s\n", error, description);
 }
 
-GLFWwindow *setup_opengl(bool disable_vsync) {
+GLFWwindow *setup_opengl(int width, int height, bool disable_vsync) {
   glfwSetErrorCallback(glfw_error_callback);
 
   if (!glfwInit())
@@ -41,7 +37,8 @@ GLFWwindow *setup_opengl(bool disable_vsync) {
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-  GLFWwindow *window = glfwCreateWindow(600, 600, WINDOW_TITLE, NULL, NULL);
+  GLFWwindow *window =
+      glfwCreateWindow(width, height, WINDOW_TITLE, NULL, NULL);
   if (!window) {
     glfwTerminate();
     exit(EXIT_FAILURE);
@@ -63,7 +60,6 @@ GLFWwindow *setup_opengl(bool disable_vsync) {
   glfwSetCursorPosCallback(window, cursor_callback);
   glfwSetCursorEnterCallback(window, cursor_enter_callback);
 
-  // disable vsync to see the full speed
   if (disable_vsync)
     glfwSwapInterval(0);
 
@@ -74,9 +70,7 @@ GLFWwindow *setup_opengl(bool disable_vsync) {
   return window;
 }
 
-void setup_renderer(char *vertex_shader_filename,
-                    char *fragment_shader_filename, GLuint *shader_program,
-                    FilesWatcher *shader_watcher, RendererBuffers *rb) {
+void setup_renderer_buffers(RBuffers *rb) {
   // Define vertices for a full-screen quad
   float vertices[] = {
       -1.0f, 1.0f,  // Top left
@@ -105,17 +99,6 @@ void setup_renderer(char *vertex_shader_filename,
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), NULL);
   glEnableVertexAttribArray(0);
 
-  shader_watcher->num_of_files = 2;
-  shader_watcher->file_names = malloc(2 * sizeof(char *));
-  shader_watcher->file_names[0] = vertex_shader_filename;
-  shader_watcher->file_names[1] = fragment_shader_filename;
-  shader_watcher->watcher_fds = malloc(2 * sizeof(int));
-  shader_watcher->watcher_fds[0] = watch_file(vertex_shader_filename);
-  shader_watcher->watcher_fds[1] = watch_file(fragment_shader_filename);
-
-  *shader_program =
-      create_shader_program(vertex_shader_filename, fragment_shader_filename);
-
   // unbind the vbo
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 
@@ -123,49 +106,67 @@ void setup_renderer(char *vertex_shader_filename,
   glBindVertexArray(0);
 }
 
-void update_frame(GLuint shader_program, GLFWwindow *window, Uniforms *uniforms,
-                  RendererBuffers *rb, BackBuffer *back_buffer,
-                  ModelsBuffer *mb) {
+void generate_ssbo(GLuint *ssbo, const void *data, int size, int index) {
+  glGenBuffers(1, ssbo);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, *ssbo);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, size, data, GL_STATIC_READ);
+  /* glBindBufferBase(GL_SHADER_STORAGE_BUFFER, index, *ssbo); */
+  glBindBufferRange(GL_SHADER_STORAGE_BUFFER, index, *ssbo, 0, size);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+}
+
+RMeshBuffers rmb_build(const Scene *scene) {
+  RMeshBuffers rmb = {0};
+
+  generate_ssbo(&rmb.triangles_ssbo, scene->triangles,
+                scene->triangles_count * sizeof(Triangle), 1);
+  generate_ssbo(&rmb.bvh_nodes_ssbo, scene->bvh.nodes,
+                scene->bvh.nodes_count * sizeof(BVHnode), 2);
+  generate_ssbo(&rmb.mats_ssbo, scene->mats,
+                scene->mats_count * sizeof(Material), 3);
+  // NOTE: this assumes that primitives are just a LUT for triangles
+  generate_ssbo(&rmb.primitives_ssbo, scene->primitives,
+                scene->triangles_count * sizeof(Primitive), 4);
+
+  rmb.bvh_nodes_count = scene->bvh.nodes_count;
+  rmb.triangle_count = scene->triangles_count;
+  rmb.mats_count = scene->mats_count;
+
+  return rmb;
+}
+
+void update_frame(GLuint shader_program, GLFWwindow *window,
+                  const RFrameStructs *rfs) {
   // setup the program and bind the vao associated with the quad
   // and the vbo holding the vertices of the quad
   glUseProgram(shader_program);
-  glBindVertexArray(rb->vao);
+  glBindVertexArray(rfs->rb->vao);
 
   // render the quad to the back buffer
-  glBindFramebuffer(GL_FRAMEBUFFER, back_buffer->fbo);
+  glBindFramebuffer(GL_FRAMEBUFFER, rfs->back_buffer->fbo);
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, back_buffer->fboTex);
+  glBindTexture(GL_TEXTURE_2D, rfs->back_buffer->fboTex);
   glUniform1i(glGetUniformLocation(shader_program, "BackBufferTexture"), 0);
   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
-  // update uniforms
-  glUniform1i(glGetUniformLocation(shader_program, "iFrame"), uniforms->iFrame);
+  // update "simple" uniforms
+  glUniform1i(glGetUniformLocation(shader_program, "iFrame"),
+              rfs->uniforms->iFrame);
   glUniform2f(glGetUniformLocation(shader_program, "iResolution"),
-              uniforms->iResolution[0], uniforms->iResolution[1]);
+              rfs->uniforms->iResolution[0], rfs->uniforms->iResolution[1]);
 
-  glUniform3f(glGetUniformLocation(shader_program, "cPos"), uniforms->camPos[0],
-              uniforms->camPos[1], uniforms->camPos[2]);
+  glUniform3f(glGetUniformLocation(shader_program, "cPos"),
+              rfs->uniforms->cPos.x, rfs->uniforms->cPos.y,
+              rfs->uniforms->cPos.z);
   glUniform3f(glGetUniformLocation(shader_program, "cLookat"),
-              uniforms->camLookat[0], uniforms->camLookat[1],
-              uniforms->camLookat[2]);
-
-  // make sure the models' "textures" are loaded
-  glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_BUFFER, mb->tbo_tex_triangles);
-  glActiveTexture(GL_TEXTURE2);
-  glBindTexture(GL_TEXTURE_BUFFER, mb->tbo_tex_meshes);
-  glActiveTexture(GL_TEXTURE3);
-  glBindTexture(GL_TEXTURE_BUFFER, mb->tbo_tex_materials);
-
-  glUniform1i(glGetUniformLocation(shader_program, "trianglesBuffer"), 1);
-  glUniform1i(glGetUniformLocation(shader_program, "meshesInfoBuffer"), 2);
-  glUniform1i(glGetUniformLocation(shader_program, "materialsBuffer"), 3);
-  glUniform1i(glGetUniformLocation(shader_program, "numOfMeshes"),
-              mb->num_of_meshes);
+              rfs->uniforms->cLookat.x, rfs->uniforms->cLookat.y,
+              rfs->uniforms->cLookat.z);
+  glUniform1f(glGetUniformLocation(shader_program, "cFov"),
+              rfs->uniforms->cFov);
 
   // render the quad to the screen
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  glBindVertexArray(rb->vao);
+  glBindVertexArray(rfs->rb->vao);
   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
   glfwSwapBuffers(window);
   glfwPollEvents();
@@ -235,7 +236,7 @@ GLuint create_shader_program_from_source(const char *vertex_shader_src,
 
 // expects two files to be in shader_files_watcher structure
 // first must be a vertex shader and second one a fragment shader
-bool reload_shader(GLuint *shader_program, FilesWatcher *shader_files_watcher) {
+bool did_shader_change(RFilesWatcher *shader_files_watcher) {
   char buffer[BUF_LEN];
   int num_of_events;
   bool did_reload = false;
@@ -268,25 +269,26 @@ bool reload_shader(GLuint *shader_program, FilesWatcher *shader_files_watcher) {
     }
   }
 
-  if (did_reload) {
-    GLuint new_program =
-        create_shader_program(shader_files_watcher->file_names[0],
-                              shader_files_watcher->file_names[1]);
-
-    if (new_program == (GLuint)-1) {
-      fprintf(stderr,
-              "Failed to create a shader program, loading the default...\n");
-      new_program = create_shader_program_from_source(DEFAULT_VERTEX_SHADER,
-                                                      DEFAULT_FRAGMENT_SHADER);
-    }
-    glDeleteProgram(*shader_program);
-    *shader_program = new_program;
-  }
   return did_reload;
 }
 
-void setup_back_buffer(GLuint shader_program, BackBuffer *bb,
-                       unsigned int width, unsigned int height) {
+void reload_shader(GLuint *shader_program,
+                   RFilesWatcher *shader_files_watcher) {
+  GLuint new_program = create_shader_program(
+      shader_files_watcher->file_names[0], shader_files_watcher->file_names[1]);
+
+  if (new_program == (GLuint)-1) {
+    fprintf(stderr,
+            "Failed to create a shader program, loading the default...\n");
+    new_program = create_shader_program_from_source(DEFAULT_VERTEX_SHADER,
+                                                    DEFAULT_FRAGMENT_SHADER);
+  }
+  glDeleteProgram(*shader_program);
+  *shader_program = new_program;
+}
+
+void setup_back_buffer(RBackBuffer *bb, unsigned int width,
+                       unsigned int height) {
   glGenFramebuffers(1, &bb->fbo);
   glBindFramebuffer(GL_FRAMEBUFFER, bb->fbo);
 
@@ -303,10 +305,6 @@ void setup_back_buffer(GLuint shader_program, BackBuffer *bb,
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
                          bb->fboTex, 0);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-  // set the program uniform for the texture sampler
-  glUseProgram(shader_program);
-  glUniform1i(glGetUniformLocation(shader_program, "BackBufferTexture"), 0);
 }
 
 void display_fps(GLFWwindow *window, unsigned int *frame_counter,
@@ -325,4 +323,16 @@ void display_fps(GLFWwindow *window, unsigned int *frame_counter,
     *frame_counter = 0;
     *last_frame_time = current_time;
   }
+}
+
+const float DEFAULT_CAM_FOV = PI / 4.0; // 45 deg
+const vec3 DEFAULT_CAM_POS = {0, 0, 0, 0};
+const vec3 DEFAULT_CAM_LOOKAT = {0, 0, 1, 0}; // look down z axis
+
+RUniforms runiforms_new(int width, int height) {
+  return (RUniforms){.cFov = DEFAULT_CAM_FOV,
+                     .cLookat = DEFAULT_CAM_LOOKAT,
+                     .cPos = DEFAULT_CAM_POS,
+                     .iFrame = 0,
+                     .iResolution = {width, height}};
 }

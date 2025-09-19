@@ -7,7 +7,7 @@
 
 typedef struct GLFWUserData {
   // 1 means true, -1 the opposite direction and 0 no
-  int movingForward, movingLeft;
+  int movingForward, movingLeft, movingUp;
   float lastMouseX, lastMouseY;
   // yaw = 360 should point at the same point as yaw = 0
   // pitch = 0 means lookAt.y = cam.pos.y
@@ -15,14 +15,10 @@ typedef struct GLFWUserData {
   bool resetPosition, releaseCursor, paused;
 } GLFWUserData;
 
-typedef struct float3 {
-  float x, y, z;
-} float3;
-
 void cursor_callback(GLFWwindow *window, double xPos, double yPos);
 void cursor_enter_callback(GLFWwindow *window, int entered);
 void key_callback(GLFWwindow *window, int key, int scancode, int action,
                   int mods);
-bool update_uniforms(GLFWwindow *window, Uniforms *uniforms);
+bool update_inputs_uniforms(GLFWwindow *window, RUniforms *uniforms);
 
 #endif // INPUTS_H_

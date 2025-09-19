@@ -1,9 +1,9 @@
-CC = gcc
-CFLAGS = -g -Wall -Wextra -Wno-unused -Werror -Ilib/include
+CC = clang
+CFLAGS = -g -Wall -Wextra -Wno-unused -Werror -Ilib/include -Iinclude
 LDFLAGS = -lglfw -ldl -lm
-TARGET = bin/main
-SRC := $(wildcard src/*.c)
-OBJ := $(SRC:src/%.c=bin/%.o)
+TARGET = build/main
+SRC := $(shell find src -name '*.c')
+OBJ := $(SRC:src/%.c=build/%.o)
 GLAD_SRC = ./lib/src/gl.c
 
 all: $(TARGET)
@@ -11,11 +11,11 @@ all: $(TARGET)
 $(TARGET): $(OBJ) $(GLAD_SRC)
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $(TARGET)
 
-bin/%.o: src/%.c
-	@mkdir -p bin
+build/%.o: src/%.c
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -rf bin/*
+	rm -rf build/*
 
 .PHONY: all clean

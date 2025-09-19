@@ -1,18 +1,22 @@
 #include "inputs.h"
 #include "renderer.h"
+#include "vec3.h"
 #include <GLFW/glfw3.h>
 #include <math.h>
+#include <stdio.h>
 
 const float STEP_SIZE_PER_FRAME = 0.05;
 const float CURSOR_SENSITIVITY = 0.1;
 const float FOCAL_LENGTH = 10.0;
+// +Y is UP, must be the same as in the shader
+const vec3 UP = {0, 1, 0, 0};
 
 #define UNUSED(x) (void)(x)
 
 void key_callback(GLFWwindow *window, int key, int scancode, int action,
                   int mods) {
-  UNUSED(scancode);
   UNUSED(mods);
+  UNUSED(scancode);
   GLFWUserData *userPtr = glfwGetWindowUserPointer(window);
 
   if (action == GLFW_PRESS) {
@@ -26,16 +30,20 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action,
     } else if (key == GLFW_KEY_D) {
       userPtr->movingLeft = -1;
     }
+    if (key == GLFW_KEY_SPACE) {
+      userPtr->movingUp = 1;
+    } else if (key == GLFW_KEY_C) {
+      userPtr->movingUp = -1;
+    }
   } else if (action == GLFW_RELEASE) {
-    if (key == GLFW_KEY_W) {
-      userPtr->movingForward = 0;
-    } else if (key == GLFW_KEY_S) {
+    if (key == GLFW_KEY_W || key == GLFW_KEY_S) {
       userPtr->movingForward = 0;
     }
-    if (key == GLFW_KEY_A) {
+    if (key == GLFW_KEY_A || key == GLFW_KEY_D) {
       userPtr->movingLeft = 0;
-    } else if (key == GLFW_KEY_D) {
-      userPtr->movingLeft = 0;
+    }
+    if (key == GLFW_KEY_SPACE || key == GLFW_KEY_C) {
+      userPtr->movingUp = 0;
     }
     if (key == GLFW_KEY_R) {
       userPtr->resetPosition = true;
@@ -48,55 +56,25 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action,
   }
 }
 
-void moveForward(Uniforms *uniforms, float dir) {
-  float diffX = uniforms->camPos[0] - uniforms->camLookat[0];
-  float diffY = uniforms->camPos[1] - uniforms->camLookat[1];
-  float diffZ = uniforms->camPos[2] - uniforms->camLookat[2];
-
-  if (diffX > 0)
-    uniforms->camPos[0] -= STEP_SIZE_PER_FRAME * dir;
-  else if (diffX < 0)
-    uniforms->camPos[0] += STEP_SIZE_PER_FRAME * dir;
-
-  if (diffY > 0)
-    uniforms->camPos[1] -= STEP_SIZE_PER_FRAME * dir;
-  else if (diffY < 0)
-    uniforms->camPos[1] += STEP_SIZE_PER_FRAME * dir;
-
-  if (diffZ > 0)
-    uniforms->camPos[2] -= STEP_SIZE_PER_FRAME * dir;
-  else if (diffZ < 0)
-    uniforms->camPos[2] += STEP_SIZE_PER_FRAME * dir;
+void moveUp(RUniforms *uniforms, float dir) {
+  /* uniforms->cPos.y += STEP_SIZE_PER_FRAME * dir; */
+  uniforms->cPos =
+      vec3_add(uniforms->cPos, vec3_mult(UP, STEP_SIZE_PER_FRAME * dir));
 }
 
-float3 normalize(float3 a) {
-  float d = sqrtf(a.x * a.x + a.y * a.y + a.z * a.z);
-  a.x /= d;
-  a.y /= d;
-  a.z /= d;
-  return a;
+void moveForward(RUniforms *uniforms, float dir) {
+  vec3 camera_dir = vec3_sub(uniforms->cLookat, uniforms->cPos);
+  vec3 move_dir = vec3_norm(vec3_mult(camera_dir, dir));
+  uniforms->cPos =
+      vec3_add(uniforms->cPos, vec3_mult(move_dir, STEP_SIZE_PER_FRAME));
 }
 
-float3 cross(float3 a, float3 b) {
-  float3 r = {0};
-  r.x = a.y * b.z - a.z * b.y;
-  r.y = a.x * b.z - a.z * b.x;
-  r.z = a.x * b.y - a.y * b.x;
-  return r;
-}
-
-void moveLeft(Uniforms *uniforms, float dir) {
-  float3 cameraDirection =
-      normalize((float3){uniforms->camLookat[0] - uniforms->camPos[0], //
-                         uniforms->camLookat[1] - uniforms->camPos[1], //
-                         uniforms->camLookat[2] - uniforms->camPos[2]});
-  float3 viewportRight =
-      cross(cameraDirection, (float3){uniforms->camUp[0], uniforms->camUp[1],
-                                      uniforms->camUp[2]});
-
-  uniforms->camPos[0] -= viewportRight.x * STEP_SIZE_PER_FRAME * dir;
-  uniforms->camPos[1] -= viewportRight.y * STEP_SIZE_PER_FRAME * dir;
-  uniforms->camPos[2] -= viewportRight.z * STEP_SIZE_PER_FRAME * dir;
+void moveLeft(RUniforms *uniforms, float dir) {
+  vec3 camera_dir = vec3_sub(uniforms->cLookat, uniforms->cPos);
+  vec3 view_left = vec3_norm(vec3_cross(UP, camera_dir));
+  vec3 move_dir = vec3_mult(view_left, dir);
+  uniforms->cPos =
+      vec3_add(uniforms->cPos, vec3_mult(move_dir, STEP_SIZE_PER_FRAME));
 }
 
 void cursor_callback(GLFWwindow *window, double xPos, double yPos) {
@@ -113,11 +91,12 @@ void cursor_callback(GLFWwindow *window, double xPos, double yPos) {
     userPtr->yawDeg = 360 - userPtr->yawDeg;
 
   float pitch = userPtr->pitchDeg - y * CURSOR_SENSITIVITY / 4.;
-  if (pitch > -90 && pitch < 90)
+  if (pitch > -85 && pitch < 85)
     userPtr->pitchDeg = pitch;
 
   userPtr->lastMouseX = xPos;
   userPtr->lastMouseY = yPos;
+  printf("yaw: %f, pitch: %f\n", userPtr->yawDeg, userPtr->pitchDeg);
 }
 
 void cursor_enter_callback(GLFWwindow *window, int entered) {
@@ -129,26 +108,19 @@ void cursor_enter_callback(GLFWwindow *window, int entered) {
   }
 }
 
-bool update_uniforms(GLFWwindow *window, Uniforms *uniforms) {
+// updates uniforms with the inputs received from GLFW
+bool update_inputs_uniforms(GLFWwindow *window, RUniforms *uniforms) {
   GLFWUserData *ptr = (GLFWUserData *)glfwGetWindowUserPointer(window);
 
-  if (ptr->movingForward != 0) {
-    moveForward(uniforms, (float)ptr->movingForward);
-    return true;
-  }
-  if (ptr->movingLeft != 0) {
-    moveLeft(uniforms, (float)ptr->movingLeft);
-    return true;
-  }
   if (ptr->resetPosition) {
-    uniforms->camPos[0] = 0.0;
-    uniforms->camPos[1] = 1;
-    uniforms->camPos[2] = 0;
+    uniforms->cPos.x = 0.0;
+    uniforms->cPos.y = 1;
+    uniforms->cPos.z = 0;
     ptr->yawDeg = 0.0;
     ptr->pitchDeg = 0.0;
-    /* uniforms->camLookat[0] = 0; */
-    /* uniforms->camLookat[1] = 1; */
-    /* uniforms->camLookat[2] = 0; */
+    /* uniforms->cLookat.x = 0; */
+    /* uniforms->cLookat.y = 1; */
+    /* uniforms->cLookat.z = 0; */
     ptr->resetPosition = false;
   }
   if (ptr->releaseCursor) {
@@ -157,19 +129,34 @@ bool update_uniforms(GLFWwindow *window, Uniforms *uniforms) {
     ptr->paused = true;
   }
 
+  bool changed = false;
+  if (ptr->movingForward != 0) {
+    moveForward(uniforms, (float)ptr->movingForward);
+    changed = true;
+  }
+  if (ptr->movingLeft != 0) {
+    moveLeft(uniforms, (float)ptr->movingLeft);
+    changed = true;
+  }
+  if (ptr->movingUp != 0) {
+    moveUp(uniforms, (float)ptr->movingUp);
+    changed = true;
+  }
+
+  // TODO: focal length should be taken from glTF's znear
   float lookatX =
-      uniforms->camPos[0] + FOCAL_LENGTH * cos(ptr->yawDeg / 180.0 * PI);
+      uniforms->cPos.x + FOCAL_LENGTH * cos(ptr->yawDeg / 180.0 * PI);
   float lookatZ =
-      uniforms->camPos[2] + FOCAL_LENGTH * sin(ptr->yawDeg / 180.0 * PI);
+      uniforms->cPos.z + FOCAL_LENGTH * sin(ptr->yawDeg / 180.0 * PI);
   float lookatY =
-      uniforms->camPos[1] + FOCAL_LENGTH * tan(ptr->pitchDeg / 180.0 * PI);
+      uniforms->cPos.y + FOCAL_LENGTH * tan(ptr->pitchDeg / 180.0 * PI);
 
-  bool changed =
-      (lookatX != uniforms->camLookat[0] || lookatY != uniforms->camLookat[1] ||
-       uniforms->camLookat[2] != lookatZ);
+  changed |= (lookatX != uniforms->cLookat.x ||
+              lookatY != uniforms->cLookat.y || uniforms->cLookat.z != lookatZ);
 
-  uniforms->camLookat[0] = lookatX;
-  uniforms->camLookat[1] = lookatY;
-  uniforms->camLookat[2] = lookatZ;
+  uniforms->cLookat.x = lookatX;
+  uniforms->cLookat.y = lookatY;
+  uniforms->cLookat.z = lookatZ;
+
   return changed;
 }
