@@ -1,5 +1,7 @@
 #ifndef OBJ_PARSER_H_
 #define OBJ_PARSER_H_
+
+void OBJ_PARSER_STUB(void);
 /* #include "../structs.h" */
 /* #include <glad/gl.h> */
 /* #include <stdbool.h> */

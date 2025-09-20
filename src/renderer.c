@@ -11,16 +11,6 @@
 
 #define WINDOW_TITLE "Path Tracing Renderer"
 
-int debug_fn_counter = 0;
-
-void debug() {
-  GLenum error = glGetError();
-  if (error != GL_NO_ERROR)
-    fprintf(stderr, "%d. OpenGL Error: %x\n", ++debug_fn_counter, error);
-  else
-    printf("%d. all good\n", ++debug_fn_counter);
-}
-
 // Function to handle glfw errors
 void glfw_error_callback(int error, const char *description) {
   fprintf(stderr, "Error (%d): %s\n", error, description);

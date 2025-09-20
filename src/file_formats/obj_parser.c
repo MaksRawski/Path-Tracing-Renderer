@@ -1,9 +1,10 @@
-/* #include "obj_parser.h" */
+#include "obj_parser.h"
 /* #include "../utils.h" */
 /* #include <glad/gl.h> */
 /* #include <stdio.h> */
 /* #include <stdlib.h> */
 
+void OBJ_PARSER_STUB(void) {}
 /* #define INFINITY 1.0e30 */
 
 /* const Material default_mat = {.albedo = {0, 0.4, 0.7}, */

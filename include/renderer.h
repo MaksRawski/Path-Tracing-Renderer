@@ -19,8 +19,6 @@
   "#version 330 core\nlayout(location = 0) in vec3 aPos;\nvoid "               \
   "main(){gl_Position=vec4(aPos,1.0);}"
 
-void debug();
-
 // NOTE: all renderer structs are prefixed with `R` as they are intended to be
 // used only from within the renderer
 
