@@ -108,8 +108,8 @@ bool update_inputs_uniforms(GLFWwindow *window, RUniforms *uniforms) {
   GLFWUserData *ptr = (GLFWUserData *)glfwGetWindowUserPointer(window);
 
   if (ptr->resetPosition) {
-    uniforms->cPos.x = 0.0;
-    uniforms->cPos.y = 1;
+    uniforms->cPos.x = 0;
+    uniforms->cPos.y = 0;
     uniforms->cPos.z = 0;
     ptr->yaw = 0.0;
     ptr->pitch = 0.0;
@@ -135,16 +135,22 @@ bool update_inputs_uniforms(GLFWwindow *window, RUniforms *uniforms) {
     changed = true;
   }
 
-  float lookatX = uniforms->cPos.x + FOCAL_LENGTH * cos(ptr->yaw);
-  float lookatZ = uniforms->cPos.z + FOCAL_LENGTH * sin(ptr->yaw);
-  float lookatY = uniforms->cPos.y + FOCAL_LENGTH * tan(ptr->pitch);
-
-  changed |= (lookatX != uniforms->cLookat.x ||
-              lookatY != uniforms->cLookat.y || uniforms->cLookat.z != lookatZ);
-
-  uniforms->cLookat.x = lookatX;
-  uniforms->cLookat.y = lookatY;
-  uniforms->cLookat.z = lookatZ;
+  vec3 new_lookat = lookat_from_inputs(uniforms->cPos, ptr->yaw, ptr->pitch);
+  changed |= !vec3_eq(uniforms->cLookat, new_lookat);
+  uniforms->cLookat = new_lookat;
 
   return changed;
+}
+
+// NOTE: these 2 functions must be kept in sync and perform opposite actions
+vec3 lookat_from_inputs(vec3 pos, float yaw, float pitch) {
+  // TODO: this focal length should be gotten rid of
+  return vec3_new(pos.x + FOCAL_LENGTH * sinf(yaw),
+                  pos.y + FOCAL_LENGTH * tanf(pitch),
+                  pos.z - FOCAL_LENGTH * cosf(yaw));
+}
+
+YawPitch inputs_from_lookat(vec3 pos, vec3 lookat) {
+  return (YawPitch){.yaw = asinf((lookat.x - pos.x) / FOCAL_LENGTH),
+                    .pitch = atanf(lookat.y - pos.y) / FOCAL_LENGTH};
 }

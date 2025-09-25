@@ -10,9 +10,12 @@ typedef struct {
   float x, y, z, _;
 } vec3;
 
+vec3 vec3_new(float x, float y, float z);
+vec3 vec3_from_float3(const float *const v);
+
 /* float3 read_float3_from_line(char *line); */
-vec3 min(const vec3 a, const vec3 b);
-vec3 max(const vec3 a, const vec3 b);
+vec3 vec3_min(vec3 a, vec3 b);
+vec3 vec3_max(vec3 a, vec3 b);
 
 vec3 vec3_add(vec3 a, vec3 b);
 vec3 vec3_sub(vec3 a, vec3 b);
@@ -23,14 +26,21 @@ vec3 vec3_cross(vec3 a, vec3 b);
 float vec3_mag(vec3 v);
 
 // 0 - x, 1 - y, 2 - z
-static inline float vec3_get_by_axis(const vec3 *v, int axis) {
+static inline float vec3_get_by_axis(const vec3 *const v, int axis) {
   return ((float *)v)[axis];
 }
 
-void vec3_copy(const vec3 *src, vec3 *dst);
+void vec3_copy_from_float3(vec3 *const dst, const float *const src);
 void vec3_swap(vec3 *a, vec3 *b);
 /* void vec3_inc(vec3 *a, const vec3 *b); */
-void vec3_from_float3(vec3 *dst, const float src[3]);
 bool is_vec3_zero(vec3 v);
+bool vec3_eq(vec3 a, vec3 b);
+
+typedef struct {
+  char s[32];
+} Vec3Str;
+
+// returns a string representation of a vector
+Vec3Str vec3_str(vec3 v);
 
 #endif // VEC3_H_

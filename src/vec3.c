@@ -1,15 +1,23 @@
 #include "vec3.h"
 #include <math.h>
+#include <stdio.h>
 
-// element-wise mium
-vec3 min(const vec3 a, const vec3 b) {
+vec3 vec3_new(float x, float y, float z) { return (vec3){x, y, z, 0}; }
+// creates a vec3 from 3 consecutive floats
+vec3 vec3_from_float3(const float *const v) {
+  return (vec3){v[0], v[1], v[2], 0};
+}
+
+// element-wise min
+vec3 vec3_min(vec3 a, vec3 b) {
   vec3 res = {.x = a.x <= b.x ? a.x : b.x,
               .y = a.y <= b.y ? a.y : b.y,
               .z = a.z <= b.z ? a.z : b.z};
   return res;
 }
 
-vec3 max(const vec3 a, const vec3 b) {
+// element-wise max
+vec3 vec3_max(vec3 a, vec3 b) {
   vec3 res = {.x = a.x >= b.x ? a.x : b.x,
               .y = a.y >= b.y ? a.y : b.y,
               .z = a.z >= b.z ? a.z : b.z};
@@ -45,25 +53,16 @@ void vec3_swap(vec3 *a, vec3 *b) {
   *a = *b;
   *b = t;
 }
-
-void vec3_copy(const vec3 *src, vec3 *dst) {
-  dst->x = src->x;
-  dst->y = src->y;
-  dst->z = src->z;
-}
-
-bool is_vec3_zero(vec3 v) { return v.x == 0 && v.y == 0 && v.z == 0; }
-
-void vec3_from_float3(vec3 *dst, const float src[3]) {
+void vec3_copy_from_float3(vec3 *const dst, const float *const src) {
   dst->x = src[0];
   dst->y = src[1];
   dst->z = src[2];
 }
 
-float vec3_mag(vec3 v) {
-  return sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
-}
+bool is_vec3_zero(vec3 v) { return v.x == 0 && v.y == 0 && v.z == 0; }
+bool vec3_eq(vec3 a, vec3 b) { return a.x == b.x && a.y == b.y && a.z == b.z; }
 
+float vec3_mag(vec3 v) { return sqrtf(v.x * v.x + v.y * v.y + v.z * v.z); }
 vec3 vec3_norm(vec3 v) { return vec3_mult(v, 1.0 / vec3_mag(v)); }
 
 vec3 vec3_cross(vec3 a, vec3 b) {
@@ -72,4 +71,10 @@ vec3 vec3_cross(vec3 a, vec3 b) {
   r.y = a.x * b.z - a.z * b.x;
   r.z = a.x * b.y - a.y * b.x;
   return r;
+}
+
+Vec3Str vec3_str(vec3 v) {
+  Vec3Str res = {0};
+  sprintf(res.s, "%+.3f %+.3f %+.3f", v.x, v.y, v.z);
+  return res;
 }

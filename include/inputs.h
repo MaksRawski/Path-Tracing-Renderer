@@ -19,4 +19,13 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action,
                   int mods);
 bool update_inputs_uniforms(GLFWwindow *window, RUniforms *uniforms);
 
+vec3 lookat_from_inputs(vec3 position, float yaw_deg, float pitch_deg);
+
+// NOTE: naming can't get any better than this
+typedef struct {
+  float yaw, pitch;
+} YawPitch;
+
+YawPitch inputs_from_lookat(vec3 position, vec3 lookat);
+
 #endif // INPUTS_H_

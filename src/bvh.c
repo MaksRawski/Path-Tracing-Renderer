@@ -93,12 +93,12 @@ void set_node_bounds(BVHnode *node, const Triangle *tris) {
 
   for (int t = node->first; t < last_tri; ++t) {
 
-    node->bound_min = min(node->bound_min, tris[t].a);
-    node->bound_min = min(node->bound_min, tris[t].b);
-    node->bound_min = min(node->bound_min, tris[t].c);
-    node->bound_max = max(node->bound_max, tris[t].a);
-    node->bound_max = max(node->bound_max, tris[t].b);
-    node->bound_max = max(node->bound_max, tris[t].c);
+    node->bound_min = vec3_min(node->bound_min, tris[t].a);
+    node->bound_min = vec3_min(node->bound_min, tris[t].b);
+    node->bound_min = vec3_min(node->bound_min, tris[t].c);
+    node->bound_max = vec3_max(node->bound_max, tris[t].a);
+    node->bound_max = vec3_max(node->bound_max, tris[t].b);
+    node->bound_max = vec3_max(node->bound_max, tris[t].c);
   }
 }
 
