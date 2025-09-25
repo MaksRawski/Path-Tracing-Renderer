@@ -13,7 +13,8 @@ uniform float cFov;
 
 const int MAX_BOUNCE_COUNT = 2;
 const int SAMPLES_PER_PIXEL = 1;
-const float DivergeStrength = 20.0;
+const float DIVERGE_STRENGTH = 0.001;
+const float FOCAL_LENGTH = 10.0;
 
 const float EPSILON = 0.00001;
 const float INFINITY = 1.0e30;
@@ -448,7 +449,7 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
             c *= hitInfo.mat.albedo;
         } else {
             // get color from environment
-            incomingLight += vec3(116, 139, 151) / 255 * c;
+            incomingLight += vec3(58, 58, 58) / 255 * c;
             break;
         }
     }
@@ -474,7 +475,7 @@ void main() {
     vec3 cameraDirection = normalize(cam.lookat - cam.pos);
     vec3 viewportRight = cross(cameraDirection, UP); // cross calculates the vector perpendicular to both its arguments
     vec3 viewportUp = cross(viewportRight, cameraDirection); // use the right-hand rule to see why it makes sense :)
-    float cameraDistanceFromViewport = length(cam.lookat - cam.pos); // AKA focal length
+    float cameraDistanceFromViewport = FOCAL_LENGTH; // AKA focal length
 
     float viewportWidth = 2.0 * cameraDistanceFromViewport * tan(cam.fov / 2.0);
     float viewportHeight = viewportWidth / aspectRatio;
@@ -487,7 +488,7 @@ void main() {
     for (int i = 0; i < SAMPLES_PER_PIXEL; ++i) {
         Ray ray;
         ray.origin = cam.pos;
-        vec2 jitter = RandomPointInCircle(rngState) * DivergeStrength / iResolution.x;
+        vec2 jitter = RandomPointInCircle(rngState) * DIVERGE_STRENGTH;
         vec3 jitteredRayTarget = rayTarget + viewportRight * jitter.x + viewportUp * jitter.y;
 
         ray.dir = normalize(jitteredRayTarget - ray.origin);

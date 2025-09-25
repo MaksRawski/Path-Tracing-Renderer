@@ -1,4 +1,5 @@
 #include "inputs.h"
+#include "asserts.h"
 #include "renderer.h"
 #include "vec3.h"
 #include <GLFW/glfw3.h>
@@ -6,10 +7,6 @@
 
 const float STEP_SIZE_PER_FRAME = 0.05;
 const float CURSOR_SENSITIVITY = 0.001;
-const float FOCAL_LENGTH = 10.0;
-// +Y is UP, must be the same as in the shader
-const vec3 UP = {0, 1, 0, 0};
-const vec3 DEFAULT_LOOKAT = {0, 0, -1, 0};
 
 #define UNUSED(x) (void)(x)
 
@@ -58,8 +55,8 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action,
 
 void moveUp(RUniforms *uniforms, float dir) {
   /* uniforms->cPos.y += STEP_SIZE_PER_FRAME * dir; */
-  uniforms->cPos =
-      vec3_add(uniforms->cPos, vec3_mult(UP, STEP_SIZE_PER_FRAME * dir));
+  uniforms->cPos = vec3_add(
+      uniforms->cPos, vec3_mult(DEFAULT_CAM_UP, STEP_SIZE_PER_FRAME * dir));
 }
 
 void moveForward(RUniforms *uniforms, float dir) {
@@ -71,7 +68,7 @@ void moveForward(RUniforms *uniforms, float dir) {
 
 void moveLeft(RUniforms *uniforms, float dir) {
   vec3 camera_dir = vec3_sub(uniforms->cLookat, uniforms->cPos);
-  vec3 view_left = vec3_norm(vec3_cross(UP, camera_dir));
+  vec3 view_left = vec3_norm(vec3_cross(DEFAULT_CAM_UP, camera_dir));
   vec3 move_dir = vec3_mult(view_left, dir);
   uniforms->cPos =
       vec3_add(uniforms->cPos, vec3_mult(move_dir, STEP_SIZE_PER_FRAME));
@@ -85,6 +82,11 @@ void cursor_callback(GLFWwindow *window, double xPos, double yPos) {
   float y = yPos - userPtr->lastMouseY;
 
   userPtr->yaw += x * CURSOR_SENSITIVITY;
+  for (int i = 0; i < 10 && userPtr->yaw >= 2 * PI; ++i)
+    userPtr->yaw -= 2 * PI;
+
+  for (int i = 0; i < 10 && userPtr->yaw <= 0; ++i)
+    userPtr->yaw += 2 * PI;
 
   float pitch = userPtr->pitch - y * CURSOR_SENSITIVITY;
   if (pitch > -(PI / 2 - 0.05) && pitch < (PI / 2 - 0.05))
@@ -144,13 +146,48 @@ bool update_inputs_uniforms(GLFWwindow *window, RUniforms *uniforms) {
 
 // NOTE: these 2 functions must be kept in sync and perform opposite actions
 vec3 lookat_from_inputs(vec3 pos, float yaw, float pitch) {
-  // TODO: this focal length should be gotten rid of
-  return vec3_new(pos.x + FOCAL_LENGTH * sinf(yaw),
-                  pos.y + FOCAL_LENGTH * tanf(pitch),
-                  pos.z - FOCAL_LENGTH * cosf(yaw));
+  // yaw is expected to be in range [0, 2*PI] but it'd be ok if it wasn't
+  ASSERTQ_CONDF(yaw >= -EPSILON && yaw <= 2 * PI + EPSILON, yaw);
+  // this function explodes if pitch is out of exclusive range (-PI/2, PI/2)
+  ASSERTQ_CONDF(pitch >= -PI / 2.0 + EPSILON && pitch <= PI / 2.0 - EPSILON,
+                pitch);
+
+  // as we want yaw = 0 to correspond to x = 0 and z = -1
+  // then regular angle a = 0 <=> yaw = -PI/2
+  //
+  // TODO: we could optimize it by noticing that this offset corresponds to just
+  // doing the other function
+  float a = yaw - PI / 2.0;
+
+  return vec3_new(pos.x + cosf(a), pos.y + tanf(pitch), pos.z + sinf(a));
 }
 
 YawPitch inputs_from_lookat(vec3 pos, vec3 lookat) {
-  return (YawPitch){.yaw = asinf((lookat.x - pos.x) / FOCAL_LENGTH),
-                    .pitch = atanf(lookat.y - pos.y) / FOCAL_LENGTH};
+  vec3 dir = vec3_sub(lookat, pos);
+  // the first two should be true, but it's ok if they aren't
+  ASSERTQ_CONDF(-1.0 <= dir.x && dir.x <= 1.0, dir.x);
+  ASSERTQ_CONDF(-1.0 <= dir.y && dir.y <= 1.0, dir.y);
+  // this function explodes if this doesn't hold
+  ASSERTQ_CONDF(-1.0 <= dir.z && dir.z <= 1.0, dir.z);
+
+  // yaw = angle - PI / 2
+  // a = yaw + PI /2
+  // cos a = x
+  // sin a = z
+  // acos(x) = a
+  // asin(z) = a
+  //
+  // a = asin(z), gives only [-PI/2, PI/2] (i.e. right half) based on the z axis
+  // if x > 0 we are on the right half otherwise on the left one
+
+  float a = asinf(dir.z); // [-PI/2, PI/2]
+  if (dir.x < 0)
+    a = PI - a; // [PI/2, 3/2*PI]
+
+  // a [-PI/2, 3/2*PI]
+
+  float yaw = a + PI / 2.0; // [0, 2*PI]
+  ASSERTQ_CONDF(yaw >= -EPSILON && yaw <= 2 * PI + EPSILON, yaw);
+
+  return (YawPitch){.yaw = yaw, .pitch = atanf(dir.y)};
 }
