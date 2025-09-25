@@ -3,6 +3,12 @@
 
 #include "bvh.h"
 
+#define PI 3.1415926535897932
+#define DEFAULT_CAM_FOV PI / 4.0
+#define DEFAULT_CAM_POS (vec3){0, 0, 0, 0}
+#define DEFAULT_CAM_UP (vec3){0, 1, 0, 0}
+#define DEFAULT_CAM_LOOKAT (vec3){0, 0, -1, 0}
+
 typedef struct {
   Triangle *triangles;
   Material *mats;

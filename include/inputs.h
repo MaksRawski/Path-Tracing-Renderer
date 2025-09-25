@@ -9,9 +9,7 @@ typedef struct GLFWUserData {
   // 1 means true, -1 the opposite direction and 0 no
   int movingForward, movingLeft, movingUp;
   float lastMouseX, lastMouseY;
-  // yaw = 360 should point at the same point as yaw = 0
-  // pitch = 0 means lookAt.y = cam.pos.y
-  float yawDeg, pitchDeg;
+  float yaw, pitch;
   bool resetPosition, releaseCursor, paused;
 } GLFWUserData;
 

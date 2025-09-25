@@ -315,10 +315,6 @@ void display_fps(GLFWwindow *window, unsigned int *frame_counter,
   }
 }
 
-const float DEFAULT_CAM_FOV = PI / 4.0; // 45 deg
-const vec3 DEFAULT_CAM_POS = {0, 0, 0, 0};
-const vec3 DEFAULT_CAM_LOOKAT = {0, 0, 1, 0}; // look down z axis
-
 RUniforms runiforms_new(int width, int height) {
   return (RUniforms){.cFov = DEFAULT_CAM_FOV,
                      .cLookat = DEFAULT_CAM_LOOKAT,

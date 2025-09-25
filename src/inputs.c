@@ -5,10 +5,11 @@
 #include <math.h>
 
 const float STEP_SIZE_PER_FRAME = 0.05;
-const float CURSOR_SENSITIVITY = 0.1;
+const float CURSOR_SENSITIVITY = 0.001;
 const float FOCAL_LENGTH = 10.0;
 // +Y is UP, must be the same as in the shader
 const vec3 UP = {0, 1, 0, 0};
+const vec3 DEFAULT_LOOKAT = {0, 0, -1, 0};
 
 #define UNUSED(x) (void)(x)
 
@@ -83,15 +84,11 @@ void cursor_callback(GLFWwindow *window, double xPos, double yPos) {
   float x = xPos - userPtr->lastMouseX;
   float y = yPos - userPtr->lastMouseY;
 
-  userPtr->yawDeg += x * CURSOR_SENSITIVITY;
-  if (userPtr->yawDeg >= 360)
-    userPtr->yawDeg = userPtr->yawDeg - 360;
-  if (userPtr->yawDeg < 0)
-    userPtr->yawDeg = 360 - userPtr->yawDeg;
+  userPtr->yaw += x * CURSOR_SENSITIVITY;
 
-  float pitch = userPtr->pitchDeg - y * CURSOR_SENSITIVITY / 4.;
-  if (pitch > -85 && pitch < 85)
-    userPtr->pitchDeg = pitch;
+  float pitch = userPtr->pitch - y * CURSOR_SENSITIVITY;
+  if (pitch > -(PI / 2 - 0.05) && pitch < (PI / 2 - 0.05))
+    userPtr->pitch = pitch;
 
   userPtr->lastMouseX = xPos;
   userPtr->lastMouseY = yPos;
@@ -114,8 +111,8 @@ bool update_inputs_uniforms(GLFWwindow *window, RUniforms *uniforms) {
     uniforms->cPos.x = 0.0;
     uniforms->cPos.y = 1;
     uniforms->cPos.z = 0;
-    ptr->yawDeg = 0.0;
-    ptr->pitchDeg = 0.0;
+    ptr->yaw = 0.0;
+    ptr->pitch = 0.0;
     ptr->resetPosition = false;
   }
   if (ptr->releaseCursor) {
@@ -138,13 +135,9 @@ bool update_inputs_uniforms(GLFWwindow *window, RUniforms *uniforms) {
     changed = true;
   }
 
-  // TODO: focal length should be taken from glTF's znear
-  float lookatX =
-      uniforms->cPos.x + FOCAL_LENGTH * cos(ptr->yawDeg / 180.0 * PI);
-  float lookatZ =
-      uniforms->cPos.z + FOCAL_LENGTH * sin(ptr->yawDeg / 180.0 * PI);
-  float lookatY =
-      uniforms->cPos.y + FOCAL_LENGTH * tan(ptr->pitchDeg / 180.0 * PI);
+  float lookatX = uniforms->cPos.x + FOCAL_LENGTH * cos(ptr->yaw);
+  float lookatZ = uniforms->cPos.z + FOCAL_LENGTH * sin(ptr->yaw);
+  float lookatY = uniforms->cPos.y + FOCAL_LENGTH * tan(ptr->pitch);
 
   changed |= (lookatX != uniforms->cLookat.x ||
               lookatY != uniforms->cLookat.y || uniforms->cLookat.z != lookatZ);
