@@ -1,6 +1,20 @@
+
 CC = clang
-CFLAGS = -g -Wall -Wextra -Wno-unused -Werror -Wpedantic -Ilib/include -Iinclude
+CFLAGS = -Wall -Wextra -Wno-unused -Werror -Wpedantic -Ilib/include -Iinclude
+DEBUG_FLAGS = -g
+RELEASE_FLAGS = -O2
 LDFLAGS = -lglfw -ldl -lm
+
+# must be either: debug release
+MODE = debug
+
+ifeq ($(MODE), debug)
+	CFLAGS += $(DEBUG_FLAGS)
+endif
+ifeq ($(MODE), release)
+	CFLAGS += $(RELEASE_FLAGS)
+endif
+
 
 MAIN := src/main.c
 GLAD_SRC := ./lib/src/gl.c
