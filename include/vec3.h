@@ -33,7 +33,7 @@ static inline float vec3_get_by_axis(const vec3 *const v, int axis) {
 void vec3_copy_from_float3(vec3 *const dst, const float *const src);
 void vec3_swap(vec3 *a, vec3 *b);
 /* void vec3_inc(vec3 *a, const vec3 *b); */
-bool is_vec3_zero(vec3 v);
+bool vec3_is_zero(vec3 v);
 bool vec3_eq(vec3 a, vec3 b);
 
 typedef struct {

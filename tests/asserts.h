@@ -1,6 +1,7 @@
 #ifndef ASSERTS_H_
 #define ASSERTS_H_
 #include "stdio.h"
+#include "epsilon.h"
 
 #define ASSERT(cond, fail_reason)                                              \
   do {                                                                         \
@@ -11,11 +12,11 @@
     }                                                                          \
   } while (0);
 
-#define ASSERT_EQ(a, b)                                                        \
+#define ASSERT_EQF(a, b)                                                        \
   do {                                                                         \
     char out[128];                                                             \
     sprintf(out, "%s (%f) != %s (%f)\n", #a, a, #b, b);                        \
-    ASSERT(a == b, out);                                                       \
+    ASSERT(is_zero(a - b), out);                                               \
   } while (0);
 
 #define ASSERT_VEC3_EQ(a, b)                                                   \

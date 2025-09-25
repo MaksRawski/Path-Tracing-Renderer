@@ -1,4 +1,5 @@
 #include "vec3.h"
+#include "epsilon.h"
 #include <math.h>
 #include <stdio.h>
 
@@ -59,8 +60,12 @@ void vec3_copy_from_float3(vec3 *const dst, const float *const src) {
   dst->z = src[2];
 }
 
-bool is_vec3_zero(vec3 v) { return v.x == 0 && v.y == 0 && v.z == 0; }
-bool vec3_eq(vec3 a, vec3 b) { return a.x == b.x && a.y == b.y && a.z == b.z; }
+bool vec3_is_zero(vec3 v) {
+  return is_zero(v.x) && is_zero(v.y) && is_zero(v.z);
+}
+bool vec3_eq(vec3 a, vec3 b) {
+  return vec3_is_zero(vec3_sub(a, b));
+}
 
 float vec3_mag(vec3 v) { return sqrtf(v.x * v.x + v.y * v.y + v.z * v.z); }
 vec3 vec3_norm(vec3 v) { return vec3_mult(v, 1.0 / vec3_mag(v)); }
