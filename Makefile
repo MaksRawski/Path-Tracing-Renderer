@@ -36,7 +36,20 @@ build/%.o: src/%.c Makefile
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
 
+# ------------------------------TESTS------------------------------
+TESTS_MAIN := tests/main.c
+
+TESTS_TARGET := build/$(TESTS_MAIN:.c=)
+TESTS_DEPS = $(filter-out $(TARGET).o,$(BUILD_DEPS)) $(TESTS_MAIN)
+
+tests: $(TESTS_TARGET)
+	./$(TESTS_TARGET)
+
+$(TESTS_TARGET): $(TESTS_DEPS) tests/asserts.h
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(TESTS_DEPS) -o $@
+
 clean:
 	rm -rf build/*
 
-.PHONY: all clean
+.PHONY: all clean tests
