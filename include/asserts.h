@@ -1,78 +1,47 @@
 #ifndef ASSERTS_H_
 #define ASSERTS_H_
-#include "epsilon.h"
-#include "stdio.h"  // (s)printf
-#include "stdlib.h" // exit
+#include "vec3.h"
 
-// IDEA: macro to create other versions of macros???
+int ASSERT_CUSTOM_impl(bool cond, char *fail_reason, char *file_name,
+                       int line_num);
 
-#define ASSERT_CUSTOM(cond, fail_reason)                                       \
-  do {                                                                         \
-    if (!(cond)) {                                                             \
-      printf("%s:%d: \033[31mASSERTION FAILED\033[0m: %s", __FILE__, __LINE__, \
-             fail_reason);                                                     \
-      return 0;                                                                \
-    }                                                                          \
-  } while (0);
+#define return_if(cond)                                                        \
+  if (cond)                                                                    \
+    return 0;
+
+// implementing as a regular function so that stdio.h doesn't have to be loaded
+void exit_if(bool cond);
+
+// -----------------------------------------------------------------------------
+int ASSERT_CONDF_impl(char *cond_str, bool cond, char *val_str, float val,
+                      char *file_name, int line_num);
 
 #define ASSERT_CONDF(cond, val)                                                \
-  do {                                                                         \
-    char out[128];                                                             \
-    sprintf(out, "(%s) %s = %f \n", #cond, #val, val);                         \
-    ASSERT_CUSTOM(cond, out);                                                  \
-  } while (0);
-
-#define ASSERT_EQF(a, b)                                                       \
-  do {                                                                         \
-    char out[128];                                                             \
-    sprintf(out, "%s (%f) != %s (%f)\n", #a, a, #b, b);                        \
-    ASSERT_CUSTOM(is_zero(a - b), out);                                        \
-  } while (0);
-
-#define ASSERT_VEC3_EQ(a, b)                                                   \
-  do {                                                                         \
-    char out[128];                                                             \
-    sprintf(out, "%s (%s) != %s (%s)\n", #a, vec3_str(a).s, #b,                \
-            vec3_str(b).s);                                                    \
-    ASSERT_CUSTOM(vec3_eq(a, b), out);                                         \
-  } while (0);
-
-#define TEST_RUN(name)                                                         \
-  printf("test %s: \033[33mRUNNING\033[0m\n", #name);                          \
-  if (name())                                                                  \
-    printf("test %s: \033[32mOK\033[0m\n", #name);                           \
-  else                                                                         \
-    printf("test %s: \033[31mERROR\033[0m\n", #name);
-
-#define ASSERTQ_CUSTOM(cond, fail_reason)                                      \
-  do {                                                                         \
-    if (!(cond)) {                                                             \
-      printf("%s:%d: \033[31mASSERTION FAILED\033[0m: %s", __FILE__, __LINE__, \
-             fail_reason);                                                     \
-      exit(1);                                                                 \
-    }                                                                          \
-  } while (0);
+  return_if(ASSERT_CONDF_impl(#cond, cond, #val, val, __FILE__, __LINE__));
 
 #define ASSERTQ_CONDF(cond, val)                                               \
-  do {                                                                         \
-    char out[128];                                                             \
-    sprintf(out, "(%s) %s = %f \n", #cond, #val, val);                         \
-    ASSERTQ_CUSTOM(cond, out);                                                 \
-  } while (0);
+  exit_if(ASSERT_CONDF_impl(#cond, cond, #val, val, __FILE__, __LINE__));
+// -----------------------------------------------------------------------------
+
+// -----------------------------------------------------------------------------
+int ASSERT_EQF_impl(char *a_str, float a, char *b_str, float b, char *file_name,
+                    int line_num);
+
+#define ASSERT_EQF(a, b)                                                       \
+  return_if(ASSERT_EQF_impl(#a, a, #b, b, __FILE__, __LINE__));
 
 #define ASSERTQ_EQF(a, b)                                                      \
-  do {                                                                         \
-    char out[128];                                                             \
-    sprintf(out, "%s (%f) != %s (%f)\n", #a, a, #b, b);                        \
-    ASSERTQ_CUSTOM(is_zero(a - b), out);                                       \
-  } while (0);
+  exit_if(ASSERT_EQF_impl(#a, a, #b, b, __FILE__, __LINE__));
+// -----------------------------------------------------------------------------
+
+// -----------------------------------------------------------------------------
+int ASSERT_VEC3_EQ_impl(char *a_str, vec3 a, char *b_str, vec3 b,
+                        char *file_name, int line_num);
+#define ASSERT_VEC3_EQ(a, b)                                                   \
+  return_if(ASSERT_VEC3_EQ_impl(#a, a, #b, b, __FILE__, __LINE__));
 
 #define ASSERTQ_VEC3_EQ(a, b)                                                  \
-  do {                                                                         \
-    char out[128];                                                             \
-    sprintf(out, "%s (%s) != %s (%s)\n", #a, vec3_str(a).s, #b,                \
-            vec3_str(b).s);                                                    \
-    ASSERTQ(vec3_eq(a, b), out);                                               \
-  } while (0);
+  exit_if(ASSERT_VEC3_EQ_impl(#a, a, #b, b, __FILE__, __LINE__));
+// -----------------------------------------------------------------------------
 
 #endif // ASSERT_H_

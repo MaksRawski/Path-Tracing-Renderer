@@ -48,13 +48,21 @@ int main(int argc, char *argv[]) {
   load_gltf_scene(&scene, argv[1]);
   if (scene.camera_count == 1) {
     uniforms.cFov = scene.camera.projection_matrix.yfov;
-    uniforms.cPos =
-        mat4_mul_vec3(scene.camera.view_matrix, uniforms.cPos);
+    uniforms.cPos = mat4_mul_vec3(scene.camera.view_matrix, uniforms.cPos);
     uniforms.cLookat =
         mat4_mul_vec3(scene.camera.view_matrix, uniforms.cLookat);
 
-    // TODO: adjust aspect ratio
+    // TODO: adjust window aspect ratio based on projection_matrix
+    printf("Pos: %s\n", vec3_str(uniforms.cPos).s);
+    printf("Lookat: %s\n", vec3_str(uniforms.cLookat).s);
+    printf("Fov: %+0.3f\n", uniforms.cFov);
   }
+
+  GLFWUserData *userPtr = glfwGetWindowUserPointer(window);
+  YawPitch yp = inputs_from_lookat(uniforms.cPos, uniforms.cLookat);
+  userPtr->yaw = yp.yaw;
+  userPtr->pitch = yp.pitch;
+  printf("yaw: %0.3f, pitch: %0.3f\n", yp.yaw, yp.pitch);
 
   RBackBuffer bb;
   setup_back_buffer(&bb, width, height);

@@ -1,6 +1,7 @@
 #include "./tests_inputs.h"
 #include "asserts.h"
 #include "inputs.h"
+#include "tests_macros.h"
 #include <math.h>
 
 int test_lookat_from_inputs__by_default_look_at_negative_z_axis(void) {
@@ -52,7 +53,7 @@ int test_inputs_from_lookat__yaw_is_counter_clockwise__90_deg(void) {
 }
 
 int test_inputs_from_lookat__yaw_is_counter_clockwise__60_deg(void) {
-  // we go counter 60 deg clokwise starting from (0, -1)
+  // we go counter clockwise 60 deg starting from (0, -1)
   vec3 pos = vec3_new(0, 0, 0);
   vec3 lookat = vec3_new(cosf(-PI / 6.0), 0, sinf(-PI / 6.0));
 

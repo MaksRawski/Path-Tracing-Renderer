@@ -4,6 +4,7 @@
 #include "vec3.h"
 #include <GLFW/glfw3.h>
 #include <math.h>
+#include "epsilon.h"
 
 const float STEP_SIZE_PER_FRAME = 0.05;
 const float CURSOR_SENSITIVITY = 0.001;
