@@ -4,23 +4,25 @@ DEBUG_FLAGS = -g
 RELEASE_FLAGS = -O2 -DNDEBUG
 LDFLAGS = -lglfw -ldl -lm
 
-# must be either: debug release
+# must be either debug or release
 MODE = debug
 
 ifeq ($(MODE), debug)
 	CFLAGS += $(DEBUG_FLAGS)
+	BUILD_DIR = build/debug
 endif
 ifeq ($(MODE), release)
 	CFLAGS += $(RELEASE_FLAGS)
+	BUILD_DIR = build/release
 endif
 
 
 MAIN := src/main.c
 GLAD_SRC := ./lib/src/gl.c
 
-TARGET := build/$(shell basename $(MAIN) .c)
+TARGET := $(BUILD_DIR)/$(shell basename $(MAIN) .c)
 SRC := $(shell find src -name '*.c')
-OBJ := $(SRC:src/%.c=build/%.o)
+OBJ := $(SRC:src/%.c=$(BUILD_DIR)/%.o)
 BUILD_DEPS := $(OBJ) $(GLAD_SRC)
 D_FILES := $(OBJ:%.o=%.d)
 
@@ -31,16 +33,16 @@ $(TARGET): $(BUILD_DEPS)
 
 -include $(D_FILES)
 
-build/%.o: src/%.c Makefile
+$(BUILD_DIR)/%.o: src/%.c Makefile
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
 
 # ------------------------------TESTS------------------------------
 TESTS_MAIN := tests/main.c
 
-TESTS_TARGET := build/$(TESTS_MAIN:.c=)
+TESTS_TARGET := $(BUILD_DIR)/$(TESTS_MAIN:.c=)
 TESTS_SRC := $(shell find tests -name '*.c')
-TESTS_OBJ := $(filter-out $(TARGET).o,$(OBJ)) $(TESTS_SRC:tests/%.c=build/tests/%.o)
+TESTS_OBJ := $(filter-out $(TARGET).o,$(OBJ)) $(TESTS_SRC:tests/%.c=$(BUILD_DIR)/tests/%.o)
 TESTS_DEPS := $(TESTS_OBJ) $(GLAD_SRC)
 TESTS_D_FILES := $(TESTS_OBJ:%.o=%.d)
 
@@ -51,7 +53,7 @@ tests: $(TESTS_TARGET)
 
 -include $(TESTS_D_FILES)
 
-build/tests/%.o: tests/%.c Makefile
+$(BUILD_DIR)/tests/%.o: tests/%.c Makefile
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
 
