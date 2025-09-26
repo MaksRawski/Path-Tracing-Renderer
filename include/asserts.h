@@ -5,12 +5,19 @@
 bool ASSERT_CUSTOM_impl(bool cond, char *fail_reason, char *file_name,
                         int line_num);
 
-#define return_if_not(cond)                                                        \
-  if (!cond)                                                                    \
+// implementing as a regular function so that stdio.h doesn't have to be loaded
+void exit_if_not_impl(bool cond);
+
+#define return_if_not(cond)                                                    \
+  if (!cond)                                                                   \
     return false;
 
-// implementing as a regular function so that stdio.h doesn't have to be loaded
-void exit_if_not(bool cond);
+// remove ASSERTQ asserts fro release builds
+#ifdef NDEBUG
+#define exit_if_not(cond)
+#else
+#define exit_if_not(cond) exit_if_not_impl(cond)
+#endif
 
 // -----------------------------------------------------------------------------
 bool ASSERT_CONDF_impl(char *cond_str, bool cond, char *val_str, float val,
