@@ -1,4 +1,4 @@
-#include "gltf.h"
+#include "file_formats/gltf.h"
 #include "mat4.h"
 #include "vec3.h"
 #include <math.h>
@@ -8,7 +8,7 @@
 #include <stdlib.h>
 
 #define CGLTF_IMPLEMENTATION
-#include "cgltf.h"
+#include "file_formats/cgltf.h"
 
 const Material DEFAULT_MATERIAL = {
     .albedo = {0.3, 0.3, 0.3},
@@ -93,12 +93,13 @@ void load_gltf_scene(Scene *scene, const char *path) {
 
   // nodes
   cgltf_size t_counter = 0;
+  cgltf_size meshes_counter = 0;
   for (cgltf_size n = 0; n < data->nodes_count; ++n) {
     cgltf_node *node = &data->nodes[n];
 
     // FIXME: technically a node can instantiate both a camera and a mesh
     if (node->mesh != NULL)
-      handle_mesh(data, path, node, scene, n, &t_counter);
+      handle_mesh(data, path, node, scene, meshes_counter++, &t_counter);
     if (node->camera != NULL)
       handle_camera(path, node, scene);
   }
@@ -123,10 +124,10 @@ void load_gltf_scene(Scene *scene, const char *path) {
 }
 
 void handle_mesh(cgltf_data *data, const char *path, cgltf_node *node,
-                 Scene *scene, int n, cgltf_size *const t_counter) {
+                 Scene *scene, int m, cgltf_size *const t_counter) {
   cgltf_mesh mesh = *node->mesh;
   cgltf_size primitives_count = mesh.primitives_count;
-  scene->meshes[n].index = *t_counter;
+  scene->meshes[m].index = *t_counter;
 
   cgltf_float node_transform_matrix[16] = {0};
   cgltf_node_transform_world(node, node_transform_matrix);
@@ -181,11 +182,11 @@ void handle_mesh(cgltf_data *data, const char *path, cgltf_node *node,
     }
   }
 
-  scene->meshes[n].count = *t_counter - scene->meshes[n].index;
+  scene->meshes[m].count = *t_counter - scene->meshes[m].index;
 
   // apply node_transform_matrix to each triangle's vertex
-  int first_tri = scene->meshes[n].index;
-  int last_tri = first_tri + scene->meshes[n].count;
+  int first_tri = scene->meshes[m].index;
+  int last_tri = first_tri + scene->meshes[m].count;
   for (int t = first_tri; t < last_tri; ++t) {
     for (int i = 0; i < 6; ++i) {
       vec3 *v = vec3_get_triangle_vertex(&scene->triangles[t], i);

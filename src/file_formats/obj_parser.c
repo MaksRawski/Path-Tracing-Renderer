@@ -1,4 +1,4 @@
-#include "obj_parser.h"
+#include "file_formats/obj_parser.h"
 /* #include "../utils.h" */
 /* #include <glad/gl.h> */
 /* #include <stdio.h> */

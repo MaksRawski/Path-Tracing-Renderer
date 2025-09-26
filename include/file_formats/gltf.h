@@ -7,7 +7,7 @@
 void load_gltf_scene(Scene *scene, const char *filename);
 
 void handle_mesh(cgltf_data *data, const char *path, cgltf_node *node,
-                 Scene *scene, int n, cgltf_size *const t_counter);
+                 Scene *scene, int m, cgltf_size *const t_counter);
 void handle_camera(const char *path, cgltf_node *node, Scene *scene);
 
 #endif // GLTF_H_
