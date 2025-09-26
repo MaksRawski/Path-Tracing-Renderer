@@ -12,7 +12,7 @@ void exit_if_not_impl(bool cond);
   if (!cond)                                                                   \
     return false;
 
-// remove ASSERTQ asserts fro release builds
+// remove ASSERTQ asserts from release builds
 #ifdef NDEBUG
 #define exit_if_not(cond)
 #else
@@ -39,6 +39,17 @@ bool ASSERT_EQF_impl(char *a_str, float a, char *b_str, float b,
 
 #define ASSERTQ_EQF(a, b)                                                      \
   exit_if_not(ASSERT_EQF_impl(#a, a, #b, b, __FILE__, __LINE__));
+// -----------------------------------------------------------------------------
+
+// -----------------------------------------------------------------------------
+bool ASSERT_EQI_impl(char *a_str, long a, char *b_str, long b, char *file_name,
+                     int line_num);
+
+#define ASSERT_EQI(a, b)                                                       \
+  return_if_not(ASSERT_EQI_impl(#a, a, #b, b, __FILE__, __LINE__));
+
+#define ASSERTQ_EQI(a, b)                                                      \
+  exit_if_not(ASSERT_EQI_impl(#a, a, #b, b, __FILE__, __LINE__));
 // -----------------------------------------------------------------------------
 
 // -----------------------------------------------------------------------------

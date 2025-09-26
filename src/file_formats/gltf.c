@@ -1,4 +1,5 @@
 #include "file_formats/gltf.h"
+#include "asserts.h"
 #include "mat4.h"
 #include "vec3.h"
 #include <math.h>
@@ -40,6 +41,9 @@ const char *cgltf_result_str(cgltf_result res) {
   }
 }
 
+// this compared to ASSERTQ_* handles errors that /may/ actually happen because
+// of user input, whereas the latter is more for asserts that /should/ always
+// hold or otherwise it's an internal error
 void gltf_assert(bool cond, const char *path, const char *err_msg_fmt, ...) {
   if (!cond) {
     char msg[256];
@@ -59,7 +63,6 @@ vec3 *vec3_get_triangle_vertex(Triangle *t, int vertex) {
 }
 
 // scene should be zero-intialized
-// NOTE: this is very naive loading, node-level transformations are ignored
 void load_gltf_scene(Scene *scene, const char *path) {
   cgltf_options options = {0};
   cgltf_data *data = NULL;
@@ -97,12 +100,13 @@ void load_gltf_scene(Scene *scene, const char *path) {
   for (cgltf_size n = 0; n < data->nodes_count; ++n) {
     cgltf_node *node = &data->nodes[n];
 
-    // FIXME: technically a node can instantiate both a camera and a mesh
     if (node->mesh != NULL)
       handle_mesh(data, path, node, scene, meshes_counter++, &t_counter);
     if (node->camera != NULL)
       handle_camera(path, node, scene);
   }
+  ASSERTQ_EQI(t_counter, scene->triangles_count);
+  ASSERTQ_EQI(meshes_counter, scene->meshes_count);
 
   // materials
   scene->mats[0] = DEFAULT_MATERIAL;

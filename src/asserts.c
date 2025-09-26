@@ -27,6 +27,12 @@ bool ASSERT_EQF_impl(char *a_str, float a, char *b_str, float b,
   return ASSERT_CUSTOM_impl(is_zero(a - b), out, file_name, line_num);
 }
 
+bool ASSERT_EQI_impl(char *a_str, long a, char *b_str, long b, char *file_name,
+                     int line_num) {
+  char out[128];
+  sprintf(out, "%s (%ld) != %s (%ld)\n", a_str, a, b_str, b);
+  return ASSERT_CUSTOM_impl(is_zero(a - b), out, file_name, line_num);
+}
 
 bool ASSERT_VEC3_EQ_impl(char *a_str, vec3 a, char *b_str, vec3 b,
                          char *file_name, int line_num) {
