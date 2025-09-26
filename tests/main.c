@@ -1,4 +1,4 @@
-#include "tests_inputs.h"
+#include "inputs/tests_inputs.h"
 #include "tests_macros.h"
 
 int main(void) {
