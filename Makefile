@@ -18,18 +18,18 @@ endif
 MAIN := src/main.c
 GLAD_SRC := ./lib/src/gl.c
 
+TARGET := build/$(shell basename $(MAIN) .c)
 SRC := $(shell find src -name '*.c')
 OBJ := $(SRC:src/%.c=build/%.o)
-DEPS := $(SRC:src/%.c=build/%.d)
-TARGET := build/$(shell basename $(MAIN) .c)
-BUILD_DEPS = $(OBJ) $(GLAD_SRC)
+BUILD_DEPS := $(OBJ) $(GLAD_SRC)
+D_FILES := $(OBJ:%.o=%.d)
 
 all: $(TARGET)
 
 $(TARGET): $(BUILD_DEPS)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(BUILD_DEPS) -o $@
 
--include $(DEPENDS)
+-include $(D_FILES)
 
 build/%.o: src/%.c Makefile
 	@mkdir -p $(dir $@)
@@ -41,11 +41,15 @@ TESTS_MAIN := tests/main.c
 TESTS_TARGET := build/$(TESTS_MAIN:.c=)
 TESTS_SRC := $(shell find tests -name '*.c')
 TESTS_OBJ := $(filter-out $(TARGET).o,$(OBJ)) $(TESTS_SRC:tests/%.c=build/tests/%.o)
-TESTS_DEPS := $(TESTS_OBJ:%.c=%.d) $(GLAD_SRC)
+TESTS_DEPS := $(TESTS_OBJ) $(GLAD_SRC)
+TESTS_D_FILES := $(TESTS_OBJ:%.o=%.d)
+
 CFLAGS += -Itests
 
 tests: $(TESTS_TARGET)
 	./$(TESTS_TARGET)
+
+-include $(TESTS_D_FILES)
 
 build/tests/%.o: tests/%.c Makefile
 	@mkdir -p $(dir $@)
