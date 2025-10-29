@@ -1,8 +1,13 @@
 CC = clang
-CFLAGS = -Wall -Wextra -Wno-unused -Werror -Wpedantic -Ilib/include -Iinclude
+CXX = clang++
+
+CFLAGS = -Wall -Wextra -Wno-unused -Werror -Wpedantic -Iinclude
 DEBUG_FLAGS = -g
 RELEASE_FLAGS = -O2 -DNDEBUG
-LDFLAGS = -lglfw -ldl -lm
+
+include lib/vars.mk
+CFLAGS += $(LIB_INCLUDE_PATHS:%=-Ilib/%)
+LDFLAGS = -ldl -lm -lX11 $(LIB_TARGETS:%=lib/%)
 
 # must be either debug or release
 MODE = debug
@@ -18,18 +23,17 @@ endif
 
 
 MAIN := src/main.c
-GLAD_SRC := ./lib/src/gl.c
 
 TARGET := $(BUILD_DIR)/$(shell basename $(MAIN) .c)
 SRC := $(shell find src -name '*.c')
 OBJ := $(SRC:src/%.c=$(BUILD_DIR)/%.o)
-BUILD_DEPS := $(OBJ) $(GLAD_SRC)
 D_FILES := $(OBJ:%.o=%.d)
+BUILD_DEPS := $(OBJ)
 
 all: $(TARGET)
 
 $(TARGET): $(BUILD_DEPS)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(BUILD_DEPS) -o $@
+	$(CXX) $(CFLAGS) $(BUILD_DEPS) $(LDFLAGS) -o $@
 
 -include $(D_FILES)
 
@@ -43,7 +47,7 @@ TESTS_MAIN := tests/main.c
 TESTS_TARGET := $(BUILD_DIR)/$(TESTS_MAIN:.c=)
 TESTS_SRC := $(shell find tests -name '*.c')
 TESTS_OBJ := $(filter-out $(TARGET).o,$(OBJ)) $(TESTS_SRC:tests/%.c=$(BUILD_DIR)/tests/%.o)
-TESTS_DEPS := $(TESTS_OBJ) $(GLAD_SRC)
+TESTS_DEPS := $(TESTS_OBJ)
 TESTS_D_FILES := $(TESTS_OBJ:%.o=%.d)
 
 CFLAGS += -Itests
@@ -58,7 +62,7 @@ $(BUILD_DIR)/tests/%.o: tests/%.c Makefile
 	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
 
 $(TESTS_TARGET): $(TESTS_DEPS)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(TESTS_DEPS) -o $@
+	$(CC) $(CFLAGS) $(TESTS_DEPS) $(LDFLAGS) -o $@
 
 clean:
 	rm -rf build/*

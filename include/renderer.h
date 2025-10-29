@@ -59,6 +59,8 @@ typedef struct {
   RMeshBuffers *rmb;
 } RFrameStructs;
 
+
+void glfw_error_callback(int error, const char *description); // TODO: this doesn't have to be here
 GLFWwindow *setup_opengl(int width, int height, bool disable_vsync);
 void setup_renderer_buffers(RBuffers *rb);
 GLuint compile_shader(const char *shader_source, GLenum shader_type);

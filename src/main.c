@@ -21,9 +21,7 @@
 const char help_str[] = "Usage: %s scene.gltf";
 
 int main(int argc, char *argv[]) {
-  if (argc != 2)
-    return 1;
-
+  (void)(argc);
   GLFWwindow *window = setup_opengl(WIDTH, HEIGHT, /* disable_vsync = */ false);
 
   GLuint shader_program;
