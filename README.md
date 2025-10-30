@@ -14,6 +14,44 @@ and so far:
 - snake_case for functions_names, variable_names and struct_members
 - PascalCase for StructNames
 
+## Building
+This project uses submodules for libraries so if you don't specify `--recurse-submodules`
+during `git clone`, you will have to run `git submodule update --init --recursive` in the
+root of the cloned project.
+
+After making sure all the libraries are downloaded, compile them with:
+
+```
+make -Clib
+```
+
+This has to be done only once. Afterwards regular compilation can be performed with just:
+
+```
+make
+```
+
+or 
+
+```
+make MODE=release
+```
+
+## Tests
+Tests are provided in the `tests/` directory and can be run with:
+
+```
+make tests
+```
+
+My DIY "testing framework" is made up of 
+- `include/asserts.h`, `src/asserts.c`
+- and a simple `TEST_RUN` macro from `tests/tests_macros.h` 
+
+`asserts` are included in the main part of the project as they turned out
+to be convenient as runtime checks on debug builds, and so they are completely 
+removed when compiling with `-DNDEBUG`.
+
 ### Resources used:
 - [Sebastian Lague's video on ray tracing](https://www.youtube.com/watch?v=Qz0KTGYJtUk)
 - [tinyraytracer](https://github.com/ssloy/tinyraytracer/wiki/Part-1:-understandable-raytracing)
