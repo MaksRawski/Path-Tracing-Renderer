@@ -1,6 +1,7 @@
 
 #include "file_formats/gltf.h"
 #include "mat4.h"
+#include "renderer/buffers.h"
 #include "structs.h"
 #include "utils.h"
 #include <stdlib.h>
@@ -27,9 +28,6 @@ int main(int argc, char *argv[]) {
   GLuint shader_program;
   RFilesWatcher shader_watcher;
   init_shader_watcher(&shader_watcher, "src/vertex.glsl", "src/renderer.glsl");
-
-  RBuffers rb;
-  setup_renderer_buffers(&rb);
 
   int width, height;
   glfwGetFramebufferSize(window, &width, &height);
@@ -61,9 +59,6 @@ int main(int argc, char *argv[]) {
   userPtr->yaw = yp.yaw;
   userPtr->pitch = yp.pitch;
   printf("yaw: %0.3f, pitch: %0.3f\n", yp.yaw, yp.pitch);
-
-  RBackBuffer bb;
-  setup_back_buffer(&bb, width, height);
 
   BVHresult b_res = build_bvh(scene.triangles, scene.triangles_count);
   scene.bvh = b_res.bvh;
@@ -112,16 +107,14 @@ int main(int argc, char *argv[]) {
   /*   else */
   /*     printf("  (leaf) %d + %d\n", node.first, node.count); */
   /* } */
-  RMeshBuffers rmb = rmb_build(&scene);
-  RFrameStructs rfs = {
-      .uniforms = &uniforms, .rb = &rb, .back_buffer = &bb, .rmb = &rmb};
+  RendererBuffers rb = RendererBuffers_new(width, height, &scene);
 
   reload_shader(&shader_program, &shader_watcher);
   bool should_reset = false;
   while (!glfwWindowShouldClose(window)) {
     if (did_shader_change(&shader_watcher)) {
       reload_shader(&shader_program, &shader_watcher);
-      rmb = rmb_build(&scene);
+      RendererBuffers_rebuild(&rb, &scene);
       should_reset = true;
     }
 
@@ -139,7 +132,7 @@ int main(int argc, char *argv[]) {
       uniforms.iResolution[1] = height;
 
       // Resize the backbuffer texture
-      glBindTexture(GL_TEXTURE_2D, bb.fboTex);
+      glBindTexture(GL_TEXTURE_2D, rb.back.fboTex);
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
                    GL_UNSIGNED_BYTE, NULL);
       glBindTexture(GL_TEXTURE_2D, 0);
@@ -158,13 +151,12 @@ int main(int argc, char *argv[]) {
     frame_counter++;
 
     glClear(GL_COLOR_BUFFER_BIT);
-    update_frame(shader_program, window, &rfs);
+    update_frame(shader_program, window, &rb, &uniforms);
 
     glfwPollEvents();
     ++uniforms.iFrame;
   }
-
-  free_gl_buffers(&rb, &bb, &rmb);
+  RendererBuffers_delete(&rb);
   delete_file_watcher(&shader_watcher);
   glDeleteProgram(shader_program);
   glfwTerminate();

@@ -1,6 +1,7 @@
 #ifndef RENDERER_H_
 #define RENDERER_H_
 
+#include "renderer/buffers.h"
 #include "scene.h"
 #include <glad/gl.h>
 //
@@ -75,8 +76,7 @@ void setup_back_buffer(RBackBuffer *bb, unsigned int width,
                        unsigned int height);
 void display_fps(GLFWwindow *window, unsigned int *frame_counter,
                  double *last_frame_time);
-void update_frame(GLuint shader_program, GLFWwindow *window,
-                  const RFrameStructs *rfs);
+void update_frame(GLuint shader_program, GLFWwindow *window, const RendererBuffers *rb, RUniforms *uniforms);
 RUniforms runiforms_new(int width, int height);
 RMeshBuffers rmb_build(const Scene *scene);
 /* void do_gl_binds(GLuint shader_program, const RMeshBuffers *rmb); */

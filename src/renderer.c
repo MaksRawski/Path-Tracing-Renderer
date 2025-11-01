@@ -1,5 +1,6 @@
 #include "renderer.h"
 #include "inputs.h"
+#include "renderer/buffers.h"
 #include "utils.h"
 #include <errno.h>
 #include <stdbool.h>
@@ -96,67 +97,34 @@ void setup_renderer_buffers(RBuffers *rb) {
   glBindVertexArray(0);
 }
 
-void generate_ssbo(GLuint *ssbo, const void *data, int size, int index) {
-  glGenBuffers(1, ssbo);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, *ssbo);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, size, data, GL_STATIC_READ);
-  /* glBindBufferBase(GL_SHADER_STORAGE_BUFFER, index, *ssbo); */
-  glBindBufferRange(GL_SHADER_STORAGE_BUFFER, index, *ssbo, 0, size);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-}
-
-RMeshBuffers rmb_build(const Scene *scene) {
-  RMeshBuffers rmb = {0};
-
-  generate_ssbo(&rmb.triangles_ssbo, scene->triangles,
-                scene->triangles_count * sizeof(Triangle), 1);
-  generate_ssbo(&rmb.bvh_nodes_ssbo, scene->bvh.nodes,
-                scene->bvh.nodes_count * sizeof(BVHnode), 2);
-  generate_ssbo(&rmb.mats_ssbo, scene->mats,
-                scene->mats_count * sizeof(Material), 3);
-  // NOTE: this assumes that primitives are just a LUT for triangles
-  generate_ssbo(&rmb.primitives_ssbo, scene->primitives,
-                scene->triangles_count * sizeof(Primitive), 4);
-
-  rmb.bvh_nodes_count = scene->bvh.nodes_count;
-  rmb.triangle_count = scene->triangles_count;
-  rmb.mats_count = scene->mats_count;
-
-  return rmb;
-}
-
 void update_frame(GLuint shader_program, GLFWwindow *window,
-                  const RFrameStructs *rfs) {
+                  const RendererBuffers *rb, RUniforms *uniforms) {
   // setup the program and bind the vao associated with the quad
   // and the vbo holding the vertices of the quad
   glUseProgram(shader_program);
-  glBindVertexArray(rfs->rb->vao);
+  glBindVertexArray(rb->internal.vao);
 
   // render the quad to the back buffer
-  glBindFramebuffer(GL_FRAMEBUFFER, rfs->back_buffer->fbo);
+  glBindFramebuffer(GL_FRAMEBUFFER, rb->back.fbo);
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, rfs->back_buffer->fboTex);
+  glBindTexture(GL_TEXTURE_2D, rb->back.fboTex);
   glUniform1i(glGetUniformLocation(shader_program, "BackBufferTexture"), 0);
   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
   // update "simple" uniforms
-  glUniform1i(glGetUniformLocation(shader_program, "iFrame"),
-              rfs->uniforms->iFrame);
+  glUniform1i(glGetUniformLocation(shader_program, "iFrame"), uniforms->iFrame);
   glUniform2f(glGetUniformLocation(shader_program, "iResolution"),
-              rfs->uniforms->iResolution[0], rfs->uniforms->iResolution[1]);
+              uniforms->iResolution[0], uniforms->iResolution[1]);
 
-  glUniform3f(glGetUniformLocation(shader_program, "cPos"),
-              rfs->uniforms->cPos.x, rfs->uniforms->cPos.y,
-              rfs->uniforms->cPos.z);
+  glUniform3f(glGetUniformLocation(shader_program, "cPos"), uniforms->cPos.x,
+              uniforms->cPos.y, uniforms->cPos.z);
   glUniform3f(glGetUniformLocation(shader_program, "cLookat"),
-              rfs->uniforms->cLookat.x, rfs->uniforms->cLookat.y,
-              rfs->uniforms->cLookat.z);
-  glUniform1f(glGetUniformLocation(shader_program, "cFov"),
-              rfs->uniforms->cFov);
+              uniforms->cLookat.x, uniforms->cLookat.y, uniforms->cLookat.z);
+  glUniform1f(glGetUniformLocation(shader_program, "cFov"), uniforms->cFov);
 
   // render the quad to the screen
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  glBindVertexArray(rfs->rb->vao);
+  glBindVertexArray(rb->internal.vao);
   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
   glfwSwapBuffers(window);
   glfwPollEvents();
