@@ -34,7 +34,6 @@ struct Camera {
     // horizontal field of view in radians
     float fov;
     float focal_length;
-	int _, _1;
 };
 
 struct Ray {

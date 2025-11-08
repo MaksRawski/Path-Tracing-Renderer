@@ -10,7 +10,7 @@
 #define DEFAULT_CAM_DIR vec3_new(0, 0, -1)
 #define DEFAULT_CAM_UP vec3_new(0, 1, 0)
 #define DEFAULT_CAM_FOV M_PI / 4.0
-#define DEFAULT_CAM_FOCAL_LENGTH 10.0
+#define DEFAULT_CAM_FOCAL_LENGTH 20.0
 
 typedef struct {
   vec3 pos;
