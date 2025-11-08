@@ -1,8 +1,18 @@
-#include "bvh.h"
+#include "scene/bvh.h"
 #include <math.h>
 #include <stdlib.h>
 
-BVHresult build_bvh(Triangle *tri, int tri_count) {
+void calculate_centroids(Triangle *tri, int tri_count, vec3 *centroids);
+void set_node_bounds(BVHnode *node, const Triangle *tris);
+void subdivide(BVHnode *nodes, int node_idx, Triangle *tri, vec3 *centroids,
+               int *created_nodes, int swaps_lut[]);
+
+void tri_swap(Triangle *a, Triangle *b);
+int split_group(Triangle *tris, vec3 *centroids, int first, int count, int axis,
+                float split_pos, int swaps_lut[]);
+
+
+BVHresult BVH_build(Triangle *tri, int tri_count) {
   BVHresult res = {0};
   res.bvh.nodes = calloc(tri_count * 2 - 1, sizeof(BVHnode));
   res.swaps_lut = malloc(tri_count * sizeof(int));
@@ -19,6 +29,11 @@ BVHresult build_bvh(Triangle *tri, int tri_count) {
 
   free(centroids);
   return res;
+}
+
+void BVH_delete(BVH *self) {
+  free(self->nodes);
+  self = NULL;
 }
 
 // recursively subdivide a node until there are 2 primitives left

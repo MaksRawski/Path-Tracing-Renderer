@@ -11,7 +11,6 @@ bool test_load_gltf_scene__cube_camera(void) {
   ASSERT_EQI(scene.triangles_count, 12);
   ASSERT_EQI(scene.mats_count, 1); // just the default material
   ASSERT_EQI(scene.meshes_count, 1);
-  ASSERT_EQI(scene.camera_count, 1);
 
   return true;
 }

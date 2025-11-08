@@ -1,15 +1,16 @@
 #include "file_formats/gltf.h"
 #include "asserts.h"
+#include "cgltf.h"
 #include "mat4.h"
+#include "scene.h"
+#include "scene/camera.h"
 #include "vec3.h"
-#include <math.h>
+
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#define CGLTF_IMPLEMENTATION
-#include "file_formats/cgltf.h"
+#include <string.h>
 
 const Material DEFAULT_MATERIAL = {
     .albedo = {0.3, 0.3, 0.3},
@@ -56,11 +57,9 @@ void gltf_assert(bool cond, const char *path, const char *err_msg_fmt, ...) {
   }
 }
 
-// vertex must be a number from 0 to 5
-vec3 *vec3_get_triangle_vertex(Triangle *t, int vertex) {
-  // HACK: this is technically UB but /it works/ and is soooo easy to write
-  return ((vec3 *)t) + vertex;
-}
+void handle_mesh(cgltf_data *data, const char *path, cgltf_node *node,
+                 Scene *scene, int m, cgltf_size *const t_counter);
+void handle_camera(const char *path, cgltf_node *node, Scene *scene);
 
 // scene should be zero-intialized
 void load_gltf_scene(Scene *scene, const char *path) {
@@ -83,6 +82,8 @@ void load_gltf_scene(Scene *scene, const char *path) {
       total_triangles += prim.indices->count / 3;
     }
   }
+
+  scene->camera = Camera_default();
 
   // there will always be a default material at 0
   scene->mats_count = data->materials_count + 1;
@@ -173,11 +174,15 @@ void handle_mesh(cgltf_data *data, const char *path, cgltf_node *node,
     cgltf_size t_count = idx_accessor->count / 3;
     for (cgltf_size i = 0; i < t_count; ++i) {
       for (cgltf_size v = 0; v < 3; ++v) {
-        vec3 *tv = (vec3 *)(scene->triangles + *t_counter) + v;
-        vec3 *tn = tv + 3;
+        vec3 *tv = Triangle_get_vertex(&scene->triangles[*t_counter], v);
+        vec3 *tn = Triangle_get_vertex(&scene->triangles[*t_counter], v + 3);
         cgltf_size index = cgltf_accessor_read_index(idx_accessor, 3 * i + v);
-        cgltf_accessor_read_float(pos_accessor, index, (float *)tv, 3);
-        cgltf_accessor_read_float(norm_accessor, index, (float *)tn, 3);
+
+        float tvf[3], tnf[3];
+        cgltf_accessor_read_float(pos_accessor, index, tvf, 3);
+        cgltf_accessor_read_float(norm_accessor, index, tnf, 3);
+        vec3_copy_from_float3(tv, tvf);
+        vec3_copy_from_float3(tn, tnf);
       }
       // NOTE: primitive in my case is a just a wrapper around a single
       // triangle
@@ -193,8 +198,8 @@ void handle_mesh(cgltf_data *data, const char *path, cgltf_node *node,
   int last_tri = first_tri + scene->meshes[m].count;
   for (int t = first_tri; t < last_tri; ++t) {
     for (int i = 0; i < 6; ++i) {
-      vec3 *v = vec3_get_triangle_vertex(&scene->triangles[t], i);
-      *v = mat4_mul_vec3(node_transform_matrix, *v);
+      vec3 *v = Triangle_get_vertex(&scene->triangles[t], i);
+      *v = Mat4_mul_vec3(node_transform_matrix, *v);
     }
   }
 }
@@ -203,14 +208,22 @@ void handle_camera(const char *path, cgltf_node *node, Scene *scene) {
   gltf_assert(node->camera->type == cgltf_camera_type_perspective, path,
               "Only perspective camera type is supported! Got type %d\n",
               node->camera->type);
+  // From glTF 2.0 Specification
+  // (https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#cameras-overview):
+  // "A camera object defines the projection matrix that transforms scene
+  // coordinates from the view space to the clip space.
+  // A node containing the camera instance defines the view matrix that
+  // transforms scene coordinates from the global space to the view space."
 
   cgltf_camera_perspective cam = node->camera->data.perspective;
-  scene->camera.projection_matrix.aspectRatio = cam.aspect_ratio;
-  scene->camera.projection_matrix.yfov = cam.yfov;
-  scene->camera.projection_matrix.zfar = cam.has_zfar ? cam.zfar : INFINITY;
-  scene->camera.projection_matrix.znear = cam.znear;
-
   cgltf_float node_transform_matrix[16] = {0};
-  cgltf_node_transform_world(node, scene->camera.view_matrix);
-  ++scene->camera_count;
+  Mat4 view_matrix;
+  cgltf_node_transform_world(node, view_matrix);
+  vec3 pos = Mat4_mul_vec3(view_matrix, DEFAULT_CAM_POS);
+  vec3 lookat =
+      Mat4_mul_vec3(view_matrix, vec3_add(DEFAULT_CAM_POS, DEFAULT_CAM_DIR));
+  vec3 dir = vec3_sub(lookat, pos);
+
+  scene->camera =
+      Camera_new(pos, dir, DEFAULT_CAM_UP, cam.yfov, DEFAULT_CAM_FOCAL_LENGTH);
 }

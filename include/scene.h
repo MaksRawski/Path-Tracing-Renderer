@@ -1,13 +1,12 @@
 #ifndef SCENE_H_
 #define SCENE_H_
 
-#include "bvh.h"
-
-#define PI 3.1415926535897932
-#define DEFAULT_CAM_FOV PI / 4.0
-#define DEFAULT_CAM_POS (vec3){0, 0, 0, 0}
-#define DEFAULT_CAM_UP (vec3){0, 1, 0, 0}
-#define DEFAULT_CAM_LOOKAT (vec3){0, 0, -1, 0}
+#include "scene/bvh.h"
+#include "scene/camera.h"
+#include "scene/material.h"
+#include "scene/mesh.h"
+#include "scene/primitive.h"
+#include "scene/triangle.h"
 
 typedef struct {
   Triangle *triangles;
@@ -19,9 +18,12 @@ typedef struct {
 
   // primitives are just wrappers around triangles so the count is going to be
   // the same
-  int triangles_count, mats_count, meshes_count, camera_count;
+  int triangles_count, mats_count, meshes_count;
 
   BVH bvh;
 } Scene;
+
+Scene Scene_load_gltf(const char *path);
+void Scene_delete(Scene *self);
 
 #endif // SCENE_H_

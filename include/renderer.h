@@ -1,84 +1,37 @@
 #ifndef RENDERER_H_
 #define RENDERER_H_
 
-#include "scene.h"
-#include <glad/gl.h>
-//
-#include <GLFW/glfw3.h>
-#include <stdbool.h>
+#include "renderer/buffers.h"
+#include "renderer/shaders.h"
+#include "renderer/uniforms.h"
 
-#define EVENT_SIZE (sizeof(struct inotify_event))
-#define BUF_LEN (1024 * (EVENT_SIZE + 16))
-
-#define PI 3.1415926535897932
-
-// renders just pure white
-#define DEFAULT_FRAGMENT_SHADER                                                \
-  "#version 330 core\nvoid main(){gl_FragColor=vec4(1.0,1.0,1.0,1.0);}"
-#define DEFAULT_VERTEX_SHADER                                                  \
-  "#version 330 core\nlayout(location = 0) in vec3 aPos;\nvoid "               \
-  "main(){gl_Position=vec4(aPos,1.0);}"
-
-// NOTE: all renderer structs are prefixed with `R` as they are intended to be
-// used only from within the renderer
+#include "opengl/context.h"
 
 typedef struct {
-  int num_of_files;
-  int *watcher_fds;
-  const char **file_names;
-} RFilesWatcher;
+  RendererShaders _shaders;
+  RendererBuffers _buffers;
+  RendererUniforms _uniforms;
+  // the last known resolution to render for
+  OpenGLResolution resolution;
+  int _fps_counter;
+  double _last_frame_time;
+} Renderer;
 
-typedef struct {
-  GLuint fbo, fboTex;
-} RBackBuffer;
+// NOTE: the created window may not have the same resolution that was desired
+// e.g. due to scaling
+Renderer Renderer_new(OpenGLResolution real_resolution);
+void Renderer_load_scene(Renderer *self, const Scene *scene,
+                         GLFWUserData *user_data);
+void Renderer_load_gltf(Renderer *self, const char *gltf_path,
+                        GLFWUserData *user_data);
+void Renderer_update_state(Renderer *self, GLFWUserData *user_data,
+                           OpenGLResolution res);
+void Renderer_render_frame(Renderer *self, OpenGLContext *ctx);
+void Renderer_delete(Renderer *self);
 
-// Renderer's OpenGL buffers for all mesh related data that should be on the GPU
-typedef struct {
-  int triangle_count, bvh_nodes_count, mats_count;
-  GLuint triangles_ssbo, bvh_nodes_ssbo, mats_ssbo, primitives_ssbo;
-} RMeshBuffers;
-
-// buffers used internally by the renderer
-typedef struct {
-  GLuint vbo;
-  // vertex array object, describes how to interpret vbo?
-  GLuint vao;
-} RBuffers;
-
-typedef struct {
-  unsigned int iFrame;
-  float iResolution[2];
-  vec3 cPos, cLookat;
-  float cFov;
-} RUniforms;
-
-typedef struct {
-  RUniforms *uniforms;
-  RBuffers *rb;
-  RBackBuffer *back_buffer;
-  RMeshBuffers *rmb;
-} RFrameStructs;
-
-
-void glfw_error_callback(int error, const char *description); // TODO: this doesn't have to be here
-GLFWwindow *setup_opengl(int width, int height, bool disable_vsync);
-void setup_renderer_buffers(RBuffers *rb);
-GLuint compile_shader(const char *shader_source, GLenum shader_type);
-GLuint create_shader_program(const char *vertex_shader_filename,
-                             const char *fragment_shader_filename);
-GLuint create_shader_program_from_source(const char *vertex_shader_src,
-                                         const char *fragment_shader_src);
-bool did_shader_change(RFilesWatcher *shader_files_watcher);
-void reload_shader(GLuint *shader_program, RFilesWatcher *shader_files_watcher);
-
-void setup_back_buffer(RBackBuffer *bb, unsigned int width,
-                       unsigned int height);
-void display_fps(GLFWwindow *window, unsigned int *frame_counter,
-                 double *last_frame_time);
-void update_frame(GLuint shader_program, GLFWwindow *window,
-                  const RFrameStructs *rfs);
-RUniforms runiforms_new(int width, int height);
-RMeshBuffers rmb_build(const Scene *scene);
-/* void do_gl_binds(GLuint shader_program, const RMeshBuffers *rmb); */
+void Renderer_handle_key_callback(GLFWUserData *user_data, int key,
+                                  int scancode, int action, int mods);
+void Renderer_handle_cursor_callback(GLFWUserData *user_data, double xPos,
+                                     double yPos);
 
 #endif // RENDERER_H_

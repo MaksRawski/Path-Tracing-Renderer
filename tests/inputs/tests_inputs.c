@@ -1,139 +1,75 @@
 #include "./tests_inputs.h"
 #include "asserts.h"
-#include "inputs.h"
 #include "tests_macros.h"
+#include "yawpitch.h"
 #include <math.h>
 
-bool test_lookat_from_inputs__by_default_look_at_negative_z_axis(void) {
-  vec3 pos = vec3_new(0, 0, 0);
-  float yaw = 0, pitch = 0;
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
-  vec3 lookat = lookat_from_inputs(pos, yaw, pitch);
-  vec3 expected_lookat = vec3_new(0, 0, -1);
+#define TEST_YAW_PITCH_TO_DIR(test_name, yaw, pitch, expected_dir)             \
+  bool test_YawPitch_to_dir__##test_name(void) {                               \
+    Vec3d dir = YawPitch_to_dir(YawPitch_new(yaw, pitch));                     \
+    ASSERT_VEC3D_EQ(dir, Vec3d_new expected_dir);                              \
+    return true;                                                               \
+  }
 
-  ASSERT_VEC3_EQ(lookat, expected_lookat);
-  return true;
-}
+#define TEST_YAW_PITCH_FROM_DIR(test_name, dir, expected_yaw, expected_pitch)  \
+  bool test_YawPitch_from_dir__##test_name(void) {                             \
+    YawPitch yp = YawPitch_from_dir(Vec3d_new dir);                            \
+    ASSERT_EQF(yp.yaw, expected_yaw);                                          \
+    ASSERT_EQF(yp.pitch, expected_pitch);                                      \
+    return true;                                                               \
+  }
 
-bool test_lookat_from_inputs__yaw_is_counter_clockwise__90_deg(void) {
-  vec3 pos = vec3_new(0, 0, 0);
-  float yaw = PI / 2.0, pitch = 0;
+#define TEST_YAW_PITCH_ID(test_name, yaaw, piitch)                             \
+  bool test_YawPitch_id__##test_name(void) {                                   \
+    Vec3d dir = YawPitch_to_dir(YawPitch_new(yaaw, piitch));                   \
+    YawPitch yp = YawPitch_from_dir(dir);                                      \
+    ASSERT_EQF(yp.yaw, yaaw);                                                  \
+    ASSERT_EQF(yp.pitch, piitch);                                              \
+    return true;                                                               \
+  }
 
-  vec3 lookat = lookat_from_inputs(pos, yaw, pitch);
-  vec3 expected_lookat = vec3_new(1, 0, 0);
+TEST_YAW_PITCH_TO_DIR(by_default_look_at_negative_z_axis, 0, 0, //
+                      (0, 0, -1))
+TEST_YAW_PITCH_TO_DIR(yaw_is_counter_clockwise__90_deg, M_PI / 2.0, 0,
+                      (1, 0, 0))
+TEST_YAW_PITCH_TO_DIR(yaw_is_counter_clockwise__60_deg, M_PI / 3.0, 0,
+                      (cosf(-M_PI / 6.0), 0.0, sinf(-M_PI / 6.0)))
 
-  ASSERT_VEC3_EQ(lookat, expected_lookat);
-  return true;
-}
+TEST_YAW_PITCH_FROM_DIR(by_default_look_at_negative_z_axis, (0, 0, -1), //
+                        0, 0)
+TEST_YAW_PITCH_FROM_DIR(yaw_is_counter_clockwise__90_deg, (1, 0, 0), //
+                        M_PI / 2.0, 0)
+TEST_YAW_PITCH_FROM_DIR(yaw_is_counter_clockwise__60_deg,
+                        (cosf(-M_PI / 6.0), 0.0, sinf(-M_PI / 6.0)), //
+                        M_PI / 3.0, 0)
 
-bool test_lookat_from_inputs__yaw_is_counter_clockwise__60_deg(void) {
-  vec3 pos = vec3_new(0, 0, 0);
-  //
-  float yaw = PI / 3.0, pitch = 0;
+TEST_YAW_PITCH_ID(leet, 1.337, 0.42)
+TEST_YAW_PITCH_ID(decimals, 0.1, 0.2)
+TEST_YAW_PITCH_ID(260deg, 2 * M_PI * 260.0 / 360.0, 0.2)
 
-  vec3 lookat = lookat_from_inputs(pos, yaw, pitch);
-  vec3 expected_lookat = vec3_new(cosf(-PI / 6.0), 0.0, sinf(-PI / 6.0));
-
-  ASSERT_VEC3_EQ(lookat, expected_lookat);
-  return true;
-}
-
-bool test_inputs_from_lookat__yaw_is_counter_clockwise__90_deg(void) {
-  vec3 pos = vec3_new(0, 0, 0);
-  vec3 lookat = vec3_new(1, 0, 0);
-
-  YawPitch yp = inputs_from_lookat(pos, lookat);
-
-  float expected_yaw = PI / 2;
-  float expected_pitch = 0;
-
-  ASSERT_EQF(yp.yaw, expected_yaw);
-  ASSERT_EQF(yp.pitch, expected_pitch);
-  return true;
-}
-
-bool test_inputs_from_lookat__yaw_is_counter_clockwise__60_deg(void) {
-  // we go counter clockwise 60 deg starting from (0, -1)
-  vec3 pos = vec3_new(0, 0, 0);
-  vec3 lookat = vec3_new(cosf(-PI / 6.0), 0, sinf(-PI / 6.0));
-
-  YawPitch yp = inputs_from_lookat(pos, lookat);
-
-  float expected_yaw = PI / 3;
-  float expected_pitch = 0;
-
-  ASSERT_EQF(yp.yaw, expected_yaw);
-  ASSERT_EQF(yp.pitch, expected_pitch);
-  return true;
-}
-
-bool test_inputs_from_lookat__by_default_look_at_negative_z_axis(void) {
-  vec3 pos = vec3_new(0, 3, 0);
-  vec3 lookat = vec3_new(0, 3, -1);
-
-  YawPitch yp = inputs_from_lookat(pos, lookat);
-
-  float expected_yaw = 0;
-  float expected_pitch = 0;
-
-  ASSERT_EQF(yp.yaw, expected_yaw);
-  ASSERT_EQF(yp.pitch, expected_pitch);
-  return true;
-}
-
-// NOTE: no matter the implementation, these id tests should always pass
-bool test_inputs_from_lookat__id(void) {
-  vec3 pos = vec3_new(-7, 1.5, -4);
-  vec3 lookat = vec3_new(pos.x - sqrtf(2) / 2.0, 1.5, pos.z - sqrtf(2) / 2.0);
-  // making sure that that we have a unit vector
-  ASSERT_EQF(vec3_mag(vec3_sub(pos, lookat)), 1.0);
-
-  YawPitch yp = inputs_from_lookat(pos, lookat);
-  vec3 new_lookat = lookat_from_inputs(pos, yp.yaw, yp.pitch);
-
-  ASSERT_VEC3_EQ(new_lookat, lookat);
-  return true;
-}
-
-bool test_lookat_from_inputs__id(void) {
-  vec3 pos = vec3_new(-7, 1.5, -4);
-  float yaw = sqrtf(2.0) / 2.0;
-  float pitch = 0.2;
-
-  vec3 lookat = lookat_from_inputs(pos, yaw, pitch);
-  YawPitch yp = inputs_from_lookat(pos, lookat);
-
-  ASSERT_EQF(yp.yaw, yaw);
-  ASSERT_EQF(yp.pitch, pitch);
-  return true;
-}
-
-bool test_inputs_from_lookat__real_fail(void) {
-  vec3 pos = vec3_new(0, 0, 0);
-  vec3 lookat = vec3_new(1 - 0.0340743065, 0, 1 - 0.7411808968);
-  // making sure that that we have a unit vector
-  ASSERT_EQF(vec3_mag(vec3_sub(pos, lookat)), 1.0);
-
-  YawPitch yp = inputs_from_lookat(pos, lookat);
-  vec3 new_lookat = lookat_from_inputs(pos, yp.yaw, yp.pitch);
-  ASSERT_EQF(vec3_mag(vec3_sub(pos, new_lookat)), 1.0);
-
-  ASSERT_VEC3_EQ(new_lookat, lookat);
-  return true;
-}
-
+TEST_YAW_PITCH_ID(extreme_min, 0.0, -M_PI / 2.0 + 1e-15)
+TEST_YAW_PITCH_ID(extreme_mid, M_PI, 0.0)
+TEST_YAW_PITCH_ID(extreme_max, 2 * M_PI - 1e-5, M_PI / 2.0 - 1e-15)
 
 bool all_inputs_tests(void) {
-  TEST_RUN(test_lookat_from_inputs__by_default_look_at_negative_z_axis);
-  TEST_RUN(test_lookat_from_inputs__yaw_is_counter_clockwise__90_deg);
-  TEST_RUN(test_lookat_from_inputs__yaw_is_counter_clockwise__60_deg);
-  TEST_RUN(test_lookat_from_inputs__id);
+  TEST_RUN(test_YawPitch_to_dir__by_default_look_at_negative_z_axis);
+  TEST_RUN(test_YawPitch_to_dir__yaw_is_counter_clockwise__90_deg);
+  TEST_RUN(test_YawPitch_to_dir__yaw_is_counter_clockwise__60_deg);
 
-  TEST_RUN(test_inputs_from_lookat__yaw_is_counter_clockwise__90_deg);
-  TEST_RUN(test_inputs_from_lookat__yaw_is_counter_clockwise__60_deg);
-  TEST_RUN(test_inputs_from_lookat__by_default_look_at_negative_z_axis);
-  TEST_RUN(test_inputs_from_lookat__id);
+  TEST_RUN(test_YawPitch_from_dir__by_default_look_at_negative_z_axis);
+  TEST_RUN(test_YawPitch_from_dir__yaw_is_counter_clockwise__90_deg);
+  TEST_RUN(test_YawPitch_from_dir__yaw_is_counter_clockwise__60_deg);
 
-  TEST_RUN(test_inputs_from_lookat__real_fail);
+  TEST_RUN(test_YawPitch_id__leet);
+  TEST_RUN(test_YawPitch_id__decimals);
+  TEST_RUN(test_YawPitch_id__260deg);
+  TEST_RUN(test_YawPitch_id__extreme_min);
+  TEST_RUN(test_YawPitch_id__extreme_mid);
+  TEST_RUN(test_YawPitch_id__extreme_max);
+
   return true;
 }

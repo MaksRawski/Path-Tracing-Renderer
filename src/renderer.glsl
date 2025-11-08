@@ -8,19 +8,15 @@ uniform int iFrame;
 uniform vec2 iResolution;
 uniform sampler2D backBufferTexture;
 uniform int bvhNodeCount;
-uniform vec3 cPos, cLookat;
-uniform float cFov;
 
 const int MAX_BOUNCE_COUNT = 2;
 const int SAMPLES_PER_PIXEL = 1;
 const float DIVERGE_STRENGTH = 0.001;
-const float FOCAL_LENGTH = 10.0;
 
 const float EPSILON = 0.00001;
 const float INFINITY = 1.0e30;
 const float C_PI = 3.141592653589793;
 const float C_TWOPI = 6.283185307179586;
-const vec3 UP = vec3(0, 1, 0);
 
 out vec4 FragColor;
 
@@ -30,14 +26,15 @@ out vec4 FragColor;
 #define STACK_SIZE 40
 #define MAX_ITERATIONS 200
 
-// https : //raytracing.github.io/books/RayTracingInOneWeekend.html#positionablecamera (12.2)
+// https://raytracing.github.io/books/RayTracingInOneWeekend.html#positionablecamera (12.2)
 struct Camera {
-    // camera's position
-    vec3 pos;
-    // what's camera pointed at
-    vec3 lookat;
+    vec4 pos;
+    vec4 dir;
+	vec4 up;
     // horizontal field of view in radians
     float fov;
+    float focal_length;
+	int _, _1;
 };
 
 struct Ray {
@@ -83,7 +80,7 @@ struct Primitive {
 layout(std430, binding = 1) readonly buffer trianglesBuffer {
     Triangle triangles[];
 };
-layout(std430, binding = 2) readonly buffer bvhNodes {
+layout(std430, binding = 2) readonly buffer bvhNodesBuffer {
     BVHnode nodes[];
 };
 layout(std430, binding = 3) readonly buffer materialsBuffer {
@@ -91,6 +88,9 @@ layout(std430, binding = 3) readonly buffer materialsBuffer {
 };
 layout(std430, binding = 4) readonly buffer primitivesBuffer {
     Primitive primitives[];
+};
+layout(std430, binding = 5) readonly buffer cameraBuffer {
+    Camera camera;
 };
 
 struct Sphere {
@@ -456,7 +456,6 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
     return incomingLight;
 }
 
-// void mainImage(out vec4 FragColor, in vec2 gl_FragCcoord) {
 void main() {
     uint pixelIndex = uint(gl_FragCoord.x) + uint(gl_FragCoord.y) * uint(iResolution.x);
     uint rngState = uint(pixelIndex + uint(iFrame * 719393));
@@ -466,28 +465,21 @@ void main() {
     uv = 2.0 * uv - 1.0; // normalized coordinates [-1, 1]
     float aspectRatio = iResolution.x / iResolution.y;
 
-    // camera
-    Camera cam;
-    cam.pos = cPos;
-    cam.lookat = cLookat;
-    cam.fov = cFov;
+    vec3 viewportRight = cross(camera.dir.xyz, camera.up.xyz);
+    vec3 viewportUp = cross(viewportRight, camera.dir.xyz);
+    float cameraDistanceFromViewport = camera.focal_length;
 
-    vec3 cameraDirection = normalize(cam.lookat - cam.pos);
-    vec3 viewportRight = cross(cameraDirection, UP); // cross calculates the vector perpendicular to both its arguments
-    vec3 viewportUp = cross(viewportRight, cameraDirection); // use the right-hand rule to see why it makes sense :)
-    float cameraDistanceFromViewport = FOCAL_LENGTH; // AKA focal length
-
-    float viewportWidth = 2.0 * cameraDistanceFromViewport * tan(cam.fov / 2.0);
+    float viewportWidth = 2.0 * cameraDistanceFromViewport * tan(camera.fov / 2.0);
     float viewportHeight = viewportWidth / aspectRatio;
 
-    vec3 rayTarget = cameraDirection * cameraDistanceFromViewport +
+    vec3 rayTarget = camera.dir.xyz * cameraDistanceFromViewport +
             viewportWidth * viewportRight * uv.x +
             viewportHeight * viewportUp * uv.y;
 
     vec3 totalIncomingLight = vec3(0.0, 0.0, 0.0);
     for (int i = 0; i < SAMPLES_PER_PIXEL; ++i) {
         Ray ray;
-        ray.origin = cam.pos;
+        ray.origin = camera.pos.xyz;
         vec2 jitter = RandomPointInCircle(rngState) * DIVERGE_STRENGTH;
         vec3 jitteredRayTarget = rayTarget + viewportRight * jitter.x + viewportUp * jitter.y;
 
