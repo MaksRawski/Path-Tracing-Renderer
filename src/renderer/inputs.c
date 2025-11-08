@@ -1,6 +1,5 @@
 #include "renderer/inputs.h"
 #include "vec3d.h"
-#include <stdio.h>
 
 #define STEP_SIZE_PER_FRAME 0.05
 
@@ -24,7 +23,6 @@ bool RendererInputs_update_camera(Camera *cam, const GLFWUserData *user_data) {
   }
   vec3 new_dir = Vec3d_to_vec3(YawPitch_to_dir(user_data->renderer.yp));
   if (!vec3_eq(cam->dir, new_dir)) {
-    printf("old dir: %s, new_dir: %s\n", vec3_str(cam->dir).s, vec3_str(new_dir).s);
     cam->dir = new_dir;
     changed = true;
   }
