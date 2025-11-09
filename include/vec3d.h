@@ -30,7 +30,7 @@ double Vec3d_mag(Vec3d v);
 
 // 0 - x, 1 - y, 2 - z
 static inline double Vec3d_get_by_axis(const Vec3d *const v, int axis) {
-  return ((double *)v)[axis];
+  return ((const double *)v)[axis];
 }
 
 void Vec3d_copy_from_double3(Vec3d *const dst, const double *const src);

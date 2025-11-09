@@ -1,10 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-
-// for hot reloading on linux
-#include <fcntl.h>
-#include <sys/inotify.h>
 
 /* void print_triangles(Triangle *tri, vec3 *centroids, int count) { */
 /*   for (int t = 0; t < count; ++t) { */

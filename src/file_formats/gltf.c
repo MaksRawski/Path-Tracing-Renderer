@@ -216,7 +216,6 @@ void handle_camera(const char *path, cgltf_node *node, Scene *scene) {
   // transforms scene coordinates from the global space to the view space."
 
   cgltf_camera_perspective cam = node->camera->data.perspective;
-  cgltf_float node_transform_matrix[16] = {0};
   Mat4 view_matrix;
   cgltf_node_transform_world(node, view_matrix);
   vec3 pos = Mat4_mul_vec3(view_matrix, DEFAULT_CAM_POS);

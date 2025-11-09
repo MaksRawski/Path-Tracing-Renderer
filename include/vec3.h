@@ -27,7 +27,7 @@ float vec3_mag(vec3 v);
 
 // 0 - x, 1 - y, 2 - z
 static inline float vec3_get_by_axis(const vec3 *const v, int axis) {
-  return ((float *)v)[axis];
+  return ((const float *)v)[axis];
 }
 
 void vec3_copy_from_float3(vec3 *const dst, const float *const src);

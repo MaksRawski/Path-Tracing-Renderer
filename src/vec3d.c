@@ -9,7 +9,7 @@ Vec3d Vec3d_from_double3(const double *const v) {
   return Vec3d_new(v[0], v[1], v[2]);
 }
 
-vec3 Vec3d_to_vec3(Vec3d v) { return vec3_new(v.x, v.y, v.z); }
+vec3 Vec3d_to_vec3(Vec3d v) { return vec3_new((float)v.x, (float)v.y, (float)v.z); }
 Vec3d Vec3d_from_vec3(vec3 v) { return Vec3d_new(v.x, v.y, v.z); }
 
 // element-wise min
@@ -68,7 +68,7 @@ bool Vec3d_is_zero(Vec3d v) {
 }
 bool Vec3d_eq(Vec3d a, Vec3d b) { return Vec3d_is_zero(Vec3d_sub(a, b)); }
 
-double Vec3d_mag(Vec3d v) { return sqrtf(v.x * v.x + v.y * v.y + v.z * v.z); }
+double Vec3d_mag(Vec3d v) { return sqrt(v.x * v.x + v.y * v.y + v.z * v.z); }
 Vec3d Vec3d_norm(Vec3d v) { return Vec3d_mult(v, 1.0 / Vec3d_mag(v)); }
 
 Vec3d Vec3d_cross(Vec3d a, Vec3d b) {

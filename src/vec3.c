@@ -6,7 +6,7 @@
 vec3 vec3_new(float x, float y, float z) { return (vec3){x, y, z, 0}; }
 // creates a vec3 from 3 consecutive floats
 vec3 vec3_from_float3(const float *const v) {
-  return (vec3){v[0], v[1], v[2], 0};
+  return vec3_new(v[0], v[1], v[2]);
 }
 
 // element-wise min
@@ -68,7 +68,7 @@ bool vec3_eq(vec3 a, vec3 b) {
 }
 
 float vec3_mag(vec3 v) { return sqrtf(v.x * v.x + v.y * v.y + v.z * v.z); }
-vec3 vec3_norm(vec3 v) { return vec3_mult(v, 1.0 / vec3_mag(v)); }
+vec3 vec3_norm(vec3 v) { return vec3_mult(v, 1.0f / vec3_mag(v)); }
 
 vec3 vec3_cross(vec3 a, vec3 b) {
   vec3 r = {0};

@@ -21,7 +21,7 @@ void exit_if_not_impl(bool cond);
 #endif
 
 // -----------------------------------------------------------------------------
-bool ASSERT_CONDF_impl(char *cond_str, bool cond, char *val_str, float val,
+bool ASSERT_CONDF_impl(char *cond_str, bool cond, char *val_str, double val,
                        char *file_name, int line_num);
 
 #define ASSERT_CONDF(cond, val)                                                \
@@ -32,7 +32,7 @@ bool ASSERT_CONDF_impl(char *cond_str, bool cond, char *val_str, float val,
 // -----------------------------------------------------------------------------
 
 // -----------------------------------------------------------------------------
-bool ASSERT_EQF_impl(char *a_str, float a, char *b_str, float b,
+bool ASSERT_EQF_impl(char *a_str, double a, char *b_str, double b,
                      char *file_name, int line_num);
 
 #define ASSERT_EQF(a, b)                                                       \

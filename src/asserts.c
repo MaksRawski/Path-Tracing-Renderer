@@ -13,14 +13,14 @@ bool ASSERT_CUSTOM_impl(bool cond, char *fail_reason, char *file_name,
   return true;
 }
 
-bool ASSERT_CONDF_impl(char *cond_str, bool cond, char *val_str, float val,
+bool ASSERT_CONDF_impl(char *cond_str, bool cond, char *val_str, double val,
                        char *file_name, int line_num) {
   char out[256];
   sprintf(out, "(%s) %s = %f \n", cond_str, val_str, val);
   return ASSERT_CUSTOM_impl(cond, out, file_name, line_num);
 }
 
-bool ASSERT_EQF_impl(char *a_str, float a, char *b_str, float b,
+bool ASSERT_EQF_impl(char *a_str, double a, char *b_str, double b,
                      char *file_name, int line_num) {
   char out[256];
   sprintf(out, "%s (%f) != %s (%f)\n", a_str, a, b_str, b);
@@ -31,7 +31,7 @@ bool ASSERT_EQI_impl(char *a_str, long a, char *b_str, long b, char *file_name,
                      int line_num) {
   char out[256];
   sprintf(out, "%s (%ld) != %s (%ld)\n", a_str, a, b_str, b);
-  return ASSERT_CUSTOM_impl(is_zero(a - b), out, file_name, line_num);
+  return ASSERT_CUSTOM_impl(a == b, out, file_name, line_num);
 }
 
 bool ASSERT_VEC3_EQ_impl(char *a_str, vec3 a, char *b_str, vec3 b,

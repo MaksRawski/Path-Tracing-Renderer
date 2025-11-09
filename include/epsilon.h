@@ -7,6 +7,6 @@
 // comparing values and how close can they be before considering them equal
 #define EPSILON (1.0 / (1 << 20))
 
-static inline bool is_zero(float x) { return x < EPSILON && x > -EPSILON; }
+static inline bool is_zero(double x) { return x < EPSILON && x > -EPSILON; }
 
 #endif // EPSILON_H_
