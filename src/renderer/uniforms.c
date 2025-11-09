@@ -6,7 +6,6 @@ RendererUniforms RendererUniforms_new(unsigned int width, unsigned int height) {
 }
 
 void RendererUniforms_update(RendererUniforms *self, OpenGLResolution res) {
-  ++self->_iFrame;
   self->_iResolution[0] = res.width;
   self->_iResolution[1] = res.height;
 }

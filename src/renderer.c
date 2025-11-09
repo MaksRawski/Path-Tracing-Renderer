@@ -5,6 +5,7 @@
 #include "renderer/buffers_scene.h"
 #include "renderer/inputs.h"
 #include "renderer/uniforms.h"
+#include "scene/camera.h"
 #include "vec3d.h"
 #include <stdio.h>
 
@@ -49,9 +50,8 @@ void Renderer_load_gltf(Renderer *self, const char *gltf_path,
 void display_fps(GLFWwindow *window, int *frame_counter,
                  double *last_frame_time);
 
-// NOTE: this doesn't reset the currently loaded scene,
-// just forces the sample collection to restart
-void Renderer_reset(Renderer *self, GLFWUserData *user_data) {
+// NOTE: this just forces the sample collection to restart
+void Renderer_restart(Renderer *self, GLFWUserData *user_data) {
   UNUSED(user_data);
   RendererUniforms_reset(&self->_uniforms);
 }
@@ -62,32 +62,38 @@ void Renderer_update_state(Renderer *self, GLFWUserData *user_data,
   if (RendererShaders_update(&self->_shaders)) {
     should_reset = true;
   }
-  should_reset |= !OpenGLResolution_eq(self->resolution, res);
+  if (!OpenGLResolution_eq(self->resolution, res)) {
+    self->resolution = res;
+    should_reset = true;
+  }
+
   RendererUniforms_update(&self->_uniforms, res);
 
-  // TODO: update_camera shouldn't be called here directly!
+  // TODO: we shouldn't be accessing camera here directly!
   bool new_camera =
       RendererInputs_update_camera(&self->_buffers.scene._camera, user_data);
+
+  if (user_data->renderer.resetPosition) {
+    user_data->renderer.resetPosition = false;
+    user_data->renderer.yp = YawPitch_new(0, 0);
+    self->_buffers.scene._camera = Camera_default();
+    new_camera = true;
+  }
+
   if (new_camera) {
     RendererBuffersScene_update_camera(&self->_buffers.scene,
                                        self->_buffers.scene._camera);
     should_reset = true;
   }
 
-  if (user_data->renderer.resetPosition) {
-    user_data->renderer.yp = YawPitch_new(0, 0);
-    user_data->renderer.resetPosition = false;
-    should_reset = true;
-  }
-
   if (should_reset) {
-    Renderer_reset(self, user_data);
+    Renderer_restart(self, user_data);
   }
 }
 
 void Renderer_render_frame(Renderer *self, OpenGLContext *ctx) {
   // resize the backbuffer on the first frame
-  if (self->_fps_counter == 0) {
+  if (self->_uniforms._iFrame == 0) {
     glBindTexture(GL_TEXTURE_2D, self->_buffers.back.fboTex);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, self->resolution.width,
                  self->resolution.height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
