@@ -1,7 +1,9 @@
 CC = clang
 CXX = clang++
 
-CFLAGS = -std=c99 -Wall -Wextra -Wno-unused -Werror -Wpedantic -Iinclude
+CFLAGS = -std=c99 -Wall -Wextra -Wpedantic 
+CFLAGS += -Wcast-align -Wpointer-arith -Wcast-qual -Wunreachable-code -Wshadow 
+CFLAGS += -Iinclude
 DEBUG_FLAGS = -g
 RELEASE_FLAGS = -O2 -DNDEBUG
 
