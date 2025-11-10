@@ -9,7 +9,7 @@ RELEASE_FLAGS = -O2 -DNDEBUG
 
 include lib/vars.mk
 CFLAGS += $(LIB_INCLUDE_PATHS:%=-Ilib/%)
-LDFLAGS = -ldl -lm -lX11 $(LIB_TARGETS:%=lib/%)
+LDFLAGS = -ldl -lm -lX11 -lglfw $(LIB_TARGETS:%=lib/%)
 
 # must be either debug or release
 MODE = debug

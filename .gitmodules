@@ -1,6 +1,3 @@
-[submodule "lib/glfw"]
-	path = lib/glfw
-	url = https://github.com/glfw/glfw
 [submodule "lib/cimgui"]
 	path = lib/cimgui
 	url = https://github.com/cimgui/cimgui
