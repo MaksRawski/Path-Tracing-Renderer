@@ -1,15 +1,16 @@
 #include "renderer.h"
+#include <stdio.h>
 
 #define DESIRED_WIDTH 1280
 #define DESIRED_HEIGHT 720
 #define WINDOW_TITLE "Path Tracing Renderer"
 
-const char help_str[] = "Usage: %s scene.gltf";
-
 int main(int argc, char *argv[]) {
-  if (argc != 2)
+  if (argc != 2) {
+    printf("Usage: %s scene.gltf\n", argv[0]);
     return 1;
-
+  }
+  
   OpenGLContext ctx =
       OpenGLContext_new(WINDOW_TITLE, DESIRED_WIDTH, DESIRED_HEIGHT);
   Renderer renderer = Renderer_new(OpenGLContext_get_resolution(&ctx));
