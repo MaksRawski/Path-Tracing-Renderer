@@ -82,11 +82,8 @@ bool ASSERT_VEC3D_EQ_impl(char *a_str, Vec3d a, char *b_str, Vec3d b,
 
 // -----------------------------------------------------------------------------
 // compare two numeric arrays
-#define ASSERT_ARRAYN_EQ(_a, _b, type, count)                                  \
+#define ASSERT_ARRAYN_EQ(_a, _b, count)                                        \
   do {                                                                         \
-    /* 64-bit integer has at max 19 digits, add to that the other formatted    \
-     * stuff */                                                                \
-    char out[20 * count + 100];                                                \
     bool arrays_equal = true;                                                  \
     for (unsigned long i = 0; i < count; ++i) {                                \
       if (_a[i] != _b[i]) {                                                    \
@@ -94,17 +91,20 @@ bool ASSERT_VEC3D_EQ_impl(char *a_str, Vec3d a, char *b_str, Vec3d b,
         const char element_fmt[] = _Generic((_a[0]),                           \
             int: "%d",                                                         \
             unsigned int: "%d",                                                \
-            long: "%l",                                                        \
+            long: "%ld",                                                       \
             unsigned long: "%lu");                                             \
         char a_str[20];                                                        \
         char b_str[20];                                                        \
         sprintf(a_str, element_fmt, _a[i]);                                    \
         sprintf(b_str, element_fmt, _b[i]);                                    \
-        sprintf(out, "%s[%lu] != %s[%lu] (%s != %s)\n", #_a, i, #_b, i, a_str, \
+        char msg[256];                                                         \
+        sprintf(msg, "%s[%lu] != %s[%lu] (%s != %s)\n", #_a, i, #_b, i, a_str, \
                 b_str);                                                        \
+        ASSERT_CUSTOM_impl(arrays_equal, msg, __FILE__, __LINE__);             \
       }                                                                        \
+      if (!arrays_equal)                                                       \
+        return false;                                                          \
     }                                                                          \
-    return ASSERT_CUSTOM_impl(arrays_equal, out, __FILE__, __LINE__);          \
   } while (0)
 // -----------------------------------------------------------------------------
 
