@@ -18,7 +18,8 @@ Scene Scene_load_gltf(const char *path) {
 
 void Scene_build_bvh(Scene *self) {
   BVHresult b_res = BVH_build(self->triangles, self->triangles_count);
-  BVH_apply_swaps_lut(b_res.swaps_lut, self->primitives, Primitive, self->triangles_count);
+  BVH_apply_swaps_lut(b_res.swaps_lut, self->primitives, Primitive,
+                      self->triangles_count);
   self->bvh = b_res.bvh;
 
   free(b_res.swaps_lut);
