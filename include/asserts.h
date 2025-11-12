@@ -1,5 +1,8 @@
 #ifndef ASSERTS_H_
 #define ASSERTS_H_
+
+#include <stdbool.h>
+
 #include "vec3.h"
 #include "vec3d.h"
 
@@ -75,6 +78,34 @@ bool ASSERT_VEC3D_EQ_impl(char *a_str, Vec3d a, char *b_str, Vec3d b,
 
 #define ASSERTQ_VEC3D_EQ(a, b)                                                 \
   exit_if_not(ASSERT_VEC3D_EQ_impl(#a, a, #b, b, __FILE__, __LINE__));
+// -----------------------------------------------------------------------------
+
+// -----------------------------------------------------------------------------
+// compare two numeric arrays
+#define ASSERT_ARRAYN_EQ(_a, _b, type, count)                                  \
+  do {                                                                         \
+    /* 64-bit integer has at max 19 digits, add to that the other formatted    \
+     * stuff */                                                                \
+    char out[20 * count + 100];                                                \
+    bool arrays_equal = true;                                                  \
+    for (unsigned long i = 0; i < count; ++i) {                                \
+      if (_a[i] != _b[i]) {                                                    \
+        arrays_equal = false;                                                  \
+        const char element_fmt[] = _Generic((_a[0]),                           \
+            int: "%d",                                                         \
+            unsigned int: "%d",                                                \
+            long: "%l",                                                        \
+            unsigned long: "%lu");                                             \
+        char a_str[20];                                                        \
+        char b_str[20];                                                        \
+        sprintf(a_str, element_fmt, _a[i]);                                    \
+        sprintf(b_str, element_fmt, _b[i]);                                    \
+        sprintf(out, "%s[%lu] != %s[%lu] (%s != %s)\n", #_a, i, #_b, i, a_str, \
+                b_str);                                                        \
+      }                                                                        \
+    }                                                                          \
+    return ASSERT_CUSTOM_impl(arrays_equal, out, __FILE__, __LINE__);          \
+  } while (0)
 // -----------------------------------------------------------------------------
 
 #endif // ASSERT_H_

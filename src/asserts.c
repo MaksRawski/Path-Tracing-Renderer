@@ -13,6 +13,11 @@ bool ASSERT_CUSTOM_impl(bool cond, char *fail_reason, char *file_name,
   return true;
 }
 
+void exit_if_not_impl(bool cond) {
+  if (!cond)
+    exit(1);
+}
+
 bool ASSERT_CONDF_impl(char *cond_str, bool cond, char *val_str, double val,
                        char *file_name, int line_num) {
   char out[256];
@@ -43,14 +48,9 @@ bool ASSERT_VEC3_EQ_impl(char *a_str, vec3 a, char *b_str, vec3 b,
 }
 
 bool ASSERT_VEC3D_EQ_impl(char *a_str, Vec3d a, char *b_str, Vec3d b,
-                         char *file_name, int line_num) {
+                          char *file_name, int line_num) {
   char out[256];
   sprintf(out, "%s (%s) != %s (%s)\n", a_str, Vec3d_str(a).s, b_str,
           Vec3d_str(b).s);
   return ASSERT_CUSTOM_impl(Vec3d_eq(a, b), out, file_name, line_num);
-}
-
-void exit_if_not_impl(bool cond) {
-  if (!cond)
-    exit(1);
 }
