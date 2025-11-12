@@ -1,7 +1,7 @@
 CC = clang
 CXX = clang++
 
-CFLAGS = -std=c99 -Wall -Wextra -Wpedantic 
+CFLAGS = -std=c11 -Wall -Wextra -Wpedantic 
 CFLAGS += -Wcast-align -Wpointer-arith -Wcast-qual -Wunreachable-code -Wshadow 
 CFLAGS += -Iinclude
 DEBUG_FLAGS = -g

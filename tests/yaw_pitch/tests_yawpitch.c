@@ -1,4 +1,4 @@
-#include "./tests_inputs.h"
+#include "./tests_yawpitch.h"
 #include "asserts.h"
 #include "tests_macros.h"
 #include "yawpitch.h"
@@ -55,7 +55,7 @@ TEST_YAW_PITCH_ID(extreme_min, 0.0, -M_PI / 2.0 + 1e-15)
 TEST_YAW_PITCH_ID(extreme_mid, M_PI, 0.0)
 TEST_YAW_PITCH_ID(extreme_max, 2 * M_PI - 1e-5, M_PI / 2.0 - 1e-15)
 
-bool all_inputs_tests(void) {
+bool all_yawpitch_tests(void) {
   TEST_RUN(test_YawPitch_to_dir__by_default_look_at_negative_z_axis);
   TEST_RUN(test_YawPitch_to_dir__yaw_is_counter_clockwise__90_deg);
   TEST_RUN(test_YawPitch_to_dir__yaw_is_counter_clockwise__60_deg);
