@@ -40,11 +40,12 @@ void BVH_delete(BVH *self);
 
 #define BVH_apply_swaps_lut(lut, objects, object_type, count)                  \
   do {                                                                         \
+    object_type object_type##_copy[count];                                     \
+    for (unsigned long i = 0; i < count; ++i)                                  \
+      object_type##_copy[i] = objects[i];                                      \
     for (unsigned long i = 0; i < count; ++i) {                                \
       unsigned long swap_idx = lut[i];                                         \
-      if (i < swap_idx) {                                                      \
-        SWAP(objects[i], objects[swap_idx], object_type);                      \
-      }                                                                        \
+      objects[i] = object_type##_copy[swap_idx];                               \
     }                                                                          \
   } while (0);
 

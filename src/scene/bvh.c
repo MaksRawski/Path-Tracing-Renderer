@@ -1,7 +1,6 @@
 #include "scene/bvh.h"
 #include <math.h>
 #include <stdlib.h>
-#include <string.h>
 
 void calculate_centroids(Triangle *tri, int tri_count, vec3 centroids[]);
 void set_node_bounds(BVHnode *node, const Triangle tris[]);
@@ -138,7 +137,7 @@ BVHTriCount split_group(Triangle tris[], vec3 centroids[], BVHTriCount first,
     else {
       SWAP(tris[i], tris[j], Triangle);
       SWAP(centroids[i], centroids[j], vec3);
-      SWAP(swaps_lut[i], swaps_lut[j], unsigned int)
+      SWAP(swaps_lut[i], swaps_lut[j], BVHTriCount)
 
       --j;
     }
