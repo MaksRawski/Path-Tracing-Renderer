@@ -1,30 +1,31 @@
 #include "scene/bvh.h"
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 
-void calculate_centroids(Triangle *tri, int tri_count, vec3 *centroids);
-void set_node_bounds(BVHnode *node, const Triangle *tris);
-void subdivide(BVHnode *nodes, int node_idx, Triangle *tri, vec3 *centroids,
-               int *created_nodes, int swaps_lut[]);
+void calculate_centroids(Triangle *tri, int tri_count, vec3 centroids[]);
+void set_node_bounds(BVHnode *node, const Triangle tris[]);
+void subdivide(BVHnode nodes[], int node_idx, Triangle tri[], vec3 centroids[],
+               BVHNodeCount *created_nodes, BVHTriCount swaps_lut[]);
 
 void tri_swap(Triangle *a, Triangle *b);
-int split_group(Triangle *tris, vec3 *centroids, int first, int count, int axis,
-                float split_pos, int swaps_lut[]);
+BVHTriCount split_group(Triangle *tris, vec3 *centroids, BVHTriCount first,
+                        BVHTriCount count, unsigned int axis, float split_pos,
+                        BVHTriCount swaps_lut[]);
 
-
-BVHresult BVH_build(Triangle *tri, int tri_count) {
+BVHresult BVH_build(Triangle triangles[], BVHTriCount count) {
   BVHresult res = {0};
-  res.bvh.nodes = calloc(tri_count * 2 - 1, sizeof(BVHnode));
-  res.swaps_lut = malloc(tri_count * sizeof(int));
-  for (int i = 0; i < tri_count; ++i)
+  res.bvh.nodes = calloc(count * 2 - 1, sizeof(BVHnode));
+  res.swaps_lut = malloc(count * sizeof(BVHTriCount));
+  for (BVHTriCount i = 0; i < count; ++i)
     res.swaps_lut[i] = i;
 
-  vec3 *centroids = malloc(tri_count * sizeof(vec3));
-  calculate_centroids(tri, tri_count, centroids);
+  vec3 *centroids = malloc(count * sizeof(vec3));
+  calculate_centroids(triangles, count, centroids);
 
   res.bvh.nodes_count = 1;
-  res.bvh.nodes[0].count = tri_count;
-  subdivide(res.bvh.nodes, 0, tri, centroids, &res.bvh.nodes_count,
+  res.bvh.nodes[0].count = count;
+  subdivide(res.bvh.nodes, 0, triangles, centroids, &res.bvh.nodes_count,
             res.swaps_lut);
 
   free(centroids);
@@ -37,8 +38,8 @@ void BVH_delete(BVH *self) {
 }
 
 // recursively subdivide a node until there are 2 primitives left
-void subdivide(BVHnode *nodes, int node_idx, Triangle *tris, vec3 *centroids,
-               int *created_nodes, int swaps_lut[]) {
+void subdivide(BVHnode nodes[], int node_idx, Triangle tris[], vec3 centroids[],
+               BVHNodeCount *created_nodes, BVHTriCount swaps_lut[]) {
   BVHnode *node = nodes + node_idx;
   // 0. first set the bounds, only a leaf node can be subdivided!
   set_node_bounds(node, tris);
@@ -60,14 +61,14 @@ void subdivide(BVHnode *nodes, int node_idx, Triangle *tris, vec3 *centroids,
                     vec3_get_by_axis(&node->bound_min, axis);
 
   // 2.
-  int split_index = split_group(tris, centroids, node->first, node->count, axis,
+  BVHTriCount split_index = split_group(tris, centroids, node->first, node->count, axis,
                                 split_pos, swaps_lut);
 
   // 3. create child nodes for the splits
   // if the split turned out to leave all elements on one side
   // then we leave that node as it was
   if (split_index == node->first ||
-      split_index == (int)(node->first + node->count))
+      split_index == (node->first + node->count))
     return;
 
   int left_node_idx = (*created_nodes)++;
@@ -126,20 +127,18 @@ void tri_swap(Triangle *a, Triangle *b) {
 // Swaps positions of triangles (and centroids) so that all to the "left" of
 // split_pos are before or at split index and all to the "right" of the
 // split_pos are after index. Returns the split index.
-int split_group(Triangle *tris, vec3 *centroids, int first, int count, int axis,
-                float split_pos, int swaps_lut[]) {
+BVHTriCount split_group(Triangle tris[], vec3 centroids[], BVHTriCount first,
+                        BVHTriCount count, unsigned int axis, float split_pos,
+                        BVHTriCount swaps_lut[]) {
   int i = first;
   int j = i + count - 1;
   while (i <= j) {
     if (vec3_get_by_axis(&centroids[i], axis) < split_pos)
       ++i;
     else {
-      tri_swap(tris + i, tris + j);
-      vec3_swap(centroids + i, centroids + j);
-
-      int tmp = swaps_lut[i];
-      swaps_lut[i] = swaps_lut[j];
-      swaps_lut[j] = tmp;
+      SWAP(tris[i], tris[j], Triangle);
+      SWAP(centroids[i], centroids[j], vec3);
+      SWAP(swaps_lut[i], swaps_lut[j], unsigned int)
 
       --j;
     }

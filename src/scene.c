@@ -1,5 +1,6 @@
 #include "scene.h"
 #include "file_formats/gltf.h"
+#include "scene/bvh.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,18 +18,9 @@ Scene Scene_load_gltf(const char *path) {
 
 void Scene_build_bvh(Scene *self) {
   BVHresult b_res = BVH_build(self->triangles, self->triangles_count);
+  BVH_apply_lut(b_res, self->primitives, Primitive, self->triangles_count);
   self->bvh = b_res.bvh;
 
-  // swap primitives according to swaps_lut
-  // NOTE: triangles are already swapped during build_bvh
-  for (int t = 0; t < self->triangles_count; ++t) {
-    int swap = b_res.swaps_lut[t];
-    if (t < swap) {
-      Primitive tmp = self->primitives[t];
-      self->primitives[t] = self->primitives[swap];
-      self->primitives[swap] = tmp;
-    }
-  }
   free(b_res.swaps_lut);
 }
 

@@ -3,6 +3,10 @@
 #include "vec3.h"
 #include "vec3d.h"
 
+// NOTE: message must be a valid identifier
+#define STATIC_ASSERT(cond, message_as_identifier)                             \
+  typedef char message_as_identifier[2 * (cond) - 1];
+
 bool ASSERT_CUSTOM_impl(bool cond, char *fail_reason, char *file_name,
                         int line_num);
 
@@ -63,15 +67,14 @@ bool ASSERT_VEC3_EQ_impl(char *a_str, vec3 a, char *b_str, vec3 b,
   exit_if_not(ASSERT_VEC3_EQ_impl(#a, a, #b, b, __FILE__, __LINE__));
 // -----------------------------------------------------------------------------
 
-// ----------------------------------------------------------------------------- 
+// -----------------------------------------------------------------------------
 bool ASSERT_VEC3D_EQ_impl(char *a_str, Vec3d a, char *b_str, Vec3d b,
-                         char *file_name, int line_num);
-#define ASSERT_VEC3D_EQ(a, b)                                                   \
+                          char *file_name, int line_num);
+#define ASSERT_VEC3D_EQ(a, b)                                                  \
   return_if_not(ASSERT_VEC3D_EQ_impl(#a, a, #b, b, __FILE__, __LINE__));
 
-#define ASSERTQ_VEC3D_EQ(a, b)                                                  \
+#define ASSERTQ_VEC3D_EQ(a, b)                                                 \
   exit_if_not(ASSERT_VEC3D_EQ_impl(#a, a, #b, b, __FILE__, __LINE__));
 // -----------------------------------------------------------------------------
-
 
 #endif // ASSERT_H_

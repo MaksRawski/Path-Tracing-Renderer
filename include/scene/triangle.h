@@ -7,6 +7,7 @@ typedef struct {
   vec3 a, b, c;
   vec3 na, nb, nc;
 } Triangle;
+
 vec3 *Triangle_get_vertex(Triangle *t, int vertex);
 
 

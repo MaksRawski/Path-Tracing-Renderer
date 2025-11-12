@@ -10,7 +10,6 @@ typedef struct {
   GLFWwindow *window;
 } OpenGLContext;
 
-// TODO: rename to callback data or something like that
 typedef struct {
   RendererUserData renderer;
   bool paused;
