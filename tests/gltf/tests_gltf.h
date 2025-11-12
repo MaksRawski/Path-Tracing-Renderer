@@ -4,6 +4,5 @@
 #include <stdbool.h>
 
 bool all_gltf_tests(void);
-bool test_load_gltf_scene(void);
 
 #endif // TESTS_GLTF_H_
