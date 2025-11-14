@@ -9,8 +9,8 @@ uniform vec2 iResolution;
 uniform sampler2D backBufferTexture;
 uniform int bvhNodeCount;
 
-const int MAX_BOUNCE_COUNT = 2;
-const int SAMPLES_PER_PIXEL = 1;
+const int MAX_BOUNCE_COUNT = 5;
+const int SAMPLES_PER_PIXEL = 2;
 const float DIVERGE_STRENGTH = 0.001;
 
 const float EPSILON = 0.00001;
@@ -20,8 +20,7 @@ const float C_TWOPI = 6.283185307179586;
 
 out vec4 FragColor;
 
-// comment out if culling is desired
-#define DOUBLE_SIDED_TRIANGLES
+// #define CULLING
 
 #define STACK_SIZE 40
 #define MAX_ITERATIONS 200
@@ -46,7 +45,7 @@ struct Ray {
 // blocks which have layouts that pad them to 16 bytes turning `vec3`s in to `vec4`s
 struct Triangle {
     vec4 a, b, c;
-    vec4 na, nb, nc;
+    vec4 _na, _nb, _nc;
 };
 
 // NOTE: same as above
@@ -217,7 +216,16 @@ HitInfo RayTriangleIntersection(Ray ray, Triangle tri) {
     vec3 De2 = cross(D, e2);
     float det = dot(e1, De2);
 
-    if (abs(det) < EPSILON) {
+	#ifdef CULLING
+	// if the determinant is negative, then the direction from which ray hits
+	// the triangle is opposite of the triangle's normal 
+	bool condition = det < -EPSILON;
+	#else
+	// if determinant is zero then the ray is coming in parallel to the triangle
+	bool condition = abs(det) < EPSILON;
+	#endif
+
+    if (condition) {
         // the vectors -D, e1 and e2 are not linearly independent,
         // meaning ray is coming in parallel to the triangle
         return hitInfo;
@@ -245,12 +253,10 @@ HitInfo RayTriangleIntersection(Ray ray, Triangle tri) {
     if (t > EPSILON) {
         hitInfo.didHit = true;
         hitInfo.hitPoint = ray.origin + ray.dir * t;
-        // look at the right beginning of the description of this function
-        float w = 1 - u - v;
-        hitInfo.normal = normalize(w * tri.na.xyz + u * tri.nb.xyz + v * tri.nc.xyz);
-        #ifdef DOUBLE_SIDED_TRIANGLES
-        if (dot(hitInfo.normal, D) > EPSILON) hitInfo.normal *= -1;
-        #endif
+		if (det > EPSILON)
+			hitInfo.normal = normalize(cross(e1, e2));
+		else
+			hitInfo.normal = normalize(cross(e2, e1));
         hitInfo.dst = t;
     }
 
@@ -448,7 +454,7 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
             c *= hitInfo.mat.albedo;
         } else {
             // get color from environment
-            incomingLight += vec3(58, 58, 58) / 255 * c;
+            // incomingLight += vec3(58, 58, 58) / 255 * c;
             break;
         }
     }
