@@ -1,7 +1,7 @@
 CC = clang
 CXX = clang++
 
-CFLAGS = -std=c11 -Wall -Wextra -Wpedantic 
+CFLAGS = -std=c11 -Wall -Wextra -pedantic-errors
 CFLAGS += -Wcast-align -Wpointer-arith -Wcast-qual -Wunreachable-code -Wshadow 
 CFLAGS += -Iinclude
 DEBUG_FLAGS = -g
@@ -9,7 +9,7 @@ RELEASE_FLAGS = -O2 -DNDEBUG
 
 include lib/vars.mk
 CFLAGS += $(LIB_INCLUDE_PATHS:%=-Ilib/%)
-LDFLAGS = -ldl -lm -lX11 -lglfw $(LIB_TARGETS:%=lib/%)
+LDFLAGS = -ldl -lm -lX11 $(LIB_TARGETS:%=lib/%)
 
 # must be either debug or release
 MODE = debug
@@ -64,7 +64,7 @@ $(BUILD_DIR)/tests/%.o: tests/%.c Makefile
 	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
 
 $(TESTS_TARGET): $(TESTS_DEPS)
-	$(CC) $(CFLAGS) $(TESTS_DEPS) $(LDFLAGS) -o $@
+	$(CXX) $(CFLAGS) $(TESTS_DEPS) $(LDFLAGS) -o $@
 
 clean:
 	rm -rf build/*

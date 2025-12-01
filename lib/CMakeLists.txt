@@ -1,24 +1,19 @@
 # GLFW
-find_library(GLFW_LIBRARY glfw)
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
+add_subdirectory(glfw-3.4)
 
 # GLAD
-add_library(glad STATIC
-    glad/src/gl.c
-)
-target_include_directories(glad PUBLIC
-    glad/include
-)
+add_library(glad glad/src/gl.c)
+target_include_directories(glad PUBLIC glad/include)
 if(UNIX)
     set_target_properties(glad PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 
 # cgltf
-add_library(cgltf STATIC
-    cgltf/cgltf.c
-)
-target_include_directories(cgltf PUBLIC
-    cgltf
-)
+add_library(cgltf cgltf/cgltf.c)
+target_include_directories(cgltf PUBLIC cgltf)
 if(UNIX)
     set_target_properties(cgltf PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
@@ -35,7 +30,7 @@ set(CIMGUI_SOURCES
     cimgui/imgui/backends/imgui_impl_opengl3.cpp
 )
 
-add_library(cimgui STATIC ${CIMGUI_SOURCES})
+add_library(cimgui ${CIMGUI_SOURCES})
 
 target_include_directories(cimgui PUBLIC
     cimgui
@@ -63,4 +58,6 @@ target_link_libraries(cimgui PUBLIC glfw)
 # Link IMM32 on Windows for imgui
 if(WIN32)
     target_link_libraries(cimgui PRIVATE imm32)
+elseif(UNIX)
+    target_link_libraries(cimgui PRIVATE X11)
 endif()

@@ -1,5 +1,6 @@
 .ccls-cache/
 build/
+build-*/
+install/
 compile_commands.json
-projekt.zip
 .cache
