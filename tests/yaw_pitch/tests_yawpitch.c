@@ -18,8 +18,8 @@
 #define TEST_YAW_PITCH_FROM_DIR(test_name, dir, expected_yaw, expected_pitch)  \
   bool test_YawPitch_from_dir__##test_name(void) {                             \
     YawPitch yp = YawPitch_from_dir(Vec3d_new dir);                            \
-    ASSERT_EQF(yp.yaw, expected_yaw);                                          \
-    ASSERT_EQF(yp.pitch, expected_pitch);                                      \
+    ASSERT_EQF(yp.yaw_rad, expected_yaw);                                      \
+    ASSERT_EQF(yp.pitch_rad, expected_pitch);                                  \
     return true;                                                               \
   }
 
@@ -27,8 +27,8 @@
   bool test_YawPitch_id__##test_name(void) {                                   \
     Vec3d dir = YawPitch_to_dir(YawPitch_new(yaaw, piitch));                   \
     YawPitch yp = YawPitch_from_dir(dir);                                      \
-    ASSERT_EQF(yp.yaw, yaaw);                                                  \
-    ASSERT_EQF(yp.pitch, piitch);                                              \
+    ASSERT_EQF(yp.yaw_rad, yaaw);                                              \
+    ASSERT_EQF(yp.pitch_rad, piitch);                                          \
     return true;                                                               \
   }
 
