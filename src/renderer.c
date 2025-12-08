@@ -1,12 +1,16 @@
 #include "renderer.h"
-#include "inputs.h"
+#include "file_path.h"
+#include "gui.h"
+#include "gui/parameters.h"
 #include "opengl/context.h"
 #include "opengl/resolution.h"
+#include "opengl/window_events.h"
 #include "renderer/buffers_scene.h"
 #include "renderer/inputs.h"
+#include "renderer/parameters.h"
 #include "renderer/uniforms.h"
 #include "scene/camera.h"
-#include "vec3d.h"
+#include <GLFW/glfw3.h>
 #include <stdio.h>
 
 #define WINDOW_TITLE "Path Tracing Renderer"
@@ -24,26 +28,23 @@ Renderer Renderer_new(OpenGLResolution resolution) {
       ._shaders = RendererShaders_new(VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH),
       ._buffers = RendererBuffers_new(resolution.width, resolution.height),
       ._uniforms = RendererUniforms_new(resolution.width, resolution.height),
-      .resolution = resolution,
+      ._last_resolution = resolution,
       ._fps_counter = 0,
-      ._last_frame_time = 0};
+      ._last_frame_time = 0,
+      ._scene_parameters = ParametersScene_default()};
 
   return self;
 }
 
-void Renderer_load_scene(Renderer *self, const Scene *scene,
-                         GLFWUserData *user_data) {
+void Renderer_load_scene(Renderer *self, const Scene *scene) {
   RendererBuffers_set_scene(&self->_buffers, scene);
-  user_data->renderer.yp =
-      YawPitch_from_dir(Vec3d_from_vec3(scene->camera.dir));
   printf("Loaded triangles: %d\n", scene->triangles_count);
   printf("Created nodes: %d\n", scene->bvh.nodes_count);
 }
 
-void Renderer_load_gltf(Renderer *self, const char *gltf_path,
-                        GLFWUserData *user_data) {
+void Renderer_load_gltf(Renderer *self, const char *gltf_path) {
   Scene scene = Scene_load_gltf(gltf_path);
-  Renderer_load_scene(self, &scene, user_data);
+  Renderer_load_scene(self, &scene);
   Scene_delete(&scene);
 }
 
@@ -51,43 +52,97 @@ void display_fps(GLFWwindow *window, int *frame_counter,
                  double *last_frame_time);
 
 // NOTE: this just forces the sample collection to restart
-void Renderer_restart(Renderer *self, GLFWUserData *user_data) {
-  UNUSED(user_data);
+void Renderer_restart(Renderer *self) {
   RendererUniforms_reset(&self->_uniforms);
 }
 
-void Renderer_update_state(Renderer *self, GLFWUserData *user_data,
-                           OpenGLResolution res) {
+Camera Renderer__get_camera(const Renderer *self) {
+  return RendererBuffersScene_get_camera(&self->_buffers.scene);
+}
+
+void Renderer__set_camera(Renderer *self, Camera cam) {
+  RendererBuffersScene_set_camera(&self->_buffers.scene, cam);
+}
+
+GuiParameters Renderer_get_gui_parameters(const Renderer *self) {
+  Camera c = Renderer__get_camera(self);
+  RendererParameters rendering = self->_uniforms._params;
+  return GuiParameters_new(&c, &rendering, &self->_scene_parameters);
+}
+
+void Renderer_apply_gui_parameters(Renderer *self, GuiParameters *params) {
+  Renderer__set_camera(self, params->cam);
+  if (FilePath_exists(&params->scene.gui_scene_path)) {
+    params->scene.loaded_scene_path =
+        FilePath_from_string(params->scene.gui_scene_path.file_path.str);
+    Renderer_load_gltf(self, params->scene.loaded_scene_path.file_path.str);
+    self->_scene_parameters = params->scene;
+  }
+
+  // NOTE: RendererParameters are set directly in uniforms_update call, with no
+  // checks whatsoever as the renderer doesn't set them
+}
+
+void Renderer_update_state(Renderer *self, const WindowEventsData *events,
+                           GuiParameters *gui_parameters) {
   bool should_reset = false;
   if (RendererShaders_update(&self->_shaders)) {
     should_reset = true;
   }
-  if (!OpenGLResolution_eq(self->resolution, res)) {
-    self->resolution = res;
+
+  // update focus
+  bool lmb_pressed =
+      WindowEventsData_is_mouse_button_pressed(events, GLFW_MOUSE_BUTTON_1);
+
+  if (!Gui_is_focused() && lmb_pressed && !self->_focused) {
+    self->_focused = true;
+    // HACK: we shouldn't be accessing window like this!
+    OpenGLContext_steal_mouse(events->_window);
+  } else if (!lmb_pressed && self->_focused) {
+    self->_focused = false;
+    OpenGLContext_give_back_mouse(events->_window);
+  }
+
+  // update camera
+  Camera camera = Renderer__get_camera(self);
+  if (!Gui_is_focused()) {
+    if (RendererInputs_move_camera(&camera, events)) {
+      // ignore the value given through gui if it was changed directly
+      gui_parameters->cam.pos = camera.pos;
+      should_reset = true;
+    }
+  }
+  if (self->_focused) {
+    if (RendererInputs_rotate_camera(&camera, events)) {
+      // ignore the value given through gui if it was changed directly
+      gui_parameters->cam.dir = camera.dir;
+      should_reset = true;
+    }
+  }
+  Renderer__set_camera(self, camera);
+
+  // if gui parameters are different from what the renderer holds
+  // TODO: this should be done on per parameter basis instead
+  GuiParameters current_params = Renderer_get_gui_parameters(self);
+  if (!GuiParameters_eq(&current_params, gui_parameters)) {
+    Renderer_apply_gui_parameters(self, gui_parameters);
     should_reset = true;
   }
 
-  RendererUniforms_update(&self->_uniforms, res);
+  RendererUniforms_update(&self->_uniforms, events->window_size,
+                          gui_parameters->rendering);
 
-  // TODO: we shouldn't be accessing camera here directly!
-  bool new_camera =
-      RendererInputs_update_camera(&self->_buffers.scene._camera, user_data);
-
-  if (user_data->renderer.resetPosition) {
-    user_data->renderer.resetPosition = false;
-    user_data->renderer.yp = YawPitch_new(0, 0);
-    self->_buffers.scene._camera = Camera_default();
-    new_camera = true;
-  }
-
-  if (new_camera) {
-    RendererBuffersScene_update_camera(&self->_buffers.scene,
-                                       self->_buffers.scene._camera);
+  // if window got resized
+  if (!OpenGLResolution_eq(self->_last_resolution, events->window_size)) {
+    self->_last_resolution = events->window_size;
     should_reset = true;
   }
+
+  // update gui_parameters
+  *gui_parameters = Renderer_get_gui_parameters(self);
 
   if (should_reset) {
-    Renderer_restart(self, user_data);
+    Renderer_restart(self);
   }
 }
 
@@ -95,8 +150,9 @@ void Renderer_render_frame(Renderer *self, OpenGLContext *ctx) {
   // resize the backbuffer on the first frame
   if (self->_uniforms._iFrame == 0) {
     glBindTexture(GL_TEXTURE_2D, self->_buffers.back.fboTex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, self->resolution.width,
-                 self->resolution.height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, self->_last_resolution.width,
+                 self->_last_resolution.height, 0, GL_RGB, GL_UNSIGNED_BYTE,
+                 NULL);
     glBindTexture(GL_TEXTURE_2D, 0);
   }
 
@@ -132,62 +188,6 @@ void Renderer_delete(Renderer *self) {
   RendererBuffers_delete(&self->_buffers);
   RendererUniforms_delete(&self->_uniforms);
   self = NULL;
-}
-
-void Renderer_handle_key_callback(GLFWUserData *user_data, int key,
-                                  int scancode, int action, int mods) {
-  UNUSED(scancode);
-  UNUSED(mods);
-  if (action == GLFW_PRESS) {
-    if (key == GLFW_KEY_W) {
-      user_data->renderer.movingForward = 1;
-    } else if (key == GLFW_KEY_S) {
-      user_data->renderer.movingForward = -1;
-    }
-    if (key == GLFW_KEY_A) {
-      user_data->renderer.movingLeft = 1;
-    } else if (key == GLFW_KEY_D) {
-      user_data->renderer.movingLeft = -1;
-    }
-    if (key == GLFW_KEY_SPACE) {
-      user_data->renderer.movingUp = 1;
-    } else if (key == GLFW_KEY_C) {
-      user_data->renderer.movingUp = -1;
-    }
-  } else if (action == GLFW_RELEASE) {
-    if (key == GLFW_KEY_W || key == GLFW_KEY_S) {
-      user_data->renderer.movingForward = 0;
-    }
-    if (key == GLFW_KEY_A || key == GLFW_KEY_D) {
-      user_data->renderer.movingLeft = 0;
-    }
-    if (key == GLFW_KEY_SPACE || key == GLFW_KEY_C) {
-      user_data->renderer.movingUp = 0;
-    }
-    if (key == GLFW_KEY_R) {
-      user_data->renderer.resetPosition = true;
-    }
-  }
-}
-
-void Renderer_handle_cursor_callback(GLFWUserData *user_data, double xPos,
-                                     double yPos) {
-  float x = xPos - user_data->renderer.lastMouseX;
-  float y = yPos - user_data->renderer.lastMouseY;
-
-  user_data->renderer.yp.yaw += x * CURSOR_SENSITIVITY;
-  for (int i = 0; i < 10 && user_data->renderer.yp.yaw >= 2 * M_PI; ++i)
-    user_data->renderer.yp.yaw -= 2 * M_PI;
-
-  for (int i = 0; i < 10 && user_data->renderer.yp.yaw <= 0; ++i)
-    user_data->renderer.yp.yaw += 2 * M_PI;
-
-  float pitch = user_data->renderer.yp.pitch - y * CURSOR_SENSITIVITY;
-  if (pitch > -(M_PI / 2 - 0.05) && pitch < (M_PI / 2 - 0.05))
-    user_data->renderer.yp.pitch = pitch;
-
-  user_data->renderer.lastMouseX = xPos;
-  user_data->renderer.lastMouseY = yPos;
 }
 
 void display_fps(GLFWwindow *window, int *fps_counter,

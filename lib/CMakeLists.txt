@@ -1,3 +1,16 @@
+# GTK - required for opening native file dialog on linux, I don't like this either
+if(UNIX)
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(GTK REQUIRED gtk+-3.0)
+  if(GTK_FOUND)
+    add_library(gtk INTERFACE)
+    target_link_libraries(gtk INTERFACE ${GTK_LIBRARIES})
+    target_include_directories(gtk INTERFACE ${GTK_INCLUDE_DIRS})
+  else()
+    message(ERROR "Failed to find GTK library (required for native file dialogs on Linux)")
+  endif()
+endif()
+
 # GLFW
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)

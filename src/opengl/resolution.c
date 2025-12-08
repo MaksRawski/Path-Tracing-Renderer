@@ -1,6 +1,6 @@
 #include "opengl/resolution.h"
 
-OpenGLResolution OpenGLResolution_new(int width, int height) {
+OpenGLResolution OpenGLResolution_new(unsigned int width, unsigned int height) {
   return (OpenGLResolution){width, height};
 }
 

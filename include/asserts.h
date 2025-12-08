@@ -10,8 +10,8 @@
 #define STATIC_ASSERT(cond, message_as_identifier)                             \
   typedef char message_as_identifier[2 * (cond) - 1];
 
-bool ASSERT_CUSTOM_impl(bool cond, char *fail_reason, char *file_name,
-                        int line_num);
+bool ASSERT_CUSTOM_impl(bool cond, const char *fail_reason,
+                        const char *file_name, int line_num);
 
 // implementing as a regular function so that stdio.h doesn't have to be loaded
 void exit_if_not_impl(bool cond);
@@ -28,8 +28,8 @@ void exit_if_not_impl(bool cond);
 #endif
 
 // -----------------------------------------------------------------------------
-bool ASSERT_CONDF_impl(char *cond_str, bool cond, char *val_str, double val,
-                       char *file_name, int line_num);
+bool ASSERT_CONDF_impl(const char *cond_str, bool cond, const char *val_str,
+                       double val, const char *file_name, int line_num);
 
 #define ASSERT_CONDF(cond, val)                                                \
   return_if_not(ASSERT_CONDF_impl(#cond, cond, #val, val, __FILE__, __LINE__));
@@ -39,8 +39,8 @@ bool ASSERT_CONDF_impl(char *cond_str, bool cond, char *val_str, double val,
 // -----------------------------------------------------------------------------
 
 // -----------------------------------------------------------------------------
-bool ASSERT_EQF_impl(char *a_str, double a, char *b_str, double b,
-                     char *file_name, int line_num);
+bool ASSERT_EQF_impl(const char *a_str, double a, const char *b_str, double b,
+                     const char *file_name, int line_num);
 
 #define ASSERT_EQF(a, b)                                                       \
   return_if_not(ASSERT_EQF_impl(#a, a, #b, b, __FILE__, __LINE__));
@@ -50,8 +50,8 @@ bool ASSERT_EQF_impl(char *a_str, double a, char *b_str, double b,
 // -----------------------------------------------------------------------------
 
 // -----------------------------------------------------------------------------
-bool ASSERT_EQI_impl(char *a_str, long a, char *b_str, long b, char *file_name,
-                     int line_num);
+bool ASSERT_EQI_impl(const char *a_str, long a, const char *b_str, long b,
+                     const char *file_name, int line_num);
 
 #define ASSERT_EQI(a, b)                                                       \
   return_if_not(ASSERT_EQI_impl(#a, a, #b, b, __FILE__, __LINE__));
@@ -61,8 +61,8 @@ bool ASSERT_EQI_impl(char *a_str, long a, char *b_str, long b, char *file_name,
 // -----------------------------------------------------------------------------
 
 // -----------------------------------------------------------------------------
-bool ASSERT_VEC3_EQ_impl(char *a_str, vec3 a, char *b_str, vec3 b,
-                         char *file_name, int line_num);
+bool ASSERT_VEC3_EQ_impl(const char *a_str, vec3 a, const char *b_str, vec3 b,
+                         const char *file_name, int line_num);
 #define ASSERT_VEC3_EQ(a, b)                                                   \
   return_if_not(ASSERT_VEC3_EQ_impl(#a, a, #b, b, __FILE__, __LINE__));
 
@@ -71,8 +71,8 @@ bool ASSERT_VEC3_EQ_impl(char *a_str, vec3 a, char *b_str, vec3 b,
 // -----------------------------------------------------------------------------
 
 // -----------------------------------------------------------------------------
-bool ASSERT_VEC3D_EQ_impl(char *a_str, Vec3d a, char *b_str, Vec3d b,
-                          char *file_name, int line_num);
+bool ASSERT_VEC3D_EQ_impl(const char *a_str, Vec3d a, const char *b_str,
+                          Vec3d b, const char *file_name, int line_num);
 #define ASSERT_VEC3D_EQ(a, b)                                                  \
   return_if_not(ASSERT_VEC3D_EQ_impl(#a, a, #b, b, __FILE__, __LINE__));
 
@@ -107,5 +107,8 @@ bool ASSERT_VEC3D_EQ_impl(char *a_str, Vec3d a, char *b_str, Vec3d b,
     }                                                                          \
   } while (0)
 // -----------------------------------------------------------------------------
+
+#define ASSERTQ_NOT_NULL(p, msg)                                               \
+  exit_if_not(ASSERT_CUSTOM_impl(p != NULL, msg, __FILE__, __LINE__));
 
 #endif // ASSERT_H_

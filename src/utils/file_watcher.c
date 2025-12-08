@@ -4,10 +4,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 
-#ifdef _WIN32
+#if defined(__linux__)
+#include <sys/stat.h>
+#elif defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
+#define stat _stat
 #endif
 
 // NOTE: exits if the file at path cannot be watched

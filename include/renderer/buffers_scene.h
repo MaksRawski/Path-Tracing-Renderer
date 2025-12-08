@@ -12,7 +12,9 @@ typedef struct {
 } RendererBuffersScene;
 
 RendererBuffersScene RendererBuffersScene_new(const Scene *scene);
-void RendererBuffersScene_update_camera(RendererBuffersScene *self, Camera cam);
+Camera RendererBuffersScene_get_camera(const RendererBuffersScene *self);
+void RendererBuffersScene_set_camera(RendererBuffersScene *self, Camera cam);
+
 void RendererBuffersScene_delete(RendererBuffersScene *self);
 
 #endif // RENDERER_BUFFERS_SCENE_H_

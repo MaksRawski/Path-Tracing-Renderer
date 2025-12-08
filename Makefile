@@ -9,7 +9,9 @@ RELEASE_FLAGS = -O2 -DNDEBUG
 
 include lib/vars.mk
 CFLAGS += $(LIB_INCLUDE_PATHS:%=-Ilib/%)
-LDFLAGS = -ldl -lm -lX11 $(LIB_TARGETS:%=lib/%)
+CFLAGS += `pkg-config --cflags gtk+-3.0`
+LDFLAGS = -ldl -lm -lX11 -lglfw $(LIB_TARGETS:%=lib/%)
+LDFLAGS += `pkg-config --libs gtk+-3.0`
 
 # must be either debug or release
 MODE = debug

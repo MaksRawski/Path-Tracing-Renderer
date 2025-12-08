@@ -7,11 +7,11 @@
 uniform int iFrame;
 uniform vec2 iResolution;
 uniform sampler2D backBufferTexture;
-uniform int bvhNodeCount;
+uniform float aspectRatioWdH;
 
-const int MAX_BOUNCE_COUNT = 5;
-const int SAMPLES_PER_PIXEL = 2;
-const float DIVERGE_STRENGTH = 0.001;
+uniform int MAX_BOUNCE_COUNT = 5;
+uniform int SAMPLES_PER_PIXEL = 2;
+uniform float DIVERGE_STRENGTH = 0.001;
 
 const float EPSILON = 0.00001;
 const float INFINITY = 1.0e30;
@@ -29,7 +29,7 @@ out vec4 FragColor;
 struct Camera {
     vec4 pos;
     vec4 dir;
-	vec4 up;
+    vec4 up;
     // horizontal field of view in radians
     float fov;
     float focal_length;
@@ -51,7 +51,7 @@ struct Triangle {
 // NOTE: same as above
 struct BVHnode {
     vec4 boundsMin, boundsMax;
-    int first, count;
+    uint first, count;
     int _, _1; // padding so that this struct's size is a multiple of 16 bytes
 };
 
@@ -69,10 +69,8 @@ struct Material {
 };
 
 struct Primitive {
-    // // index of the triangle in trianglesBuffer
-    // int tri;
     // index of the material in materialsBuffer
-    int mat;
+    uint mat;
 };
 
 layout(std430, binding = 1) readonly buffer trianglesBuffer {
@@ -216,14 +214,14 @@ HitInfo RayTriangleIntersection(Ray ray, Triangle tri) {
     vec3 De2 = cross(D, e2);
     float det = dot(e1, De2);
 
-	#ifdef CULLING
-	// if the determinant is negative, then the direction from which ray hits
-	// the triangle is opposite of the triangle's normal 
-	bool condition = det < -EPSILON;
-	#else
-	// if determinant is zero then the ray is coming in parallel to the triangle
-	bool condition = abs(det) < EPSILON;
-	#endif
+    #ifdef CULLING
+    // if the determinant is negative, then the direction from which ray hits
+    // the triangle is opposite of the triangle's normal
+    bool condition = det < -EPSILON;
+    #else
+    // if determinant is zero then the ray is coming in parallel to the triangle
+    bool condition = abs(det) < EPSILON;
+    #endif
 
     if (condition) {
         // the vectors -D, e1 and e2 are not linearly independent,
@@ -253,10 +251,10 @@ HitInfo RayTriangleIntersection(Ray ray, Triangle tri) {
     if (t > EPSILON) {
         hitInfo.didHit = true;
         hitInfo.hitPoint = ray.origin + ray.dir * t;
-		if (det > EPSILON)
-			hitInfo.normal = normalize(cross(e1, e2));
-		else
-			hitInfo.normal = normalize(cross(e2, e1));
+        if (det > EPSILON)
+            hitInfo.normal = normalize(cross(e1, e2));
+        else
+            hitInfo.normal = normalize(cross(e2, e1));
         hitInfo.dst = t;
     }
 
@@ -362,7 +360,7 @@ HitInfo CalculateRayCollision(Ray ray) {
     // TODO: with finite camera projection this will be zfar
     closestHit.dst = INFINITY;
 
-    int stack[STACK_SIZE], stack_ptr = 0;
+    uint stack[STACK_SIZE], stack_ptr = 0;
     stack[stack_ptr++] = 0;
     int max_iterations = MAX_ITERATIONS;
     while (stack_ptr > 0 && max_iterations-- > 0) {
@@ -376,7 +374,7 @@ HitInfo CalculateRayCollision(Ray ray) {
         // if node is a leaf
         if (node.count > 0) {
             for (int i = 0; i < node.count; ++i) {
-                int t_index = node.first + i;
+                uint t_index = node.first + i;
                 Triangle t = triangles[t_index];
                 HitInfo hit = RayTriangleIntersection(ray, t);
                 if (hit.didHit && hit.dst < closestHit.dst) {
@@ -469,6 +467,7 @@ void main() {
     vec2 uv = gl_FragCoord.xy / iResolution.xy; // normalized coordinates [0, 1]
     uv = 2.0 * uv - 1.0; // normalized coordinates [-1, 1]
     float aspectRatio = iResolution.x / iResolution.y;
+    // float aspectRatio = aspectRatioWdH;
 
     vec3 viewportRight = cross(camera.dir.xyz, camera.up.xyz);
     vec3 viewportUp = cross(viewportRight, camera.dir.xyz);

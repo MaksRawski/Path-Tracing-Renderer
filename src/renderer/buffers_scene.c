@@ -31,8 +31,13 @@ RendererBuffersScene RendererBuffersScene_new(const Scene *scene) {
   return self;
 }
 
-void RendererBuffersScene_update_camera(RendererBuffersScene *self, Camera cam) {
-  glNamedBufferSubData(self->camera_ssbo, 0, sizeof(Camera), &cam);
+Camera RendererBuffersScene_get_camera(const RendererBuffersScene *self) {
+  return self->_camera;
+}
+
+void RendererBuffersScene_set_camera(RendererBuffersScene *self, Camera camera) {
+  self->_camera = camera;
+  glNamedBufferSubData(self->camera_ssbo, 0, sizeof(Camera), &camera);
 }
 
 void RendererBuffersScene_delete(RendererBuffersScene *self) {

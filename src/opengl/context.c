@@ -1,8 +1,10 @@
 #include "glad/gl.h"
-#include "inputs.h"
 //
 #include "opengl/context.h"
+#include "opengl/window_coordinate.h"
+#include "opengl/window_events.h"
 
+#include <GLFW/glfw3.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -26,6 +28,15 @@ OpenGLContext OpenGLContext_new(const char *window_title, int desired_width,
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
+  if (glfwPlatformSupported(GLFW_PLATFORM_WIN32))
+    glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_WIN32);
+  else if (glfwPlatformSupported(GLFW_PLATFORM_COCOA))
+    glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_COCOA);
+  else if (glfwPlatformSupported(GLFW_PLATFORM_WAYLAND))
+    glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_WAYLAND);
+  else if (glfwPlatformSupported(GLFW_PLATFORM_X11))
+    glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
+
   self.window =
       glfwCreateWindow(desired_width, desired_height, window_title, NULL, NULL);
 
@@ -44,17 +55,11 @@ OpenGLContext OpenGLContext_new(const char *window_title, int desired_width,
   void *userDataPtr = calloc(1, sizeof(GLFWUserData));
   glfwSetWindowUserPointer(self.window, userDataPtr);
 
-  if (glfwRawMouseMotionSupported())
-    glfwSetInputMode(self.window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
-  glfwSetInputMode(self.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-  // set callbacks
-  glfwSetCursorPosCallback(self.window, cursor_callback);
-  glfwSetCursorEnterCallback(self.window, cursor_enter_callback);
-  glfwSetKeyCallback(self.window, key_callback);
-
   // update the viewport size
-  OpenGLContext_get_resolution(&self);
+  OpenGLContext_update_viewport_size(&self);
+
+  // HACK: do initial poll to avoid having huge mouse delta
+  OpenGLContext_poll_events(&self);
 
   // Successfully loaded OpenGL
   printf("Loaded OpenGL %d.%d\n", GLAD_VERSION_MAJOR(version),
@@ -63,17 +68,59 @@ OpenGLContext OpenGLContext_new(const char *window_title, int desired_width,
   return self;
 }
 
-OpenGLResolution OpenGLContext_get_resolution(const OpenGLContext *self) {
+// returns the framebuffer resolution and updates with it glViewport
+OpenGLResolution OpenGLContext_get_window_size(const OpenGLContext *self) {
   OpenGLResolution res = {0};
-  glfwGetFramebufferSize(self->window, &res.width, &res.height);
-  // making sure the viewport matches the window size
+  glfwGetWindowSize(self->window, (int *)&res.width, (int *)&res.height);
+  // update viewport size
+  OpenGLContext_update_viewport_size(self);
+
+  return res;
+}
+
+// returns the framebuffer resolution and updates with it glViewport
+// NOTE: this isn't necessarily window size, as it considers scaling
+OpenGLResolution OpenGLContext_update_viewport_size(const OpenGLContext *self) {
+  OpenGLResolution res = {0};
+  glfwGetFramebufferSize(self->window, (int *)&res.width, (int *)&res.height);
+  // making sure the viewport matches the framebuffer size
   glViewport(0, 0, res.width, res.height);
   return res;
 }
 
-void OpenGLContext_poll_events(OpenGLContext *self) {
-  UNUSED(self);
+void OpenGLContext_steal_mouse(GLFWwindow *window) {
+  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+  if (glfwRawMouseMotionSupported())
+    glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+}
+
+void OpenGLContext_give_back_mouse(GLFWwindow *window) {
+  if (glfwRawMouseMotionSupported())
+    glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_FALSE);
+  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+}
+
+WindowEventsData OpenGLContext_poll_events(OpenGLContext *self) {
   glfwPollEvents();
+  GLFWUserData *user_data = OpenGLContext_get_user_data(self);
+  WindowEventsData events = {0};
+  events._window = self->window;
+  glfwGetWindowSize(events._window, (int *)&events.window_size.width,
+                    (int *)&events.window_size.height);
+
+  // NOTE: user_data->last_mouse_pos would be zero initalized, in which case
+  // the first delta will be huge! we assume that the first frame is for
+  // settling that
+  glfwGetCursorPos(self->window, &events.mouse_pos.x, &events.mouse_pos.y);
+  events.mouse_delta =
+      WindowCoordinate_sub(events.mouse_pos, user_data->last_mouse_pos);
+  user_data->last_mouse_pos = events.mouse_pos;
+
+  // update the viewport size
+  OpenGLContext_update_viewport_size(self);
+
+  return events;
 }
 
 void OpenGLContext_swap_buffers(OpenGLContext *self) {

@@ -11,12 +11,11 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-// NOTE: position has to be given so the lookat is properly offset
 Vec3d YawPitch_to_dir(YawPitch yp) {
   // yaw is expected to be in range [0, 2*PI] but it'd be ok if it wasn't
-  ASSERTQ_CONDF(yp.yaw >= 0 && yp.yaw <= 2 * M_PI, yp.yaw);
+  ASSERTQ_CONDF(yp.yaw_rad >= 0 && yp.yaw_rad <= 2 * M_PI, yp.yaw_rad);
   // this function explodes if pitch is out of exclusive range (-PI/2, PI/2)
-  ASSERTQ_CONDF(yp.pitch > -M_PI / 2.0 && yp.pitch < M_PI / 2.0, yp.pitch);
+  ASSERTQ_CONDF(yp.pitch_rad > -M_PI / 2.0 && yp.pitch_rad < M_PI / 2.0, yp.pitch_rad);
 
   // we can imagine (x, z) of dir as being a point on a unit circle
   // then as we want yp.yaw = 0 to correspond to x = 0 and z = -1
@@ -29,7 +28,7 @@ Vec3d YawPitch_to_dir(YawPitch yp) {
   //  x = cos(yp.yaw - PI / 2) =  sin(yp.yaw)
   //  z = sin(yp.yaw - PI / 2) = -cos(yp.yaw)
 
-  return Vec3d_new(sin(yp.yaw), tan(yp.pitch), -cos(yp.yaw));
+  return Vec3d_new(sin(yp.yaw_rad), tan(yp.pitch_rad), -cos(yp.yaw_rad));
 }
 
 YawPitch YawPitch_from_dir(Vec3d dir) {
@@ -67,10 +66,10 @@ YawPitch YawPitch_from_dir(Vec3d dir) {
   double pitch = atan(dir.y); // [-PI / 2, PI / 2]
   ASSERTQ_CONDF(pitch > (-M_PI / 2.0) && pitch < (M_PI / 2.0), pitch);
 
-  return (YawPitch){.yaw = yaw, .pitch = pitch};
+  return (YawPitch){.yaw_rad = yaw, .pitch_rad = pitch};
 }
 
-PosDir PosDir_new(Vec3d pos, Vec3d lookat) { return (PosDir){pos, lookat}; }
+PosDir PosDir_new(Vec3d pos, Vec3d dir) { return (PosDir){pos, dir}; }
 
 YawPitch YawPitch_new(double yaw, double pitch) {
   return (YawPitch){yaw, pitch};

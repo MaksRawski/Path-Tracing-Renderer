@@ -3,10 +3,10 @@
 #include <stdbool.h>
 
 typedef struct {
-  int width, height;
+  unsigned int width, height;
 } OpenGLResolution;
 
-OpenGLResolution OpenGLResolution_new(int width, int height);
+OpenGLResolution OpenGLResolution_new(unsigned int width, unsigned int height);
 bool OpenGLResolution_eq(OpenGLResolution a, OpenGLResolution b);
 
 #endif // RESOLUTION_H_
