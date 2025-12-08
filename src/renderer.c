@@ -174,9 +174,12 @@ void Renderer_render_frame(Renderer *self, OpenGLContext *ctx) {
   RendererUniforms_update_in_program(&self->_uniforms, self->_shaders.program);
 
   // render the quad to the screen
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  glBindVertexArray(self->_buffers.internal.vao);
-  glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, self->_buffers.back.fbo);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+  glBlitFramebuffer(
+      0, 0, self->_last_resolution.width, self->_last_resolution.height, //
+      0, 0, self->_last_resolution.width, self->_last_resolution.height, //
+      GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
   display_fps(ctx->window, &self->_fps_counter, &self->_last_frame_time);
   ++self->_fps_counter;
