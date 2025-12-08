@@ -29,4 +29,16 @@ install(TARGETS ${CMAKE_PROJECT_NAME} DESTINATION .)
 install(DIRECTORY fonts DESTINATION .)
 install(DIRECTORY shaders DESTINATION .)
 
-# TODO: tests using CMake's CTest https://cmake.org/cmake/help/book/mastering-cmake/chapter/Testing%20With%20CMake%20and%20CTest.html#testing-with-cmake-and-ctest
+option(BUILD_TESTS "Build tests" OFF)
+if(BUILD_TESTS)
+    file(GLOB_RECURSE TEST_SOURCES "tests/*.c")
+    list(REMOVE_ITEM PROJECT_SOURCES "${CMAKE_SOURCE_DIR}/src/main.c")
+    
+    add_executable(tests ${TEST_SOURCES} ${PROJECT_SOURCES})
+    
+    target_include_directories(tests PRIVATE ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/tests)
+    target_link_libraries(tests PRIVATE ${LIBRARIES})
+    
+    enable_testing()
+    add_test(NAME tests COMMAND tests)
+endif()
