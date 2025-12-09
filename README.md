@@ -1,52 +1,59 @@
 # Path Tracing Renderer
-Simple OpenGL Path Tracing Renderer with a backend in C.
+Interactive Path Tracing Renderer with an OpenGL backend, written in C.
 
 ## Current features:
-Right now my goal is to make it a glTF 2.0 viewer of sorts
-and so far:
-- Meshes can be loaded with all their transformations
-- Materials:
-    - PBR base color is used as albedo
-    - Emission factor (color) and strength are supported
-- If there is a perspective camera available it will be used
+- GUI to control internal rendering parameters
+- Partial support of glTF 2.0:
+    - Meshes can be loaded with all their transformations
+    - Materials:
+        - PBR base color is used as albedo
+        - Emission factor (color) and strength are supported
+    - If there are perspective cameras available, first one of them will be used
+- Simple BVH is applied to the loaded scene
 
 ## Naming convention
 - snake_case for functions_names, variable_names and struct_members
 - PascalCase for StructNames
+- StructName_new for "constructors" and StructName_delete for "destructors"
+- StructName_function_name for functions that operate on a given struct directly
 
 ## Building
 This project uses submodules for libraries so if you don't specify `--recurse-submodules`
 during `git clone`, you will have to run `git submodule update --init --recursive` in the
 root of the cloned project.
 
-After making sure all the libraries are downloaded, compile them with:
-
+### Build dependencies (required only for Make):
 ```
 make -Clib
 ```
 
-This has to be done only once. Afterwards regular compilation can be performed with just:
+### Build the project:
 
+CMake:
 ```
-make
-```
-
-or 
-
-```
-make MODE=release
+cmake -Bbuild && cmake --build build
 ```
 
-## Tests
-Tests are provided in the `tests/` directory and can be run with:
+Make:
+```
+make 
+```
 
+### Build & Run tests:
+
+CMake:
+```
+cmake -Bbuild -DBUILD_TESTS=ON && cmake --build build && ./build/tests
+```
+
+Make:
 ```
 make tests
 ```
 
-My DIY "testing framework" is made up of 
-- `include/asserts.h`, `src/asserts.c`
-- and a simple `TEST_RUN` macro from `tests/tests_macros.h` 
+## Tests
+My DIY "testing framework" is made up of `include/asserts.h`, `src/asserts.c` 
+and a simple `TEST_RUN` macro from `tests/tests_macros.h` 
 
 `asserts` are included in the main part of the project as they turned out
 to be convenient as runtime checks on debug builds, and so they are completely 
