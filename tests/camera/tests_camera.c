@@ -1,0 +1,23 @@
+#include "tests_camera.h"
+#include "asserts.h"
+#include "scene/camera.h"
+#include "tests_macros.h"
+
+bool test_camera_move_forward(void) {
+  Camera cam = Camera_default();
+  Camera_move(&cam, (CameraTranslation){.forward = 1, .left = 0, .up = 0}, 1);
+  ASSERT_EQF(cam.pos.z, -1);
+
+  Camera_move(&cam, (CameraTranslation){.forward = 0, .left = 0, .up = 0}, 1);
+  ASSERT_EQF(cam.pos.z, -1);
+
+  Camera_move(&cam, (CameraTranslation){.forward = 1, .left = 0, .up = 0}, 1);
+  ASSERT_EQF(cam.pos.z, -2);
+
+  return true;
+}
+
+bool all_camera_tests(void) {
+  TEST_RUN(test_camera_move_forward);
+  return true;
+}

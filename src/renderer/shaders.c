@@ -1,4 +1,5 @@
 #include "renderer/shaders.h"
+#include "opengl/gl_call.h"
 #include "utils.h"
 #include "utils/file_watcher.h"
 #include <stddef.h>
@@ -51,7 +52,7 @@ void RendererShaders_force_update(RendererShaders *self) {
   }
 
   if (self->program != 0)
-    glDeleteProgram(self->program);
+    GL_CALL(glDeleteProgram(self->program));
 
   self->program = new_program;
 }
@@ -59,21 +60,21 @@ void RendererShaders_force_update(RendererShaders *self) {
 void RendererShaders_delete(RendererShaders *self) {
   FileWatcher_delete(&self->vertex_shader);
   FileWatcher_delete(&self->fragment_shader);
-  glDeleteProgram(self->program);
+  GL_CALL(glDeleteProgram(self->program));
   self = NULL;
 }
 
 
 GLuint compile_shader(const char *shader_source, GLenum shader_type) {
   GLuint shader = glCreateShader(shader_type);
-  glShaderSource(shader, 1, &shader_source, NULL);
-  glCompileShader(shader);
+  GL_CALL(glShaderSource(shader, 1, &shader_source, NULL));
+  GL_CALL(glCompileShader(shader));
 
   GLint success;
-  glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+  GL_CALL(glGetShaderiv(shader, GL_COMPILE_STATUS, &success));
   if (!success) {
     GLchar infoLog[512];
-    glGetShaderInfoLog(shader, 512, NULL, infoLog);
+    GL_CALL(glGetShaderInfoLog(shader, 512, NULL, infoLog));
     fprintf(stderr, "Error: Shader compilation failed\n%s", infoLog);
     return -1;
   }
@@ -92,18 +93,18 @@ GLuint create_shader_program_from_source(const char *vertex_shader_src,
     return -1;
 
   GLuint shaderProgram = glCreateProgram();
-  glAttachShader(shaderProgram, vertex_shader);
-  glAttachShader(shaderProgram, fragment_shader);
-  glLinkProgram(shaderProgram);
+  GL_CALL(glAttachShader(shaderProgram, vertex_shader));
+  GL_CALL(glAttachShader(shaderProgram, fragment_shader));
+  GL_CALL(glLinkProgram(shaderProgram));
 
-  glDeleteShader(vertex_shader);
-  glDeleteShader(fragment_shader);
+  GL_CALL(glDeleteShader(vertex_shader));
+  GL_CALL(glDeleteShader(fragment_shader));
 
   GLint success;
-  glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+  GL_CALL(glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success));
   if (!success) {
     GLchar infoLog[512];
-    glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+    GL_CALL(glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog));
     fprintf(stderr, "Error: Shader program linking failed\n%s\n", infoLog);
     return -1;
   }

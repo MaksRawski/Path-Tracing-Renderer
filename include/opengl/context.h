@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 #include <stdbool.h>
 
+#include "opengl/scaling.h"
 #include "opengl/window_coordinate.h"
 #include "opengl/window_events.h"
 
@@ -23,6 +24,10 @@ GLFWUserData *OpenGLContext_get_user_data(OpenGLContext *self);
 OpenGLResolution OpenGLContext_get_window_size(const OpenGLContext *self);
 OpenGLResolution OpenGLContext_update_viewport_size(const OpenGLContext *self);
 WindowEventsData OpenGLContext_poll_events(OpenGLContext *self);
+
+void OpenGLContext_display_framebuffer(GLuint fbo, OpenGLResolution fbo_res,
+                                       OpenGLResolution display_res,
+                                       OpenGLScalingMode scaling_mode);
 
 void OpenGLContext_steal_mouse(GLFWwindow *window);
 void OpenGLContext_give_back_mouse(GLFWwindow *window);

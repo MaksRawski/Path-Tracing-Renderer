@@ -1,10 +1,9 @@
-#include "renderer.h"
 #ifdef __linux__
 #include <gtk/gtk.h>
 #endif
 
-#include "gui.h"
-#include <GLFW/glfw3.h>
+#include "app_state.h"
+#include "app_state_display.h"
 
 #define DESIRED_WIDTH 1280
 #define DESIRED_HEIGHT 720
@@ -12,35 +11,50 @@
 
 int main(int argc, char *argv[]) {
 #ifdef __linux__
-  // Connect to X11 or Wayland, necessary for native file dialog creation
+  // Connects to X11 or Wayland, necessary for native file dialog creation.
   gtk_init(&argc, &argv);
 #endif
 
   OpenGLContext ctx =
       OpenGLContext_new(WINDOW_TITLE, DESIRED_WIDTH, DESIRED_HEIGHT);
 
-  Gui gui = Gui_new(&ctx);
+  GUIOverlay gui = GUIOverlay_new(&ctx);
 
-  Renderer renderer = Renderer_new(OpenGLContext_update_viewport_size(&ctx));
-  if (argc == 2)
-    Renderer_load_gltf(&renderer, argv[1]);
+  AppState app_state = AppState_default();
+  app_state.viewport_size = OpenGLContext_update_viewport_size(&ctx);
+  Renderer renderer = Renderer_new();
 
-  GuiParameters gui_parameters = Renderer_get_gui_parameters(&renderer);
+  if (argc == 2) {
+    app_state.scene_paths.new_scene_path = FilePath_new_copy(argv[1]);
+  }
 
+  // TODO: what if shader fails? could we skip all the other stuff then?
+  // It's not a fatal error but an error nonetheless
   while (!glfwWindowShouldClose(ctx.window)) {
+    AppState_hot_reload_shaders(&app_state, &renderer);
+
     WindowEventsData events = OpenGLContext_poll_events(&ctx);
+    app_state.viewport_size = OpenGLContext_update_viewport_size(&ctx);
+    Renderer_update_focus(&renderer, &events, &ctx, !GUIOverlay_is_focused());
 
-    Gui_update_params(&gui, &gui_parameters, &events);
-    Renderer_update_state(&renderer, &events, &gui_parameters);
+    // TODO: if window is not focused skip iteration
 
-    Renderer_render_frame(&renderer, &ctx);
-    Gui_render_frame(&gui);
+    GUIOverlay_update_state(&gui, &app_state);
 
-    OpenGLContext_swap_buffers(&ctx);
+    // NOTE: this updates the renderer with data received from GUI
+    AppState_update_scene(&app_state, &renderer);
+
+    // NOTE: should be done after scene updating, so that camera isn't somehow
+    // maintained from previous scene
+    AppState_update_camera(&app_state, &renderer, &events);
+    // NOTE: this updates the renderer resolution
+    AppState_update_renderer_parameters(&app_state, &renderer);
+
+    AppState_display(&app_state, &renderer, &gui, &ctx);
   }
 
   Renderer_delete(&renderer);
-  Gui_delete(&gui);
+  GUIOverlay_delete(&gui);
   OpenGLContext_delete(&ctx);
 
   return 0;

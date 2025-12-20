@@ -7,6 +7,11 @@
 
 void Scene_build_bvh(Scene *self);
 
+Scene Scene_empty(void) {
+  // NOTE: if counts are set to 0 then the arrays shouldn't even be accessed!
+  return (Scene){0};
+}
+
 Scene Scene_load_gltf(const char *path) {
   Scene self = {0};
   printf("Loading scene %s...\n", path);

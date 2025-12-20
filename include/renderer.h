@@ -2,36 +2,37 @@
 #define RENDERER_H_
 
 #include "renderer/buffers.h"
+#include "renderer/parameters.h"
 #include "renderer/shaders.h"
-#include "renderer/uniforms.h"
 
-#include "gui/parameters.h"
 #include "opengl/context.h"
-#include "opengl/window_events.h"
+#include "opengl/resolution.h"
 
 typedef struct {
   RendererShaders _shaders;
   RendererBuffers _buffers;
-  RendererUniforms _uniforms;
-  // the last known resolution to render for
-  OpenGLResolution _last_resolution;
-  int _fps_counter;
-  double _last_frame_time;
+  RendererParameters _params;
+  OpenGLResolution _res;
   bool _focused;
-  ParametersScene _scene_parameters;
 } Renderer;
 
-// NOTE: the created window may not have the same resolution that was desired
-// e.g. due to scaling
-Renderer Renderer_new(OpenGLResolution real_resolution);
+Renderer Renderer_new(void);
 
 void Renderer_load_scene(Renderer *self, const Scene *scene);
-void Renderer_load_gltf(Renderer *self, const char *gltf_path);
-void Renderer_update_state(Renderer *self, const WindowEventsData *events,
-                           GuiParameters *gui_parameters);
-void Renderer_render_frame(Renderer *self, OpenGLContext *ctx);
+void Renderer_set_camera(Renderer *self, Camera cam);
+/* void Renderer_set_resolution(Renderer *self, OpenGLResolution res); */
+void Renderer_set_params(Renderer *self, RendererParameters params);
 
-GuiParameters Renderer_get_gui_parameters(const Renderer *self);
+// renders frame
+void Renderer_render_frame(const Renderer *self, unsigned int frame_number);
+GLuint Renderer_get_fbo(const Renderer *self);
+
+void Renderer_clear_backbuffer(Renderer *self);
+
+void Renderer_set_focused(Renderer *self, bool focused);
+bool Renderer_is_focused(const Renderer *self);
+void Renderer_update_focus(Renderer *renderer, const WindowEventsData *events,
+                           OpenGLContext *ctx, bool mouse_over_renderer);
 
 void Renderer_delete(Renderer *self);
 

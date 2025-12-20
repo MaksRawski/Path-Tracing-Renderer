@@ -13,6 +13,12 @@ bool ASSERT_CUSTOM_impl(bool cond, const char *fail_reason,
   return true;
 }
 
+noreturn void UNREACHABLE_impl(const char *file_name, int line_num) {
+  fprintf(stderr, "%s:%d: \033[31mUNREACHABLE REACHED!\033[0m", file_name,
+          line_num);
+  exit(1);
+}
+
 void exit_if_not_impl(bool cond) {
   if (!cond)
     exit(1);

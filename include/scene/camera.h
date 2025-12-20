@@ -2,6 +2,7 @@
 #define CAMERA_H_
 
 #include "vec3.h"
+#include "yawpitch.h"
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -35,6 +36,19 @@ typedef struct {
   float focal_length;
 } Camera;
 
+typedef enum {
+  CameraMovementDirection_OPPOSITE = -1,
+  CameraMovementDirection_NONE = 0,
+  CameraMovementDirection_TOWARDS = 1,
+} CameraMovementDirection;
+
+// translation but relative to the camera's direction
+typedef struct {
+  CameraMovementDirection forward;
+  CameraMovementDirection left;
+  CameraMovementDirection up;
+} CameraTranslation;
+
 Camera Camera_new(vec3 pos, vec3 dir, vec3 up, float fov, float focal_length);
 
 float Camera_get_fov_deg(const Camera *self);
@@ -43,6 +57,9 @@ void Camera_set_fov_deg(Camera *self, float deg);
 void Camera_move_up(Camera *cam, float dir, float step_size);
 void Camera_move_forward(Camera *cam, float dir, float step_size);
 void Camera_move_left(Camera *cam, float dir, float step_size);
+
+void Camera_move(Camera *cam, CameraTranslation translation, double step_size);
+void Camera_rotate(Camera *cam, YawPitch rotation);
 
 bool Camera_eq(Camera a, Camera b);
 

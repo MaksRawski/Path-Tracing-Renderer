@@ -38,6 +38,7 @@ STATIC_ASSERT(sizeof(BVHnode) % 16 == 0,
 STATIC_ASSERT(sizeof(Primitive) == 4,
               Primitve_s_size_should_be_a_single_element)
 
+Scene Scene_empty(void);
 Scene Scene_load_gltf(const char *path);
 void Scene_delete(Scene *self);
 

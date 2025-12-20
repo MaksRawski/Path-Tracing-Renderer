@@ -2,8 +2,8 @@
 #include "renderer/buffers_scene.h"
 #include <stddef.h>
 
-RendererBuffers RendererBuffers_new(unsigned int width, unsigned int height) {
-  RendererBuffers self = {.back = RendererBuffersBack_new(width, height),
+RendererBuffers RendererBuffers_new(void) {
+  RendererBuffers self = {.back = RendererBuffersBack_new(),
                           .internal = RendererBuffersInternal_new(),
                           .scene = {0}};
   return self;

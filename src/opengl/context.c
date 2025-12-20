@@ -1,6 +1,10 @@
+#include "asserts.h"
 #include "glad/gl.h"
 //
+#include "opengl/gl_call.h"
 #include "opengl/context.h"
+#include "opengl/resolution.h"
+#include "opengl/scaling.h"
 #include "opengl/window_coordinate.h"
 #include "opengl/window_events.h"
 
@@ -25,7 +29,9 @@ OpenGLContext OpenGLContext_new(const char *window_title, int desired_width,
 
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+#ifndef NDEBUG
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+#endif
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
   if (glfwPlatformSupported(GLFW_PLATFORM_WIN32))
@@ -54,6 +60,7 @@ OpenGLContext OpenGLContext_new(const char *window_title, int desired_width,
   }
   void *userDataPtr = calloc(1, sizeof(GLFWUserData));
   glfwSetWindowUserPointer(self.window, userDataPtr);
+  glfwSwapInterval(0); // disable vsync
 
   // update the viewport size
   OpenGLContext_update_viewport_size(&self);
@@ -86,6 +93,47 @@ OpenGLResolution OpenGLContext_update_viewport_size(const OpenGLContext *self) {
   // making sure the viewport matches the framebuffer size
   glViewport(0, 0, res.width, res.height);
   return res;
+}
+
+void OpenGLContext_display_framebuffer(GLuint fbo, OpenGLResolution fbo_res,
+                                       OpenGLResolution display_res,
+                                       OpenGLScalingMode scaling_mode) {
+  // desired x and y offset and width and height
+  int dx, dy, dw, dh;
+  switch (scaling_mode) {
+  case OpenGLScalingMode_STRETCH: {
+    dx = 0;
+    dy = 0;
+    dw = display_res.width;
+    dh = display_res.height;
+    break;
+  }
+  case OpenGLScalingMode_FIT_CENTER: {
+    double fbo_aspect_ratio = (double)fbo_res.width / fbo_res.height;
+    double display_aspect_ratio =
+        (double)display_res.width / display_res.height;
+
+    if (fbo_aspect_ratio >= display_aspect_ratio) {
+      dw = display_res.width;
+      dh = display_res.width / fbo_aspect_ratio;
+      dx = 0;
+      dy = (double)(display_res.height - dh) / 2.0;
+    } else {
+      dh = display_res.height;
+      dw = display_res.height * fbo_aspect_ratio;
+      dx = (double)(display_res.width - dw) / 2.0;
+      dy = 0;
+    }
+  } break;
+  default: {
+    UNREACHABLE();
+  }
+  }
+  GL_CALL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo));
+  GL_CALL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
+  GL_CALL(glBlitFramebuffer(0, 0, fbo_res.width, fbo_res.height, //
+                            dx, dy, dx + dw, dy + dh,            //
+                            GL_COLOR_BUFFER_BIT, GL_LINEAR));
 }
 
 void OpenGLContext_steal_mouse(GLFWwindow *window) {
@@ -125,11 +173,6 @@ WindowEventsData OpenGLContext_poll_events(OpenGLContext *self) {
 
 void OpenGLContext_swap_buffers(OpenGLContext *self) {
   glfwSwapBuffers(self->window);
-}
-
-void OpenGLContext_vsync(OpenGLContext *self, bool enable) {
-  UNUSED(self);
-  glfwSwapInterval(enable ? 1 : 0);
 }
 
 GLFWUserData *OpenGLContext_get_user_data(OpenGLContext *ctx) {

@@ -1,6 +1,8 @@
 #include "gui/file_browser.h"
 #include <gtk/gtk.h>
 
+// TODO: instead use this? seems like an async thing
+// https://developer.gnome.org/documentation/tutorials/beginners/components/file_dialog.html 
 char *GuiFileBrowser_open_linux(void) {
   // 1. Create the File Chooser Dialog
   // We define the title, parent (NULL), action (Open), and the buttons.

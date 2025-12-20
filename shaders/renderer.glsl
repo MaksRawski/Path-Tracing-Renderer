@@ -1,13 +1,8 @@
-// overall resources:
-// - https://www.youtube.com/watch?v=Qz0KTGYJtUk
-// - https://github.com/ssloy/tinyraytracer/wiki/Part-1:-understandable-raytracing (FOV, reflection stuff)
-
 #version 460
 
-uniform int iFrame;
-uniform vec2 iResolution;
+uniform int frame_number;
+uniform vec2 resolution;
 uniform sampler2D backBufferTexture;
-uniform float aspectRatioWdH;
 
 uniform int MAX_BOUNCE_COUNT = 5;
 uniform int SAMPLES_PER_PIXEL = 2;
@@ -422,7 +417,7 @@ vec3 ReflectDirection(vec3 dir, vec3 normal) {
 
 vec3 GetColorForRay(Ray ray, inout uint rngState) {
     // we start with pure white
-    // as we (ig?) assume that the potential light source emits just that
+    // as we assume that the potential light source emits just that
     vec3 c = vec3(1.0, 1.0, 1.0);
     vec3 incomingLight = vec3(0.0, 0.0, 0.0);
     HitInfo hitInfo = CalculateRayCollision(ray);
@@ -433,12 +428,7 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
         if (hitInfo.didHit) {
             // bounce
             ray.origin = hitInfo.hitPoint;
-            // light strength depends on the angle between the normal vector of the surface
-            // and the light direction, the smaller the angle, the stronger the light
-            // we can use a cosine weighted distribution to achieve that
-            // we attach a random vector at the end of the normal vector and then normalize
-            // the result to get any point at a hemisphere
-            // ray.dir = RandomHemisphereDirection(hitInfo.normal, rngState);
+
             vec3 diffuseDir = DiffuseDirection(hitInfo.normal, rngState);
             vec3 reflectDir = ReflectDirection(ray.dir, hitInfo.normal);
 
@@ -447,8 +437,10 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
 
             // calculate the potential light that the object is emitting
             vec3 emittedLight = hitInfo.mat.emissionColor * hitInfo.mat.emissionStrength;
-            // tint the color of the incoming light by that color
+
             incomingLight += emittedLight * c;
+
+            // tint the final color by hit point's material color
             c *= hitInfo.mat.albedo;
         } else {
             // get color from environment
@@ -460,14 +452,13 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
 }
 
 void main() {
-    uint pixelIndex = uint(gl_FragCoord.x) + uint(gl_FragCoord.y) * uint(iResolution.x);
-    uint rngState = uint(pixelIndex + uint(iFrame * 719393));
+    uint pixelIndex = uint(gl_FragCoord.x) + uint(gl_FragCoord.y) * uint(resolution.x);
+    uint rngState = uint(pixelIndex + uint(frame_number * 719393));
 
     // gl_FragCoord stores the pixel coordinates [0.5, resolution-0.5]
-    vec2 uv = gl_FragCoord.xy / iResolution.xy; // normalized coordinates [0, 1]
+    vec2 uv = gl_FragCoord.xy / resolution.xy; // normalized coordinates [0, 1]
     uv = 2.0 * uv - 1.0; // normalized coordinates [-1, 1]
-    float aspectRatio = iResolution.x / iResolution.y;
-    // float aspectRatio = aspectRatioWdH;
+    float aspectRatio = resolution.x / resolution.y;
 
     vec3 viewportRight = cross(camera.dir.xyz, camera.up.xyz);
     vec3 viewportUp = cross(viewportRight, camera.dir.xyz);
@@ -493,10 +484,11 @@ void main() {
     }
     totalIncomingLight /= float(SAMPLES_PER_PIXEL);
 
-    vec3 lastFrameColor = texture(backBufferTexture, gl_FragCoord.xy / iResolution.xy).rgb;
-    if (iFrame == 0) lastFrameColor = totalIncomingLight;
-    float weight = 1.0 / (float(iFrame) + 1.0);
-    totalIncomingLight = lastFrameColor * (1.0 - weight) + totalIncomingLight * weight;
+    vec3 lastFrameColor = texture(backBufferTexture, gl_FragCoord.xy / resolution.xy).rgb;
+    if (frame_number > 0) {
+        float weight = 1.0 / float(frame_number);
+        totalIncomingLight = lastFrameColor * (1.0 - weight) + totalIncomingLight * weight;
+    }
 
     FragColor = vec4(totalIncomingLight, 1.0);
 }

@@ -2,16 +2,24 @@
 #define ASSERTS_H_
 
 #include <stdbool.h>
+#include <stdnoreturn.h>
 
 #include "vec3.h"
 #include "vec3d.h"
 
+// TODO: since we're using C11 anyway, we should instead use _Static_assert
 // NOTE: message must be a valid identifier
 #define STATIC_ASSERT(cond, message_as_identifier)                             \
   typedef char message_as_identifier[2 * (cond) - 1];
 
 bool ASSERT_CUSTOM_impl(bool cond, const char *fail_reason,
                         const char *file_name, int line_num);
+
+noreturn void UNREACHABLE_impl(const char *file_name, int line_num);
+
+// NOTE: this will NOT be removed from optimized builds as this assumes that
+// something must have gone HORRIBLY wrong
+#define UNREACHABLE() UNREACHABLE_impl(__FILE__, __LINE__)
 
 // implementing as a regular function so that stdio.h doesn't have to be loaded
 void exit_if_not_impl(bool cond);

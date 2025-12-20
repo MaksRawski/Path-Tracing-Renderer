@@ -13,7 +13,7 @@ typedef struct {
   RendererBuffersInternal internal;
 } RendererBuffers;
 
-RendererBuffers RendererBuffers_new(unsigned int width, unsigned int height);
+RendererBuffers RendererBuffers_new(void);
 void RendererBuffers_set_scene(RendererBuffers *self, const Scene *scene);
 void RendererBuffers_delete(RendererBuffers *self);
 

@@ -5,18 +5,16 @@
 
 #define UNUSED (void)
 
-// NOTE: needs context to set rendering user data? I HOPE NOT
-Gui Gui_new(OpenGLContext *ctx) {
-
-  Gui self = {._imgui_ctx = igCreateContext(NULL),
-              ._DEFAULT_STYLE = *igGetStyle(),
-              .ui_scale = 1.0,
-              .show_demo = false};
+GUIOverlay GUIOverlay_new(OpenGLContext *ctx) {
+  GUIOverlay self = {._imgui_ctx = igCreateContext(NULL),
+                     ._DEFAULT_STYLE = *igGetStyle(),
+                     .ui_scale = 1.0,
+                     .show_demo = false};
 
   // NOTE: assuming uniform scaling
   float scale;
   glfwGetWindowContentScale(ctx->window, &scale, NULL);
-  Gui_scale(&self, scale);
+  GUIOverlay_scale(&self, scale);
 
   ImGuiIO *io = igGetIO_Nil();
   ImFontAtlas_AddFontFromFileTTF(
@@ -29,34 +27,35 @@ Gui Gui_new(OpenGLContext *ctx) {
   return self;
 }
 
+// HACK: WindowEventsData used as a hack for reading and setting the window
+// size, though not sure if we even want it,
 // updates params in place, using the provided value for display
-void Gui_update_params(Gui *self, GuiParameters *params,
-                       WindowEventsData *events) {
+void GUIOverlay_update_state(GUIOverlay *self, AppState *state) {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   igNewFrame();
-  GuiSettings_draw(self, params, events);
+  GuiSettings_draw(self, state);
 }
 
-bool Gui_is_focused(void) { return igGetIO_Nil()->WantCaptureMouse; }
+bool GUIOverlay_is_focused(void) { return igGetIO_Nil()->WantCaptureMouse; }
 
-void Gui_render_frame(Gui *self) {
+void GUIOverlay_render_frame(GUIOverlay *self) {
   UNUSED(self);
   igRender();
   ImGui_ImplOpenGL3_RenderDrawData(igGetDrawData());
 }
 
-void Gui_delete(Gui *self) {
-  ImGui_ImplOpenGL3_Shutdown();
-  ImGui_ImplGlfw_Shutdown();
-  igDestroyContext(self->_imgui_ctx);
-  self = NULL;
-}
-
-void Gui_scale(Gui *self, float scale) {
+void GUIOverlay_scale(GUIOverlay *self, float scale) {
   ImGuiStyle *style = igGetStyle();
   *style = self->_DEFAULT_STYLE;
   style->FontScaleDpi = scale;
   self->ui_scale = scale;
   ImGuiStyle_ScaleAllSizes(style, scale);
+}
+
+void GUIOverlay_delete(GUIOverlay *self) {
+  ImGui_ImplOpenGL3_Shutdown();
+  ImGui_ImplGlfw_Shutdown();
+  igDestroyContext(self->_imgui_ctx);
+  self = NULL;
 }
