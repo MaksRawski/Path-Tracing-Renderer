@@ -59,6 +59,8 @@ void AppState_update_scene(AppState *app_state, Renderer *renderer) {
 // inputs
 void AppState_update_camera(AppState *app_state, Renderer *renderer,
                             const WindowEventsData *events) {
+  if (Scene_is_empty(&app_state->scene))
+    return;
   // NOTE: GUI changes have a higher priority than keyboard + mouse
   if (app_state->cam_changed) {
     app_state->cam_changed = false;

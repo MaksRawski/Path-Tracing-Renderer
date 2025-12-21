@@ -30,6 +30,10 @@ void Scene_build_bvh(Scene *self) {
   free(b_res.swaps_lut);
 }
 
+bool Scene_is_empty(const Scene *scene) {
+  return scene->triangles_count == 0;
+}
+
 void Scene_delete(Scene *self) {
   free(self->triangles);
   free(self->mats);
