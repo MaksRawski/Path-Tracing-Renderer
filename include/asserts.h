@@ -7,11 +7,6 @@
 #include "vec3.h"
 #include "vec3d.h"
 
-// TODO: since we're using C11 anyway, we should instead use _Static_assert
-// NOTE: message must be a valid identifier
-#define STATIC_ASSERT(cond, message_as_identifier)                             \
-  typedef char message_as_identifier[2 * (cond) - 1];
-
 bool ASSERT_CUSTOM_impl(bool cond, const char *fail_reason,
                         const char *file_name, int line_num);
 

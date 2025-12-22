@@ -1,7 +1,8 @@
 #ifndef BVH_H_
 #define BVH_H_
 
-#include "asserts.h"
+#include <assert.h>
+
 #include "scene/triangle.h"
 #include "vec3.h"
 
@@ -16,8 +17,8 @@ typedef struct {
   BVHTriCount first, count;
   long _;
 } BVHnode;
-STATIC_ASSERT(sizeof(BVHnode) % 16 == 0,
-              BVHNode_s_size_should_be_a_multiple_of_16)
+static_assert(sizeof(BVHnode) % 16 == 0,
+              "BVHNode's size should be a multiple of 16");
 
 // node index 0 must be root
 typedef struct {

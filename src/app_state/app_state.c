@@ -1,12 +1,8 @@
 #include "app_state.h"
-#include "gui.h"
 #include "opengl/scaling.h"
-#include "renderer/inputs.h"
-#include "opengl/gl_call.h"
 #include "renderer.h"
-#include "renderer/buffers_scene.h"
+#include "renderer/inputs.h"
 #include "renderer/shaders.h"
-
 
 // this new is supposed to be an exhaustive constructor, i.e. should initalize
 // every field
@@ -30,7 +26,8 @@ AppState AppState_default(void) {
                       OpenGLScalingMode_FIT_CENTER, Scene_empty());
 }
 
-void AppState__restart_progressive_rendering(AppState *app_state, Renderer *renderer) {
+void AppState__restart_progressive_rendering(AppState *app_state,
+                                             Renderer *renderer) {
   Renderer_clear_backbuffer(renderer);
   app_state->stats.frame_number = 0;
 }

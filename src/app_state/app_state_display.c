@@ -2,7 +2,6 @@
 #include "app_state/app_state_save_image.h"
 #include "opengl/gl_call.h"
 #include <GL/glext.h>
-#include <stdlib.h>
 
 // NOTE: sets the rendering_params received from GUI in Renderer
 // NOTE: renders everything that has to be rendered to the screen

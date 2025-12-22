@@ -1,6 +1,7 @@
 #ifndef SCENE_H_
 #define SCENE_H_
-#include "asserts.h"
+
+#include <assert.h>
 
 #include "scene/bvh.h"
 #include "scene/camera.h"
@@ -27,16 +28,17 @@ typedef struct {
 
 // NOTE: all structs that are passed as arrays to OpenGL
 // must have size that's a multiple of 16
-STATIC_ASSERT(sizeof(Triangle) % 16 == 0,
-              Triangle_s_size_should_be_a_multiple_of_16)
-STATIC_ASSERT(sizeof(Material) % 16 == 0,
-              Material_s_size_should_be_a_multiple_of_16)
-STATIC_ASSERT(sizeof(BVHnode) % 16 == 0,
-              BVHNode_s_size_should_be_a_multiple_of_16)
-// NOTE: right now Primive has just a single field which can be
-// passed as array without any issues
-STATIC_ASSERT(sizeof(Primitive) == 4,
-              Primitve_s_size_should_be_a_single_element)
+static_assert(sizeof(Triangle) % 16 == 0,
+              "Triangle's size should be a multiple of 16!");
+static_assert(sizeof(Material) % 16 == 0,
+              "Material's size should be a multiple of 16!");
+static_assert(sizeof(BVHnode) % 16 == 0,
+              "BVHNode's size should be a multiple of 16!");
+// NOTE: Right now primitive just contains a material index for a given
+// triangle and OpenGL is fine with an array of 4-byte elements
+static_assert(
+    (sizeof(Primitive) == 4) || (sizeof(Primitive) % 16 == 0),
+    "Primitve should contain just a single element or be a multiple of 16");
 
 Scene Scene_load_gltf(const char *path);
 
