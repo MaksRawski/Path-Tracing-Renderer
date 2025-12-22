@@ -52,10 +52,11 @@ bool test_apply_swaps_lut__simplest_earlier_breaking_case(void) {
 }
 
 bool all_bvh_lut_tests(void) {
-  TEST_RUN(test_apply_swaps_lut__id);
-  TEST_RUN(test_apply_swaps_lut__rev);
-  TEST_RUN(test_apply_swaps_lut__random);
-  TEST_RUN(test_apply_swaps_lut__simplest_earlier_breaking_case);
+  bool ok = true;
+  TEST_RUN(test_apply_swaps_lut__id, &ok);
+  TEST_RUN(test_apply_swaps_lut__rev, &ok);
+  TEST_RUN(test_apply_swaps_lut__random, &ok);
+  TEST_RUN(test_apply_swaps_lut__simplest_earlier_breaking_case, &ok);
 
-  return true;
+  return ok;
 }

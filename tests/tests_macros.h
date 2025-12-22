@@ -1,12 +1,14 @@
 #ifndef TESTS_MACROS_H_
 #define TESTS_MACROS_H_
-#include "stdio.h"
+#include <stdbool.h>
 
-#define TEST_RUN(name)                                                         \
-  printf("test %s: \033[33mRUNNING\033[0m\n", #name);                          \
-  if (name())                                                                  \
-    printf("test %s: \033[32mOK\033[0m\n\n", #name);                             \
-  else                                                                         \
-    printf("test %s: \033[31mERROR\033[0m\n\n", #name);
+void TESTS_RUN_impl(bool tests_fn(void), const char *section_name);
+
+#define TESTS_RUN(_tests) TESTS_RUN_impl(_tests, #_tests)
+
+void TEST_RUN_impl(bool test_fn(void), const char *test_name, bool *ok);
+
+/* will set ok to false if the test fails */
+#define TEST_RUN(_test, ok) TEST_RUN_impl(_test, #_test, ok)
 
 #endif // TESTS_MACROS_H_

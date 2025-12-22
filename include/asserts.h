@@ -104,6 +104,10 @@ bool ASSERT_VEC3D_EQ_impl(const char *a_str, Vec3d a, const char *b_str,
 // -----------------------------------------------------------------------------
 
 // -----------------------------------------------------------------------------
+// NOTE: it will be hard to refactor sprintfs from this into a function as that
+// function signature would have to be generic over the types of array elements!
+//
+#include "stdio.h"
 // compare two numeric arrays
 #define ASSERT_ARRAYN_EQ(_a, _b, count)                                        \
   do {                                                                         \

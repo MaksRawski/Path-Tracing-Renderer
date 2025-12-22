@@ -56,20 +56,21 @@ TEST_YAW_PITCH_ID(extreme_mid, M_PI, 0.0)
 TEST_YAW_PITCH_ID(extreme_max, 2 * M_PI - 1e-5, M_PI / 2.0 - 1e-15)
 
 bool all_yawpitch_tests(void) {
-  TEST_RUN(test_YawPitch_to_dir__by_default_look_at_negative_z_axis);
-  TEST_RUN(test_YawPitch_to_dir__yaw_is_counter_clockwise__90_deg);
-  TEST_RUN(test_YawPitch_to_dir__yaw_is_counter_clockwise__60_deg);
+  bool ok = true;
+  TEST_RUN(test_YawPitch_to_dir__by_default_look_at_negative_z_axis, &ok);
+  TEST_RUN(test_YawPitch_to_dir__yaw_is_counter_clockwise__90_deg, &ok);
+  TEST_RUN(test_YawPitch_to_dir__yaw_is_counter_clockwise__60_deg, &ok);
 
-  TEST_RUN(test_YawPitch_from_dir__by_default_look_at_negative_z_axis);
-  TEST_RUN(test_YawPitch_from_dir__yaw_is_counter_clockwise__90_deg);
-  TEST_RUN(test_YawPitch_from_dir__yaw_is_counter_clockwise__60_deg);
+  TEST_RUN(test_YawPitch_from_dir__by_default_look_at_negative_z_axis, &ok);
+  TEST_RUN(test_YawPitch_from_dir__yaw_is_counter_clockwise__90_deg, &ok);
+  TEST_RUN(test_YawPitch_from_dir__yaw_is_counter_clockwise__60_deg, &ok);
 
-  TEST_RUN(test_YawPitch_id__leet);
-  TEST_RUN(test_YawPitch_id__decimals);
-  TEST_RUN(test_YawPitch_id__260deg);
-  TEST_RUN(test_YawPitch_id__extreme_min);
-  TEST_RUN(test_YawPitch_id__extreme_mid);
-  TEST_RUN(test_YawPitch_id__extreme_max);
+  TEST_RUN(test_YawPitch_id__leet, &ok);
+  TEST_RUN(test_YawPitch_id__decimals, &ok);
+  TEST_RUN(test_YawPitch_id__260deg, &ok);
+  TEST_RUN(test_YawPitch_id__extreme_min, &ok);
+  TEST_RUN(test_YawPitch_id__extreme_mid, &ok);
+  TEST_RUN(test_YawPitch_id__extreme_max, &ok);
 
-  return true;
+  return ok;
 }

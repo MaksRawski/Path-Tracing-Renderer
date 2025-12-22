@@ -18,6 +18,7 @@ bool test_camera_move_forward(void) {
 }
 
 bool all_camera_tests(void) {
-  TEST_RUN(test_camera_move_forward);
-  return true;
+  bool ok = true;
+  TEST_RUN(test_camera_move_forward, &ok);
+  return ok;
 }
