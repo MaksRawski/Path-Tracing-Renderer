@@ -17,9 +17,8 @@ GUIOverlay GUIOverlay_new(OpenGLContext *ctx) {
   GUIOverlay_scale(&self, scale);
 
   ImGuiIO *io = igGetIO_Nil();
-  ImFontAtlas_AddFontFromFileTTF(
-      io->Fonts, "lib/cimgui/imgui/misc/fonts/Cousine-Regular.ttf", 12, NULL,
-      NULL);
+  ImFontAtlas_AddFontFromFileTTF(io->Fonts, "fonts/Cousine/Cousine-Regular.ttf",
+                                 12, NULL, NULL);
 
   ImGui_ImplOpenGL3_Init("#version 130");
   ImGui_ImplGlfw_InitForOpenGL(ctx->window, true);
