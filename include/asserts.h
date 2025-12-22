@@ -7,8 +7,12 @@
 #include "vec3.h"
 #include "vec3d.h"
 
+// NOTE: consider using ASSERT(Q)_CUSTOM(_FMT) instead of calling these directly
 bool ASSERT_CUSTOM_impl(bool cond, const char *fail_reason,
                         const char *file_name, int line_num);
+
+bool ASSERT_CUSTOM_FMT_impl(bool cond, const char *file_name, int line_num,
+                            const char *fmt, ...);
 
 noreturn void UNREACHABLE_impl(const char *file_name, int line_num);
 
@@ -29,6 +33,22 @@ void exit_if_not_impl(bool cond);
 #else
 #define exit_if_not(cond) exit_if_not_impl(cond)
 #endif
+
+// -----------------------------------------------------------------------------
+#define ASSERT_CUSTOM(cond, msg)                                               \
+  return_if_not(ASSERT_CUSTOM_impl(cond, msg, __FILE__, __LINE__));
+
+#define ASSERTQ_CUSTOM(cond, msg)                                              \
+  exit_if_not(ASSERT_CUSTOM_impl(cond, msg, __FILE__, __LINE__));
+
+#define ASSERT_CUSTOM_FMT(cond, fmt, ...)                                      \
+  return_if_not(                                                               \
+      ASSERT_CUSTOM_FMT_impl(cond, __FILE__, __LINE__, fmt, __VA_ARGS__))
+
+#define ASSERTQ_CUSTOM_FMT(cond, fmt, ...)                                     \
+  exit_if_not(                                                                 \
+      ASSERT_CUSTOM_FMT_impl(cond, __FILE__, __LINE__, fmt, __VA_ARGS__))
+// -----------------------------------------------------------------------------
 
 // -----------------------------------------------------------------------------
 bool ASSERT_CONDF_impl(const char *cond_str, bool cond, const char *val_str,
@@ -110,8 +130,5 @@ bool ASSERT_VEC3D_EQ_impl(const char *a_str, Vec3d a, const char *b_str,
     }                                                                          \
   } while (0)
 // -----------------------------------------------------------------------------
-
-#define ASSERTQ_NOT_NULL(p, msg)                                               \
-  exit_if_not(ASSERT_CUSTOM_impl(p != NULL, msg, __FILE__, __LINE__));
 
 #endif // ASSERT_H_

@@ -11,12 +11,12 @@ char *copy_string(const char *s) {
 }
 
 ConstString ConstString_new_copy(const char *str) {
-  ASSERTQ_NOT_NULL(str, "ConstString_new_copy called with NULL!");
+  ASSERTQ_CUSTOM(str != NULL, "ConstString_new_copy called with NULL!");
   return (ConstString){.str = copy_string(str), ._owned = true};
 }
 
 ConstString ConstString_new_with(const char *str) {
-  ASSERTQ_NOT_NULL(str, "ConstString_new_with called with NULL!");
+  ASSERTQ_CUSTOM(str != NULL, "ConstString_new_with called with NULL!");
   return (ConstString){.str = str, ._owned = false};
 }
 
