@@ -1,5 +1,6 @@
 #include "renderer/buffers_scene.h"
 #include "opengl/generate_ssbo.h"
+#include "opengl/gl_call.h"
 #include <stddef.h>
 
 RendererBuffersScene RendererBuffersScene_new(const Scene *scene) {
@@ -31,15 +32,15 @@ Camera RendererBuffersScene_get_camera(const RendererBuffersScene *self) {
 void RendererBuffersScene_set_camera(RendererBuffersScene *self,
                                      Camera camera) {
   self->_camera = camera;
-  glNamedBufferSubData(self->camera_ssbo, 0, sizeof(Camera), &camera);
+  GL_CALL(glNamedBufferSubData(self->camera_ssbo, 0, sizeof(Camera), &camera));
 }
 
 void RendererBuffersScene_delete(RendererBuffersScene *self) {
-  glDeleteBuffers(1, &self->bvh_nodes_ssbo);
-  glDeleteBuffers(1, &self->triangles_ssbo);
-  glDeleteBuffers(1, &self->mats_ssbo);
-  glDeleteBuffers(1, &self->primitives_ssbo);
-  glDeleteBuffers(1, &self->camera_ssbo);
+  GL_CALL(glDeleteBuffers(1, &self->bvh_nodes_ssbo));
+  GL_CALL(glDeleteBuffers(1, &self->triangles_ssbo));
+  GL_CALL(glDeleteBuffers(1, &self->mats_ssbo));
+  GL_CALL(glDeleteBuffers(1, &self->primitives_ssbo));
+  GL_CALL(glDeleteBuffers(1, &self->camera_ssbo));
 
   self = NULL;
 }
