@@ -11,7 +11,7 @@ add_subdirectory(lib)
 
 if(MSVC)
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS} /Zi /Od")
-    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS} /O2 /DNDEBUG")
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} /O2 /DNDEBUG")
 elseif(UNIX)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wno-unused -pedantic-errors")
     set(CMAKE_C_FLAGS_DEBUG "-g")
