@@ -27,8 +27,6 @@ GUIOverlay GUIOverlay_new(OpenGLContext *ctx) {
   return self;
 }
 
-// HACK: WindowEventsData used as a hack for reading and setting the window
-// size, though not sure if we even want it,
 // updates params in place, using the provided value for display
 void GUIOverlay_update_state(GUIOverlay *self, AppState *state) {
   ImGui_ImplOpenGL3_NewFrame();

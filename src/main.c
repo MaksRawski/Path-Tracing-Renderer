@@ -3,6 +3,7 @@
 #endif
 
 #include "app_state.h"
+#include "app_state/app_state_save_image.h"
 #include "app_state_display.h"
 
 #define DESIRED_WIDTH 1280
@@ -51,6 +52,8 @@ int main(int argc, char *argv[]) {
     AppState_update_renderer_parameters(&app_state, &renderer);
 
     AppState_display(&app_state, &renderer, &gui, &ctx);
+    AppState_save_image(&app_state.save_image_info, Renderer_get_fbo(&renderer),
+                        app_state.rendering_params.rendering_resolution);
   }
 
   Renderer_delete(&renderer);

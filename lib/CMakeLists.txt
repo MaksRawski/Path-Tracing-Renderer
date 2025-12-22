@@ -74,3 +74,10 @@ if(WIN32)
 elseif(UNIX)
     target_link_libraries(cimgui PRIVATE X11)
 endif()
+
+# stb_image_write
+add_library(stb_image_write stb_image_write/stb_image_write.c)
+target_include_directories(stb_image_write PUBLIC stb_image_write)
+if(UNIX)
+    set_target_properties(stb_image_write PROPERTIES POSITION_INDEPENDENT_CODE ON)
+endif()

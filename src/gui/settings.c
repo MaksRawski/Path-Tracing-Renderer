@@ -1,4 +1,5 @@
 #include "gui/settings.h"
+#include "const_string.h"
 #include "gui/file_browser.h"
 #include "opengl/scaling.h"
 #include "rad_deg.h"
@@ -127,6 +128,14 @@ void _Misc_settings(GUIOverlay *gui, AppState *state) {
   tooltip("Strategy to use for displaying the rendered image when the window "
           "size is different from the "
           "Rendering Resolution");
+
+  static char path[1024] = "output.png";
+  igInputText("Saved image path", path, 1023, 0, NULL, NULL);
+  ImVec2 button_size = {.x = 0, .y = 0};
+  if (igButton("Save image", button_size)) {
+    state->save_image_info.to_save = true;
+    state->save_image_info.path = ConstString_new_copy(path);
+  }
 
   /* int res[2] = {events->window_size.width, events->window_size.height}; */
   /* igInputInt2("viewport size", res, 0); */

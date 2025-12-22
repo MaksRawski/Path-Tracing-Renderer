@@ -1,6 +1,7 @@
 #ifndef APP_STATE_H_
 #define APP_STATE_H_
 
+#include "app_state/app_state_save_image.h"
 #include "gui/scene_paths.h"
 #include "opengl/resolution.h"
 #include "opengl/scaling.h"
@@ -19,6 +20,7 @@ typedef struct {
   ScenePaths scene_paths;
   OpenGLResolution viewport_size;
   OpenGLScalingMode scaling_mode;
+  AppStateSaveImageInfo save_image_info;
   Scene scene;
   bool cam_changed, rendering_params_changed, scene_paths_changed;
 } AppState;
