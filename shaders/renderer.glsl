@@ -1,12 +1,7 @@
 #version 460
 
 uniform int frame_number;
-uniform vec2 resolution;
 uniform sampler2D backBufferTexture;
-
-uniform int MAX_BOUNCE_COUNT = 5;
-uniform int SAMPLES_PER_PIXEL = 2;
-uniform float DIVERGE_STRENGTH = 0.001;
 
 const float EPSILON = 0.00001;
 const float INFINITY = 1.0e30;
@@ -19,6 +14,14 @@ out vec4 FragColor;
 
 #define STACK_SIZE 40
 #define MAX_ITERATIONS 200
+
+struct Parameters {
+    int max_bounce_count;
+    int samples_per_pixel;
+    float diverge_strength;
+    int _frames_to_render;
+    uint width, height;
+};
 
 // https://raytracing.github.io/books/RayTracingInOneWeekend.html#positionablecamera (12.2)
 struct Camera {
@@ -82,6 +85,9 @@ layout(std430, binding = 4) readonly buffer primitivesBuffer {
 };
 layout(std430, binding = 5) readonly buffer cameraBuffer {
     Camera camera;
+};
+layout(std430, binding = 6) readonly buffer rendererParametersBuffer {
+    Parameters params;
 };
 
 struct Sphere {
@@ -423,7 +429,7 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
     HitInfo hitInfo = CalculateRayCollision(ray);
     // return hitInfo.didHit ? hitInfo.mat.albedo : vec3(0.0, 0.0, 0.0);
 
-    for (int i = 0; i <= MAX_BOUNCE_COUNT; ++i) {
+    for (int i = 0; i <= params.max_bounce_count; ++i) {
         HitInfo hitInfo = CalculateRayCollision(ray);
         if (hitInfo.didHit) {
             // bounce
@@ -452,13 +458,14 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
 }
 
 void main() {
-    uint pixelIndex = uint(gl_FragCoord.x) + uint(gl_FragCoord.y) * uint(resolution.x);
+    vec2 resolution = vec2(params.width, params.height);
+    uint pixelIndex = uint(gl_FragCoord.x) + uint(gl_FragCoord.y) * uint(params.width);
     uint rngState = uint(pixelIndex + uint(frame_number * 719393));
 
     // gl_FragCoord stores the pixel coordinates [0.5, resolution-0.5]
     vec2 uv = gl_FragCoord.xy / resolution.xy; // normalized coordinates [0, 1]
     uv = 2.0 * uv - 1.0; // normalized coordinates [-1, 1]
-    float aspectRatio = resolution.x / resolution.y;
+    float aspectRatio = float(params.width) / float(params.height);
 
     vec3 viewportRight = cross(camera.dir.xyz, camera.up.xyz);
     vec3 viewportUp = cross(viewportRight, camera.dir.xyz);
@@ -472,17 +479,17 @@ void main() {
             viewportHeight * viewportUp * uv.y;
 
     vec3 totalIncomingLight = vec3(0.0, 0.0, 0.0);
-    for (int i = 0; i < SAMPLES_PER_PIXEL; ++i) {
+    for (int i = 0; i < params.samples_per_pixel; ++i) {
         Ray ray;
         ray.origin = camera.pos.xyz;
-        vec2 jitter = RandomPointInCircle(rngState) * DIVERGE_STRENGTH;
+        vec2 jitter = RandomPointInCircle(rngState) * params.diverge_strength;
         vec3 jitteredRayTarget = rayTarget + viewportRight * jitter.x + viewportUp * jitter.y;
 
         ray.dir = normalize(jitteredRayTarget - ray.origin);
         ray.inv_dir = 1.0 / ray.dir;
         totalIncomingLight += GetColorForRay(ray, rngState);
     }
-    totalIncomingLight /= float(SAMPLES_PER_PIXEL);
+    totalIncomingLight /= float(params.samples_per_pixel);
 
     vec3 lastFrameColor = texture(backBufferTexture, gl_FragCoord.xy / resolution.xy).rgb;
     if (frame_number > 0) {

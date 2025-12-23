@@ -2,6 +2,7 @@
 #include "opengl/gl_call.h"
 #include "opengl/resolution.h"
 #include "renderer/buffers/back.h"
+#include "renderer/buffers/parameters_buffer.h"
 #include "renderer/buffers_scene.h"
 #include "renderer/parameters.h"
 #include "scene/camera.h"
@@ -38,32 +39,9 @@ void Renderer_set_camera(Renderer *self, Camera cam) {
   RendererBuffersScene_set_camera(&self->_buffers.scene, cam);
 }
 
-/* void Renderer_set_resolution(Renderer *self, OpenGLResolution res) { */
-/*   self->_res = res; */
-/*   // TODO: instead use an SSBO? */
-/*   glUniform2f(glGetUniformLocation(self->_shaders.program, "resolution"), */
-/*               res.width, res.height); */
-/*   // TODO: should we also resize the backbuffer? it will be done
- * automatically */
-/*   // but seems weird to not do it explicitly */
-/* } */
-
-// TODO: instead use an SSBO with all the parameters?
 void Renderer_set_params(Renderer *self, RendererParameters params) {
   self->_res = params.rendering_resolution;
-  GL_CALL(glUseProgram(self->_shaders.program));
-  GL_CALL(
-      glUniform2f(glGetUniformLocation(self->_shaders.program, "resolution"),
-                  self->_res.width, self->_res.height));
-  GL_CALL(glUniform1i(
-      glGetUniformLocation(self->_shaders.program, "MAX_BOUNCE_COUNT"),
-      params.max_bounce_count));
-  GL_CALL(glUniform1i(
-      glGetUniformLocation(self->_shaders.program, "SAMPLES_PER_PIXEL"),
-      params.samples_per_pixel));
-  GL_CALL(glUniform1f(
-      glGetUniformLocation(self->_shaders.program, "DIVERGE_STRENGTH"),
-      params.diverge_strength));
+  RendererParametersBuffer_set(&self->_buffers.parameters, &params);
 }
 
 void Renderer_clear_backbuffer(Renderer *self) {
@@ -98,13 +76,12 @@ GLuint Renderer_get_fbo(const Renderer *self) {
 // TODO: frame_number should obviously be refactored out, maybe even handled by
 // a different shader
 void Renderer_render_frame(const Renderer *self, unsigned int frame_number) {
-  GL_CALL(
-      glUniform1i(glGetUniformLocation(self->_shaders.program, "frame_number"),
-                  frame_number));
-
   // setup the program and bind the vao associated with the quad
   // and the vbo holding the vertices of the quad
   GL_CALL(glUseProgram(self->_shaders.program));
+  GL_CALL(
+      glUniform1i(glGetUniformLocation(self->_shaders.program, "frame_number"),
+                  frame_number));
   GL_CALL(glBindVertexArray(self->_buffers.internal.vao));
 
   // render the quad to the back buffer

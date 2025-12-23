@@ -1,10 +1,12 @@
 #include "renderer/buffers.h"
+#include "renderer/buffers/parameters_buffer.h"
 #include "renderer/buffers_scene.h"
 #include <stddef.h>
 
 RendererBuffers RendererBuffers_new(void) {
   RendererBuffers self = {.back = RendererBuffersBack_new(),
                           .internal = RendererBuffersInternal_new(),
+                          .parameters = RendererParametersBuffer_default(),
                           .scene = {0}};
   return self;
 }
@@ -22,6 +24,7 @@ void RendererBuffers_delete(RendererBuffers *self) {
   RendererBuffersBack_delete(&self->back);
   RendererBuffersInternal_delete(&self->internal);
   RendererBuffersScene_delete(&self->scene);
+  RendererParametersBuffer_delete(&self->parameters);
 
   self = NULL;
 }

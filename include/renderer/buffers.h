@@ -1,6 +1,7 @@
 #ifndef BUFFERS_H_
 #define BUFFERS_H_
 
+#include "renderer/buffers/parameters_buffer.h"
 #include "scene.h"
 
 #include "renderer/buffers_scene.h" 
@@ -11,6 +12,7 @@ typedef struct {
   RendererBuffersScene scene;
   RendererBuffersBack back;
   RendererBuffersInternal internal;
+  RendererParametersBuffer parameters;
 } RendererBuffers;
 
 RendererBuffers RendererBuffers_new(void);

@@ -2,6 +2,7 @@
 #define RENDERER_PARAMETERS_H_
 
 #include "opengl/resolution.h"
+#include <assert.h>
 #include <stdbool.h>
 
 typedef struct {
@@ -14,9 +15,5 @@ typedef struct {
 } RendererParameters;
 
 RendererParameters RendererParameters_default(void);
-/* RendererParameters RendererParameters_new(int max_bounce_count, */
-/*                                           int samples_per_pixel, */
-/*                                           float diverge_strength); */
-/* bool RendererParameters_eq(RendererParameters a, RendererParameters b); */
 
 #endif // RENDERER_PARAMETERS_H_
