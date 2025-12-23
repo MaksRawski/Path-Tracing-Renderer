@@ -15,7 +15,7 @@
 // NOTE: using nanosecond precision on linux and second precision elsewhere
 // (which could very well be problematic but I don't care about that for now)
 // TODO: instead use OS specific APIs that offer more reliable mechanisms for
-// this
+// this; inotify on Linux and ReadDirectoryChangesW on Windows
 
 void set_stats(FileWatcher *self, struct stat stats);
 bool stats_changed(FileWatcher *self, struct stat stats);

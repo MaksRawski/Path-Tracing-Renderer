@@ -8,13 +8,13 @@
 // every field
 AppState AppState_new(Camera camera, RendererParameters rendering,
                       ScenePaths scene_pahts, OpenGLResolution res,
-                      OpenGLScalingMode stretch_mode, Scene scene) {
+                      OpenGLScalingMode scale_mode, Scene scene) {
   return (AppState){.cam = camera,
                     .rendering_params = rendering,
                     .scene_paths = scene_pahts,
                     .viewport_size = res,
                     .scene = scene,
-                    .scaling_mode = stretch_mode,
+                    .scaling_mode = scale_mode,
                     .cam_changed = true,
                     .rendering_params_changed = true,
                     .scene_paths_changed = true};
@@ -71,6 +71,7 @@ void AppState_update_camera(AppState *app_state, Renderer *renderer,
 
 void AppState_hot_reload_shaders(AppState *app_state, Renderer *renderer) {
   if (RendererShaders_update(&renderer->_shaders)) {
+    // TODO: once using SSBOs change this to AppState__restart_progressive_rendering
     // HACK: forces setting of the uniform values in the new program as well as
     // restarts progressive rendering
     app_state->rendering_params_changed = true;

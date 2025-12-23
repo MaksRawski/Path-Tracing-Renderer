@@ -1,8 +1,8 @@
 #include "asserts.h"
 #include "glad/gl.h"
 //
-#include "opengl/gl_call.h"
 #include "opengl/context.h"
+#include "opengl/gl_call.h"
 #include "opengl/resolution.h"
 #include "opengl/scaling.h"
 #include "opengl/window_coordinate.h"
@@ -90,7 +90,8 @@ OpenGLResolution OpenGLContext_get_window_size(const OpenGLContext *self) {
 OpenGLResolution OpenGLContext_update_viewport_size(const OpenGLContext *self) {
   OpenGLResolution res = {0};
   glfwGetFramebufferSize(self->window, (int *)&res.width, (int *)&res.height);
-  // making sure the viewport matches the framebuffer size
+
+  // update OpenGL's window coordinates
   glViewport(0, 0, res.width, res.height);
   return res;
 }
@@ -125,7 +126,7 @@ void OpenGLContext_display_framebuffer(GLuint fbo, OpenGLResolution fbo_res,
       dy = 0;
     }
   } break;
-  default: {
+  case OpenGLScalingMode__COUNT: {
     UNREACHABLE();
   }
   }
