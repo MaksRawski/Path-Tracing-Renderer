@@ -51,7 +51,7 @@ void RendererShaders_force_update(RendererShaders *self) {
                                                     DEFAULT_FRAGMENT_SHADER);
   }
 
-  if (self->program != 0)
+  if (self->program != 0 && self->program != (GLuint)-1)
     GL_CALL(glDeleteProgram(self->program));
 
   self->program = new_program;
