@@ -38,7 +38,8 @@ void AppState_display(AppState *app_state, Renderer *renderer, GUIOverlay *gui,
       app_state->viewport_size, app_state->scaling_mode);
 
   GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
-  GUIOverlay_render_frame(gui);
+  if (app_state->gui_enabled)
+    GUIOverlay_render_frame(gui);
 
   OpenGLContext_swap_buffers(ctx);
 }

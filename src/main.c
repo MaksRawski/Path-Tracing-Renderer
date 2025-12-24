@@ -1,3 +1,5 @@
+#include "cli.h"
+#include "renderer/parameters.h"
 #ifdef __linux__
 #include <gtk/gtk.h>
 #endif
@@ -11,6 +13,9 @@
 #define WINDOW_TITLE "Path Tracing Renderer"
 
 int main(int argc, char *argv[]) {
+  AppState app_state = AppState_default();
+  handle_args(argc, argv, &app_state);
+
 #ifdef __linux__
   // Connects to X11 or Wayland, necessary for native file dialog creation.
   gtk_init(&argc, &argv);
@@ -18,21 +23,17 @@ int main(int argc, char *argv[]) {
 
   OpenGLContext ctx =
       OpenGLContext_new(WINDOW_TITLE, DESIRED_WIDTH, DESIRED_HEIGHT);
+  app_state.viewport_size = OpenGLContext_update_viewport_size(&ctx);
 
   GUIOverlay gui = GUIOverlay_new(&ctx);
 
-  AppState app_state = AppState_default();
-  app_state.viewport_size = OpenGLContext_update_viewport_size(&ctx);
   Renderer renderer = Renderer_new();
-
-  if (argc == 2) {
-    app_state.scene_paths.new_scene_path = FilePath_new_copy(argv[1]);
-  }
 
   // TODO: what if shader fails? could we skip all the other stuff then?
   // It's not a fatal error but an error nonetheless
   while (!glfwWindowShouldClose(ctx.window)) {
-    AppState_hot_reload_shaders(&app_state, &renderer);
+    if (app_state.hot_reload_enabled)
+      AppState_hot_reload_shaders(&app_state, &renderer);
 
     WindowEventsData events = OpenGLContext_poll_events(&ctx);
     app_state.viewport_size = OpenGLContext_update_viewport_size(&ctx);
@@ -40,7 +41,8 @@ int main(int argc, char *argv[]) {
 
     // TODO: if window is not focused skip iteration
 
-    GUIOverlay_update_state(&gui, &app_state);
+    if (app_state.gui_enabled)
+      GUIOverlay_update_state(&gui, &app_state);
 
     // NOTE: this updates the renderer with data received from GUI
     AppState_update_scene(&app_state, &renderer);
@@ -48,12 +50,26 @@ int main(int argc, char *argv[]) {
     // NOTE: should be done after scene updating, so that camera isn't somehow
     // maintained from previous scene
     AppState_update_camera(&app_state, &renderer, &events);
+
     // NOTE: this updates the renderer resolution
     AppState_update_renderer_parameters(&app_state, &renderer);
 
     AppState_display(&app_state, &renderer, &gui, &ctx);
-    AppState_save_image(&app_state.save_image_info, Renderer_get_fbo(&renderer),
-                        app_state.rendering_params.rendering_resolution);
+
+    bool rendering_finished = (int)app_state.stats.frame_number ==
+                              app_state.rendering_params.frames_to_render;
+
+    if (app_state.save_after_rendering && rendering_finished)
+      app_state.save_image_info.to_save = true;
+
+    if (app_state.save_image_info.to_save) {
+      AppState_save_image(&app_state.save_image_info,
+                          Renderer_get_fbo(&renderer),
+                          app_state.rendering_params.rendering_resolution);
+    }
+
+    if (app_state.exit_after_rendering && rendering_finished)
+      break;
   }
 
   Renderer_delete(&renderer);

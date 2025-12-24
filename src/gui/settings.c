@@ -129,20 +129,12 @@ void _Misc_settings(GUIOverlay *gui, AppState *state) {
           "size is different from the "
           "Rendering Resolution");
 
-  static char path[1024] = "output.png";
-  igInputText("Saved image path", path, 1023, 0, NULL, NULL);
+  igInputText("Saved image path", state->save_image_info.path,
+              sizeof(state->save_image_info.path), 0, NULL, NULL);
   ImVec2 button_size = {.x = 0, .y = 0};
   if (igButton("Save image", button_size)) {
     state->save_image_info.to_save = true;
-    state->save_image_info.path = ConstString_new_copy(path);
   }
-
-  /* int res[2] = {events->window_size.width, events->window_size.height}; */
-  /* igInputInt2("viewport size", res, 0); */
-  /* // HACK: accessing _window, which we shouldn't! */
-  /* if (igInputInt2("Window size", res, 0)) { */
-  /*   glfwSetWindowSize(events->_window, res[0], res[1]); */
-  /* } */
 
 #ifndef NDEBUG
   igCheckbox("Show ImGui demo", &gui->show_demo);
