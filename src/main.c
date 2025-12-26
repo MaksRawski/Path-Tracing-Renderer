@@ -44,14 +44,14 @@ int main(int argc, char *argv[]) {
     if (app_state.gui_enabled)
       GUIOverlay_update_state(&gui, &app_state);
 
-    // NOTE: this updates the renderer with data received from GUI
+    // NOTE: loads a new scene if necessary
     AppState_update_scene(&app_state, &renderer);
 
     // NOTE: should be done after scene updating, so that camera isn't somehow
     // maintained from previous scene
     AppState_update_camera(&app_state, &renderer, &events);
 
-    // NOTE: this updates the renderer resolution
+    // NOTE: this includes the renderer resolution
     AppState_update_renderer_parameters(&app_state, &renderer);
 
     AppState_display(&app_state, &renderer, &gui, &ctx);
