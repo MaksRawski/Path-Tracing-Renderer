@@ -81,11 +81,7 @@ void AppState_update_camera(AppState *app_state, Renderer *renderer,
 
 void AppState_hot_reload_shaders(AppState *app_state, Renderer *renderer) {
   if (RendererShaders_update(&renderer->_shaders)) {
-    // TODO: once using SSBOs change this to
-    // AppState__restart_progressive_rendering HACK: forces setting of the
-    // uniform values in the new program as well as restarts progressive
-    // rendering
-    app_state->rendering_params_changed = true;
+    AppState__restart_progressive_rendering(app_state, renderer);
   }
 }
 
