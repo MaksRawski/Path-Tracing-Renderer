@@ -8,21 +8,21 @@
 #include <string.h>
 
 enum Options {
-  SAMPLES_PER_PIXEL,
-  MAX_BOUNCE_COUNT,
-  FRAMES_TO_RENDER,
-  RESOLUTION,
-  OUTPUT_PATH,
-  FLAG_NO_GUI,
-  FLAG_NO_HOT_RELOAD,
-  FLAG_EXIT_AFTER_RENDERING,
-  FLAG_SAVE_AFTER_RENDERING,
-  FLAG_JUST_RENDER,
-  FLAG_HELP,
+  Options_SAMPLES_PER_PIXEL,
+  Options_MAX_BOUNCE_COUNT,
+  Options_FRAMES_TO_RENDER,
+  Options_RESOLUTION,
+  Options_OUTPUT_PATH,
+  Options_FLAG_NO_GUI,
+  Options_FLAG_NO_HOT_RELOAD,
+  Options_FLAG_EXIT_AFTER_RENDERING,
+  Options_FLAG_SAVE_AFTER_RENDERING,
+  Options_FLAG_JUST_RENDER,
+  Options_FLAG_HELP,
   Options__COUNT,
 };
 
-const int FIRST_OTHER_OPTION = OUTPUT_PATH;
+const int FIRST_OTHER_OPTION = Options_OUTPUT_PATH;
 
 typedef struct {
   char description[256];
@@ -51,37 +51,37 @@ typedef struct {
 
 Option Option_new(enum Options option, const AppState *default_app_state) {
   switch (option) {
-  case SAMPLES_PER_PIXEL:
+  case Options_SAMPLES_PER_PIXEL:
     RETURN_OPTION_DV_FMT("-spp", "--samples-per-pixel", "", "%d",
                          default_app_state->rendering_params.samples_per_pixel);
-  case MAX_BOUNCE_COUNT:
+  case Options_MAX_BOUNCE_COUNT:
     RETURN_OPTION_DV_FMT("-B", "--max-bounce-count", "", "%d",
                          default_app_state->rendering_params.max_bounce_count);
-  case FRAMES_TO_RENDER:
+  case Options_FRAMES_TO_RENDER:
     RETURN_OPTION_DV_FMT("-F", "--frames-to-render", "", "%d",
                          default_app_state->rendering_params.frames_to_render);
-  case RESOLUTION: {
+  case Options_RESOLUTION: {
     OpenGLResolution resolution =
         default_app_state->rendering_params.rendering_resolution;
     RETURN_OPTION_DV_FMT("-R", "--resolution", "", "%dx%d", resolution.width,
                          resolution.height);
   }
-  case OUTPUT_PATH:
+  case Options_OUTPUT_PATH:
     RETURN_OPTION_DV_FMT("-O", "--out", "", "%s",
                          default_app_state->save_image_info.path);
-  case FLAG_EXIT_AFTER_RENDERING:
+  case Options_FLAG_EXIT_AFTER_RENDERING:
     RETURN_OPTION("-X", "--exit-after-rendering", "");
-  case FLAG_SAVE_AFTER_RENDERING:
+  case Options_FLAG_SAVE_AFTER_RENDERING:
     RETURN_OPTION("-S", "--save-after-rendering",
                   "Automatically save rendered image to PNG.");
-  case FLAG_NO_GUI:
+  case Options_FLAG_NO_GUI:
     RETURN_OPTION("-NG", "--no-gui", "Run without GUI overlay.");
-  case FLAG_NO_HOT_RELOAD:
+  case Options_FLAG_NO_HOT_RELOAD:
     RETURN_OPTION("-NH", "--no-hot-reload",
                   "Disable hot-reloading of shaders.");
-  case FLAG_HELP:
+  case Options_FLAG_HELP:
     RETURN_OPTION("-h", "--help", "Display this help");
-  case FLAG_JUST_RENDER:
+  case Options_FLAG_JUST_RENDER:
     RETURN_OPTION("-J", "--just-render",
                   "Alias for --no-gui --no-hot-reload --save-after-rendering "
                   "--exit-after-rendering.");
@@ -191,26 +191,26 @@ void parse_arg(int argc, char **argv, int *i,
   }
 
   switch (option) {
-  case FLAG_HELP:
+  case Options_FLAG_HELP:
     display_help(argv[0], all_options);
     break;
 
-  case SAMPLES_PER_PIXEL:
+  case Options_SAMPLES_PER_PIXEL:
     parse_number_exit(get_value_for_option(i, argc, argv, arg),
                       &app_state->rendering_params.samples_per_pixel, arg);
     break;
 
-  case MAX_BOUNCE_COUNT:
+  case Options_MAX_BOUNCE_COUNT:
     parse_number_exit(get_value_for_option(i, argc, argv, arg),
                       &app_state->rendering_params.max_bounce_count, arg);
     break;
 
-  case FRAMES_TO_RENDER:
+  case Options_FRAMES_TO_RENDER:
     parse_number_exit(get_value_for_option(i, argc, argv, arg),
                       &app_state->rendering_params.frames_to_render, arg);
     break;
 
-  case RESOLUTION: {
+  case Options_RESOLUTION: {
     char *res_value = get_value_for_option(i, argc, argv, arg);
     if (!parse_resolution(
             res_value, &app_state->rendering_params.rendering_resolution.width,
@@ -221,30 +221,30 @@ void parse_arg(int argc, char **argv, int *i,
     break;
   }
 
-  case OUTPUT_PATH: {
+  case Options_OUTPUT_PATH: {
     char *path = get_value_for_option(i, argc, argv, arg);
     snprintf(app_state->save_image_info.path,
              sizeof(app_state->save_image_info.path), "%s", path);
     break;
   }
 
-  case FLAG_NO_GUI:
+  case Options_FLAG_NO_GUI:
     app_state->gui_enabled = false;
     break;
 
-  case FLAG_NO_HOT_RELOAD:
+  case Options_FLAG_NO_HOT_RELOAD:
     app_state->hot_reload_enabled = false;
     break;
 
-  case FLAG_EXIT_AFTER_RENDERING:
+  case Options_FLAG_EXIT_AFTER_RENDERING:
     app_state->exit_after_rendering = true;
     break;
 
-  case FLAG_SAVE_AFTER_RENDERING:
+  case Options_FLAG_SAVE_AFTER_RENDERING:
     app_state->save_after_rendering = true;
     break;
 
-  case FLAG_JUST_RENDER:
+  case Options_FLAG_JUST_RENDER:
     app_state->gui_enabled = false;
     app_state->hot_reload_enabled = false;
     app_state->save_after_rendering = true;
@@ -275,5 +275,13 @@ void handle_args(int argc, char *argv[], AppState *app_state) {
       app_state->scene_paths.new_scene_path.file_path.str[0] == 0) {
     fprintf(stderr, "GUI was disabled, yet no scene was specified. Exiting!\n");
     exit(1);
+  }
+
+  if (!app_state->gui_enabled && app_state->save_after_rendering &&
+      app_state->rendering_params.frames_to_render < 0) {
+    fprintf(stderr,
+            "WARNING: GUI was disabled, and infinite number of frames were "
+            "asked for, if you wanted to render an image consider setting "
+            "--frames-to-render to a positive value.");
   }
 }
