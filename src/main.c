@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
 
   OpenGLContext ctx =
       OpenGLContext_new(WINDOW_TITLE, DESIRED_WIDTH, DESIRED_HEIGHT);
-  app_state.viewport_size = OpenGLContext_update_viewport_size(&ctx);
+  app_state.viewport_size = OpenGLContext_get_framebuffer_size(&ctx);
 
   GUIOverlay gui = GUIOverlay_new(&ctx);
 
@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
       AppState_hot_reload_shaders(&app_state, &renderer);
 
     WindowEventsData events = OpenGLContext_poll_events(&ctx);
-    app_state.viewport_size = OpenGLContext_update_viewport_size(&ctx);
+    app_state.viewport_size = OpenGLContext_get_framebuffer_size(&ctx);
     Renderer_update_focus(&renderer, &events, &ctx, !GUIOverlay_is_focused());
 
     // TODO: if window is not focused skip iteration

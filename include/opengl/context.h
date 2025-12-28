@@ -21,8 +21,7 @@ OpenGLContext OpenGLContext_new(const char *window_title, int width,
                                 int height);
 GLFWUserData *OpenGLContext_get_user_data(OpenGLContext *self);
 
-OpenGLResolution OpenGLContext_get_window_size(const OpenGLContext *self);
-OpenGLResolution OpenGLContext_update_viewport_size(const OpenGLContext *self);
+OpenGLResolution OpenGLContext_get_framebuffer_size(const OpenGLContext *self);
 WindowEventsData OpenGLContext_poll_events(OpenGLContext *self);
 
 void OpenGLContext_display_framebuffer(GLuint fbo, OpenGLResolution fbo_res,

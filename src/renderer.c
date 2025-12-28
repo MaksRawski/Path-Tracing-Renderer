@@ -9,7 +9,6 @@
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 
-#define WINDOW_TITLE "Path Tracing Renderer"
 #define VERTEX_SHADER_PATH "shaders/vertex.glsl"
 #define FRAGMENT_SHADER_PATH "shaders/renderer.glsl"
 
@@ -41,6 +40,8 @@ void Renderer_set_camera(Renderer *self, Camera cam) {
 
 void Renderer_set_params(Renderer *self, RendererParameters params) {
   self->_res = params.rendering_resolution;
+  // update OpenGL's window coordinates
+  GL_CALL(glViewport(0, 0, self->_res.width, self->_res.height));
   RendererParametersBuffer_set(&self->_buffers.parameters, &params);
 }
 
@@ -84,7 +85,6 @@ void Renderer_render_frame(const Renderer *self, unsigned int frame_number) {
                   frame_number));
   GL_CALL(glBindVertexArray(self->_buffers.internal.vao));
 
-  // render the quad to the back buffer
   GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, self->_buffers.back.fbo));
   GL_CALL(glBindTexture(GL_TEXTURE_2D, self->_buffers.back.fboTex));
   GL_CALL(glActiveTexture(GL_TEXTURE0));

@@ -13,6 +13,7 @@
 #include <stdlib.h>
 
 #define UNUSED (void)
+
 // Function to handle glfw errors
 void glfw_error_callback(int error, const char *description) {
   fprintf(stderr, "Error (%d): %s\n", error, description);
@@ -62,9 +63,6 @@ OpenGLContext OpenGLContext_new(const char *window_title, int desired_width,
   glfwSetWindowUserPointer(self.window, userDataPtr);
   glfwSwapInterval(0); // disable vsync
 
-  // update the viewport size
-  OpenGLContext_update_viewport_size(&self);
-
   // HACK: do initial poll to avoid having huge mouse delta
   OpenGLContext_poll_events(&self);
 
@@ -75,24 +73,10 @@ OpenGLContext OpenGLContext_new(const char *window_title, int desired_width,
   return self;
 }
 
-// returns the framebuffer resolution and updates with it glViewport
-OpenGLResolution OpenGLContext_get_window_size(const OpenGLContext *self) {
-  OpenGLResolution res = {0};
-  glfwGetWindowSize(self->window, (int *)&res.width, (int *)&res.height);
-  // update viewport size
-  OpenGLContext_update_viewport_size(self);
-
-  return res;
-}
-
-// returns the framebuffer resolution and updates with it glViewport
-// NOTE: this isn't necessarily window size, as it considers scaling
-OpenGLResolution OpenGLContext_update_viewport_size(const OpenGLContext *self) {
+OpenGLResolution OpenGLContext_get_framebuffer_size(const OpenGLContext *self) {
   OpenGLResolution res = {0};
   glfwGetFramebufferSize(self->window, (int *)&res.width, (int *)&res.height);
 
-  // update OpenGL's window coordinates
-  glViewport(0, 0, res.width, res.height);
   return res;
 }
 
@@ -165,9 +149,6 @@ WindowEventsData OpenGLContext_poll_events(OpenGLContext *self) {
   events.mouse_delta =
       WindowCoordinate_sub(events.mouse_pos, user_data->last_mouse_pos);
   user_data->last_mouse_pos = events.mouse_pos;
-
-  // update the viewport size
-  OpenGLContext_update_viewport_size(self);
 
   return events;
 }
