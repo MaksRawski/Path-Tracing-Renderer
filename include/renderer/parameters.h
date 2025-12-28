@@ -15,5 +15,7 @@ typedef struct {
 } RendererParameters;
 
 RendererParameters RendererParameters_default(void);
+bool RendererParameters_str(const RendererParameters *self, char *out,
+                            unsigned long buf_size);
 
 #endif // RENDERER_PARAMETERS_H_

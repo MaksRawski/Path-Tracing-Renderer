@@ -44,4 +44,7 @@ void AppState_hot_reload_shaders(AppState *app_state, Renderer *renderer);
 void AppState_update_renderer_parameters(AppState *app_state,
                                          Renderer *renderer);
 
+void AppState_save_image(AppState *save_image_info, GLuint fbo,
+                         OpenGLResolution resolution);
+
 #endif // APP_STATE_H_

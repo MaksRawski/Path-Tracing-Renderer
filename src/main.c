@@ -63,8 +63,7 @@ int main(int argc, char *argv[]) {
       app_state.save_image_info.to_save = true;
 
     if (app_state.save_image_info.to_save) {
-      AppState_save_image(&app_state.save_image_info,
-                          Renderer_get_fbo(&renderer),
+      AppState_save_image(&app_state, Renderer_get_fbo(&renderer),
                           app_state.rendering_params.rendering_resolution);
     }
 

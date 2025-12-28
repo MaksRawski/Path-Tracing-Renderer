@@ -11,7 +11,7 @@
 
 #if defined(__linux__)
 #define PATH_SEPARATOR '/'
-#elif defined(_WIN32) || defined(_WIN64)
+#elif defined(_WIN32)
 #define PATH_SEPARATOR '\\'
 #endif
 
