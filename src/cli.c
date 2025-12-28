@@ -67,7 +67,7 @@ Option Option_new(enum Options option, const AppState *default_app_state) {
                          resolution.height);
   }
   case Options_OUTPUT_PATH:
-    RETURN_OPTION_DV_FMT("-O", "--out", "", "%s",
+    RETURN_OPTION_DV_FMT("-o", "--out", "", "%s",
                          default_app_state->save_image_info.path);
   case Options_FLAG_EXIT_AFTER_RENDERING:
     RETURN_OPTION("-X", "--exit-after-rendering", "");
