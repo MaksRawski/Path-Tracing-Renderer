@@ -39,7 +39,7 @@ AppState AppState_default(void) {
 void AppState__restart_progressive_rendering(AppState *app_state,
                                              Renderer *renderer) {
   Renderer_clear_backbuffer(renderer);
-  app_state->stats.frame_number = 0;
+  Stats_reset(&app_state->stats);
 }
 
 void AppState__set_camera(AppState *app_state, Renderer *renderer) {

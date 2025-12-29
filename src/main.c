@@ -1,5 +1,6 @@
 #include "cli.h"
 #include "renderer/parameters.h"
+#include "stats.h"
 #ifdef __linux__
 #include <gtk/gtk.h>
 #endif
@@ -65,6 +66,11 @@ int main(int argc, char *argv[]) {
     if (app_state.save_image_info.to_save) {
       AppState_save_image(&app_state, Renderer_get_fbo(&renderer),
                           app_state.rendering_params.rendering_resolution);
+      char rendering_time_str[16];
+      Stats_string_time(app_state.stats.rendering_time, rendering_time_str,
+                        sizeof(rendering_time_str));
+      printf("Rendered %d frames in %s.\n",
+             app_state.rendering_params.frames_to_render, rendering_time_str);
     }
 
     if (app_state.exit_after_rendering && rendering_finished)

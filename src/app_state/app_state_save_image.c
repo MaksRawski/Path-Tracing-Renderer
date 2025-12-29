@@ -4,6 +4,7 @@
 #include "opengl/gl_call.h"
 #include "opengl/resolution.h"
 #include "renderer/parameters.h"
+#include "stats.h"
 #include "stb_image_write.h"
 #include <GL/gl.h>
 #include <stdio.h>
@@ -29,6 +30,8 @@ void AppState_save_image(AppState *app_state, GLuint fbo,
 
   GL_CALL(glReadPixels(0, 0, resolution.width, resolution.height, GL_RGB,
                        GL_UNSIGNED_BYTE, pixels));
+
+  Stats_stop_rendering_timer(&app_state->stats);
 
   const int stride = resolution.width * 3;
   stbi_flip_vertically_on_write(true);
@@ -58,7 +61,8 @@ void add_metadata(const RendererParameters *renderer_parameters,
         RendererParameters_str(renderer_parameters, params, sizeof(params)),
         "Buffer 'params' too small!");
 
-    int to_write = snprintf(cmd, sizeof(cmd), "exiftool -overwrite_original -Description='%s' %s",
+    int to_write = snprintf(cmd, sizeof(cmd),
+                            "exiftool -overwrite_original -Description='%s' %s",
                             params, image_filename);
     ASSERTQ_CUSTOM(to_write < (int)sizeof(cmd), "Buffer 'cmd' too small!");
     ASSERTQ_CUSTOM(system(cmd) == 0, "Command failed!");
