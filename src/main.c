@@ -63,9 +63,27 @@ int main(int argc, char *argv[]) {
     if (app_state.save_after_rendering && rendering_finished)
       app_state.save_image_info.to_save = true;
 
+    bool display_rendering_time = false;
     if (app_state.save_image_info.to_save) {
+      // NOTE: this also stops the rendering timer as it allows for an accurate
+      // result by requesting pixels from the GPU. According to the OpenGL
+      // documentation
+      // (https://wikis.khronos.org/opengl/Synchronization#Implicit_synchronization):
+      // "attempt to read from a framebuffer to CPU memory (not to a buffer
+      // object) will halt until all rendering commands affecting that
+      // framebuffer have completed."
       AppState_save_image(&app_state, Renderer_get_fbo(&renderer),
                           app_state.rendering_params.rendering_resolution);
+      display_rendering_time = true;
+    } else if (rendering_finished && app_state.stats.rendering_time == 0) {
+      // NOTE: this reading is slightly inaccurate as it's stopped right after
+      // *queueing* all operations to the GPU and there is no guarantee
+      // whatsoever whether all the frames have been rendered
+      Stats_stop_rendering_timer(&app_state.stats);
+      display_rendering_time = true;
+    }
+
+    if (display_rendering_time) {
       char rendering_time_str[16];
       Stats_string_time(app_state.stats.rendering_time, rendering_time_str,
                         sizeof(rendering_time_str));
@@ -73,7 +91,7 @@ int main(int argc, char *argv[]) {
              app_state.rendering_params.frames_to_render, rendering_time_str);
     }
 
-    if (app_state.exit_after_rendering && rendering_finished)
+    if (rendering_finished && app_state.exit_after_rendering)
       break;
   }
 
