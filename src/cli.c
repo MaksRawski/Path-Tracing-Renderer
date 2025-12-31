@@ -15,6 +15,7 @@ enum Options {
   Options_OUTPUT_PATH,
   Options_FLAG_NO_GUI,
   Options_FLAG_NO_HOT_RELOAD,
+  Options_FLAG_NO_MOVEMENT,
   Options_FLAG_EXIT_AFTER_RENDERING,
   Options_FLAG_SAVE_AFTER_RENDERING,
   Options_FLAG_JUST_RENDER,
@@ -79,11 +80,14 @@ Option Option_new(enum Options option, const AppState *default_app_state) {
   case Options_FLAG_NO_HOT_RELOAD:
     RETURN_OPTION("-NH", "--no-hot-reload",
                   "Disable hot-reloading of shaders.");
+  case Options_FLAG_NO_MOVEMENT:
+    RETURN_OPTION("-NM", "--no-movement",
+                  "Disable camera movement.");
   case Options_FLAG_HELP:
     RETURN_OPTION("-h", "--help", "Display this help");
   case Options_FLAG_JUST_RENDER:
     RETURN_OPTION("-J", "--just-render",
-                  "Alias for --no-gui --no-hot-reload --save-after-rendering "
+                  "Alias for --no-gui --no-hot-reload --no-movement --save-after-rendering "
                   "--exit-after-rendering.");
   case Options__COUNT:
     UNREACHABLE();
@@ -236,6 +240,10 @@ void parse_arg(int argc, char **argv, int *i,
     app_state->hot_reload_enabled = false;
     break;
 
+  case Options_FLAG_NO_MOVEMENT:
+    app_state->movement_enabled = false;
+    break;
+
   case Options_FLAG_EXIT_AFTER_RENDERING:
     app_state->exit_after_rendering = true;
     break;
@@ -247,6 +255,7 @@ void parse_arg(int argc, char **argv, int *i,
   case Options_FLAG_JUST_RENDER:
     app_state->gui_enabled = false;
     app_state->hot_reload_enabled = false;
+    app_state->movement_enabled = false;
     app_state->save_after_rendering = true;
     app_state->exit_after_rendering = true;
     break;

@@ -24,7 +24,7 @@ typedef struct {
   Scene scene;
   bool cam_changed, rendering_params_changed, scene_paths_changed;
   bool gui_enabled, hot_reload_enabled, save_after_rendering,
-      exit_after_rendering;
+      exit_after_rendering, movement_enabled;
 } AppState;
 
 AppState AppState_new(Camera camera, RendererParameters rendering,
@@ -32,7 +32,7 @@ AppState AppState_new(Camera camera, RendererParameters rendering,
                       OpenGLScalingMode scale_mode, Scene scene,
                       AppStateSaveImageInfo save_image_info, bool gui_enabled,
                       bool hot_reload_enabled, bool save_after_rendering,
-                      bool exit_after_rendering);
+                      bool exit_after_rendering, bool movement_enabled);
 
 AppState AppState_default(void);
 

@@ -12,7 +12,7 @@ AppState AppState_new(Camera camera, RendererParameters rendering,
                       OpenGLScalingMode scale_mode, Scene scene,
                       AppStateSaveImageInfo save_image_info, bool gui_enabled,
                       bool hot_reload_enabled, bool save_after_rendering,
-                      bool exit_after_rendering) {
+                      bool exit_after_rendering, bool movement_enabled) {
   return (AppState){.cam = camera,
                     .rendering_params = rendering,
                     .scene_paths = scene_pahts,
@@ -24,6 +24,7 @@ AppState AppState_new(Camera camera, RendererParameters rendering,
                     .hot_reload_enabled = hot_reload_enabled,
                     .save_after_rendering = save_after_rendering,
                     .exit_after_rendering = exit_after_rendering,
+                    .movement_enabled = movement_enabled,
                     .cam_changed = true,
                     .rendering_params_changed = true,
                     .scene_paths_changed = true};
@@ -33,7 +34,7 @@ AppState AppState_default(void) {
   return AppState_new(
       Camera_default(), RendererParameters_default(), ScenePath_default(),
       OpenGLResolution_new(0, 0), OpenGLScalingMode_FIT_CENTER, Scene_empty(),
-      AppStateSaveImageInfo_default(), true, true, false, false);
+      AppStateSaveImageInfo_default(), true, true, false, false, true);
 }
 
 void AppState__restart_progressive_rendering(AppState *app_state,

@@ -50,7 +50,8 @@ int main(int argc, char *argv[]) {
 
     // NOTE: should be done after scene updating, so that camera isn't somehow
     // maintained from previous scene
-    AppState_update_camera(&app_state, &renderer, &events);
+    if (app_state.movement_enabled)
+        AppState_update_camera(&app_state, &renderer, &events);
 
     // NOTE: this includes the renderer resolution
     AppState_update_renderer_parameters(&app_state, &renderer);
