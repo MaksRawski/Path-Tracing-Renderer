@@ -114,6 +114,10 @@ void load_gltf_scene(Scene *scene, const char *path) {
   for (cgltf_size m = 1; m < data->materials_count + 1; ++m) {
     cgltf_material mat = data->materials[m - 1];
 
+    gltf_assert(
+        mat.has_pbr_metallic_roughness, path,
+        "Material %s doesn't have pbr_metallic_roughness material model!",
+        mat.name);
     memcpy(scene->mats[m].albedo, mat.pbr_metallic_roughness.base_color_factor,
            3 * sizeof(float));
     memcpy(scene->mats[m].emission_color, mat.emissive_factor,
@@ -121,8 +125,12 @@ void load_gltf_scene(Scene *scene, const char *path) {
 
     scene->mats[m].emission_strength = mat.emissive_strength.emissive_strength;
 
-    // TODO: specular component seems compliated, ignoring it for now
-    scene->mats[m].specular_component = 0.0;
+    // HACK: this isn't quite how you are supposed to compute the specular
+    // component
+    // TODO: instead properly use the metallic roughness model
+    scene->mats[m].specular_component =
+        (1 - mat.pbr_metallic_roughness.roughness_factor) *
+        mat.pbr_metallic_roughness.metallic_factor;
   }
 
   cgltf_free(data);
