@@ -105,21 +105,18 @@ struct HitInfo {
 };
 
 // RNG
-uint pcg_hash(inout uint seed)
-{
+uint pcg_hash(inout uint seed) {
     seed = seed * 747796405u + 2891336453u;
     uint result = ((seed >> ((seed >> 28u) + 4u)) ^ seed) * 277803737u;
     result = (result >> 22) ^ result;
     return result;
 }
 
-float RandomFloat(inout uint state)
-{
+float RandomFloat(inout uint state) {
     return float(pcg_hash(state)) / 4294967296.0;
 }
 
-vec3 RandomUnitVector(inout uint state)
-{
+vec3 RandomUnitVector(inout uint state) {
     float z = RandomFloat(state) * 2.0f - 1.0f;
     float a = RandomFloat(state) * C_TWOPI;
     float r = sqrt(1.0f - z * z);
@@ -128,16 +125,7 @@ vec3 RandomUnitVector(inout uint state)
     return vec3(x, y, z);
 }
 
-// https://stackoverflow.com/a/6178290
-float RandomFloatNormalDistribution(inout uint state)
-{
-    float theta = C_TWOPI * RandomFloat(state);
-    float rho = sqrt(-2 * log(RandomFloat(state)));
-    return rho * cos(theta);
-}
-
-vec2 RandomPointInCircle(inout uint state)
-{
+vec2 RandomPointInCircle(inout uint state) {
     float angle = RandomFloat(state) * C_TWOPI;
     vec2 pointOnCircle = vec2(cos(angle), sin(angle));
     return pointOnCircle * sqrt(RandomFloat(state));
@@ -422,11 +410,8 @@ vec3 ReflectDirection(vec3 dir, vec3 normal) {
 }
 
 vec3 GetColorForRay(Ray ray, inout uint rngState) {
-    // we start with pure white
-    // as we assume that the potential light source emits just that
     vec3 c = vec3(1.0, 1.0, 1.0);
     vec3 incomingLight = vec3(0.0, 0.0, 0.0);
-    HitInfo hitInfo = CalculateRayCollision(ray);
     // return hitInfo.didHit ? hitInfo.mat.albedo : vec3(0.0, 0.0, 0.0);
 
     for (int i = 0; i <= params.max_bounce_count; ++i) {
@@ -491,8 +476,8 @@ void main() {
     }
     totalIncomingLight /= float(params.samples_per_pixel);
 
-    vec3 lastFrameColor = texture(backBufferTexture, gl_FragCoord.xy / resolution.xy).rgb;
     if (frame_number > 0) {
+        vec3 lastFrameColor = texture(backBufferTexture, gl_FragCoord.xy / resolution.xy).rgb;
         float weight = 1.0 / float(frame_number);
         totalIncomingLight = lastFrameColor * (1.0 - weight) + totalIncomingLight * weight;
     }
