@@ -7,23 +7,26 @@
 #include "scene/camera.h"
 #include "scene/material.h"
 #include "scene/mesh.h"
-#include "scene/primitive.h"
+#include "scene/tlas.h"
 #include "scene/triangle.h"
 
+// NOTE: any Scene loading utility is expected to only fill triangles, mats,
+// the rest can be filled with calls to
+// Scene__build_bvh_for_mesh and Scene__build_tlas
+//
+// NOTE: this is a flat SOA (no nested arrays)
 typedef struct {
   Triangle *triangles;
+  BVHNode *bvh_nodes;
   Material *mats;
-  Primitive *primitives;
   Mesh *meshes;
-  // right now only a single camera is supported
+  TLASNode *tlas_nodes;
+  unsigned int triangles_count, bvh_nodes_count, mats_count, meshes_count,
+      tlas_nodes_count;
+  unsigned int triangles_capacity, bvh_nodes_capacity, mats_capacity,
+      meshes_capacity, tlas_nodes_capacity;
+
   Camera camera;
-
-  // NOTE: primitives are just wrappers around triangles so the count is going
-  // to be the same
-  BVHTriCount triangles_count;
-  unsigned int mats_count, meshes_count;
-
-  BVH bvh;
 } Scene;
 
 // NOTE: all structs that are passed as arrays to OpenGL
@@ -32,14 +35,15 @@ static_assert(sizeof(Triangle) % 16 == 0,
               "Triangle's size should be a multiple of 16!");
 static_assert(sizeof(Material) % 16 == 0,
               "Material's size should be a multiple of 16!");
-static_assert(sizeof(BVHnode) % 16 == 0,
+static_assert(sizeof(BVHNode) % 16 == 0,
               "BVHNode's size should be a multiple of 16!");
-// NOTE: Right now primitive just contains a material index for a given
-// triangle and OpenGL is fine with an array of 4-byte elements
-static_assert(
-    (sizeof(Primitive) == 4) || (sizeof(Primitive) % 16 == 0),
-    "Primitve should contain just a single element or be a multiple of 16");
 
+void Scene__add_mesh(Scene *scene, unsigned int tris_index,
+                     unsigned int tris_count, unsigned int mat_index);
+
+void Scene__build_tlas(Scene *scene);
+
+// NOTE: any Scene loading
 Scene Scene_load_gltf(const char *path);
 
 Scene Scene_empty(void);

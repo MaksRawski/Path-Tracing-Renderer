@@ -3,6 +3,7 @@
 
 #include "vec3.h"
 
+// TODO: instead move normals to a different extension structure
 typedef struct {
   vec3 a, b, c;
   vec3 na, nb, nc;

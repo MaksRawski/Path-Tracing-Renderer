@@ -5,7 +5,6 @@
 #include <glad/gl.h> // GLuint
 
 typedef struct {
-  int triangle_count, bvh_nodes_count, mats_count;
   GLuint triangles_ssbo, bvh_nodes_ssbo, mats_ssbo;
   GLuint primitives_ssbo, camera_ssbo;
   Camera _camera;

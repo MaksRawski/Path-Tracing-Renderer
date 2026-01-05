@@ -92,7 +92,7 @@ void load_gltf_scene(Scene *scene, const char *path) {
 
   scene->meshes = malloc(scene->meshes_count * sizeof(Mesh));
   scene->triangles = malloc(scene->triangles_count * sizeof(Triangle));
-  scene->primitives = malloc(scene->triangles_count * sizeof(Primitive));
+  /* scene->primitives = malloc(scene->triangles_count * sizeof(Primitive)); */
   scene->mats = malloc(scene->mats_count * sizeof(Material));
 
   // nodes
@@ -140,7 +140,8 @@ void handle_mesh(cgltf_data *data, const char *path, cgltf_node *node,
                  Scene *scene, int m, cgltf_size *const t_counter) {
   cgltf_mesh mesh = *node->mesh;
   cgltf_size primitives_count = mesh.primitives_count;
-  scene->meshes[m].index = *t_counter;
+  ASSERTQ_CUSTOM(false, "NOT YET IMPLEMENTED");
+  /* scene->meshes[m].index = *t_counter; */
 
   cgltf_float node_transform_matrix[16] = {0};
   cgltf_node_transform_world(node, node_transform_matrix);
@@ -194,22 +195,22 @@ void handle_mesh(cgltf_data *data, const char *path, cgltf_node *node,
       }
       // NOTE: primitive in my case is a just a wrapper around a single
       // triangle
-      scene->primitives[*t_counter].mat = mat_index;
+      /* scene->primitives[*t_counter].mat = mat_index; */
       ++*t_counter;
     }
   }
 
-  scene->meshes[m].count = *t_counter - scene->meshes[m].index;
+  /* scene->meshes[m].tri_count = *t_counter - scene->meshes[m].tri_index; */
 
   // apply node_transform_matrix to each triangle's vertex
-  int first_tri = scene->meshes[m].index;
-  int last_tri = first_tri + scene->meshes[m].count;
-  for (int t = first_tri; t < last_tri; ++t) {
-    for (int i = 0; i < 6; ++i) {
-      vec3 *v = Triangle_get_vertex(&scene->triangles[t], i);
-      *v = Mat4_mul_vec3(node_transform_matrix, *v);
-    }
-  }
+  /* int first_tri = scene->meshes[m].tri_index; */
+  /* int last_tri = first_tri + scene->meshes[m].tri_count; */
+  /* for (int t = first_tri; t < last_tri; ++t) { */
+  /*   for (int i = 0; i < 6; ++i) { */
+  /*     vec3 *v = Triangle_get_vertex(&scene->triangles[t], i); */
+  /*     *v = Mat4_mul_vec3(node_transform_matrix, *v); */
+  /*   } */
+  /* } */
 }
 
 void handle_camera(const char *path, cgltf_node *node, Scene *scene) {

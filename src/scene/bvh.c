@@ -4,8 +4,8 @@
 #include <string.h>
 
 void calculate_centroids(Triangle *tri, int tri_count, vec3 centroids[]);
-void set_node_bounds(BVHnode *node, const Triangle tris[]);
-void subdivide(BVHnode nodes[], int node_idx, Triangle tri[], vec3 centroids[],
+void set_node_bounds(BVHNode *node, const Triangle tris[]);
+void subdivide(BVHNode nodes[], int node_idx, Triangle tri[], vec3 centroids[],
                BVHNodeCount *created_nodes, BVHTriCount swaps_lut[]);
 
 void tri_swap(Triangle *a, Triangle *b);
@@ -13,23 +13,26 @@ BVHTriCount split_group(Triangle *tris, vec3 *centroids, BVHTriCount first,
                         BVHTriCount count, unsigned int axis, float split_pos,
                         BVHTriCount swaps_lut[]);
 
-BVHresult BVH_build(Triangle triangles[], BVHTriCount count) {
-  BVHresult res = {0};
-  res.bvh.nodes = calloc(count * 2 - 1, sizeof(BVHnode));
-  res.swaps_lut = malloc(count * sizeof(BVHTriCount));
-  for (BVHTriCount i = 0; i < count; ++i)
-    res.swaps_lut[i] = i;
+// NOTE: nodes should be zero allocated for 2 * t_count * sizeof(BVHNode) bytes
+// NOTE: swaps_lut should be allocated for t_count * sizeof(BVHTriCount) bytes
+// NOTE: nodes_offset afterwards will contain the index after the last node
+void BVH_build(BVHNode *nodes, BVHNodeCount *nodes_offset,
+               BVHTriCount *swaps_lut, Triangle triangles[],
+               BVHTriCount tri_offset, BVHTriCount tri_count) {
+  /* bvh.nodes = calloc(count * 2 - 1, sizeof(BVHNode)); */
+  /* res.swaps_lut = malloc(count * sizeof(BVHTriCount)); */
+  for (BVHTriCount i = 0; i < tri_count; ++i)
+    swaps_lut[i] = tri_offset + i;
 
-  vec3 *centroids = malloc(count * sizeof(vec3));
-  calculate_centroids(triangles, count, centroids);
+  vec3 *centroids = malloc(tri_count * sizeof(vec3));
+  calculate_centroids(triangles + tri_offset, tri_count, centroids);
 
-  res.bvh.nodes_count = 1;
-  res.bvh.nodes[0].count = count;
-  subdivide(res.bvh.nodes, 0, triangles, centroids, &res.bvh.nodes_count,
-            res.swaps_lut);
+  nodes[*nodes_offset].first = tri_offset;
+  nodes[*nodes_offset].count = tri_count;
+  subdivide(nodes, 0, triangles + tri_offset, centroids, nodes_offset,
+            swaps_lut);
 
   free(centroids);
-  return res;
 }
 
 void BVH_delete(BVH *self) {
@@ -38,9 +41,9 @@ void BVH_delete(BVH *self) {
 }
 
 // recursively subdivide a node until there are 2 primitives left
-void subdivide(BVHnode nodes[], int node_idx, Triangle tris[], vec3 centroids[],
+void subdivide(BVHNode nodes[], int node_idx, Triangle tris[], vec3 centroids[],
                BVHNodeCount *created_nodes, BVHTriCount swaps_lut[]) {
-  BVHnode *node = nodes + node_idx;
+  BVHNode *node = nodes + node_idx;
   // 0. first set the bounds, only a leaf node can be subdivided!
   set_node_bounds(node, tris);
 
@@ -61,20 +64,19 @@ void subdivide(BVHnode nodes[], int node_idx, Triangle tris[], vec3 centroids[],
                     vec3_get_by_axis(&node->bound_min, axis);
 
   // 2.
-  BVHTriCount split_index = split_group(tris, centroids, node->first, node->count, axis,
-                                split_pos, swaps_lut);
+  BVHTriCount split_index = split_group(
+      tris, centroids, node->first, node->count, axis, split_pos, swaps_lut);
 
   // 3. create child nodes for the splits
   // if the split turned out to leave all elements on one side
   // then we leave that node as it was
-  if (split_index == node->first ||
-      split_index == (node->first + node->count))
+  if (split_index == node->first || split_index == (node->first + node->count))
     return;
 
   int left_node_idx = (*created_nodes)++;
   int right_node_idx = (*created_nodes)++;
-  BVHnode *left_node = &nodes[left_node_idx];
-  BVHnode *right_node = &nodes[right_node_idx];
+  BVHNode *left_node = &nodes[left_node_idx];
+  BVHNode *right_node = &nodes[right_node_idx];
   left_node->first = node->first;
   left_node->count = split_index - node->first;
   right_node->first = split_index;
@@ -97,7 +99,7 @@ void calculate_centroids(Triangle *tri, int tri_count, vec3 *centroids) {
 }
 
 // sets node bounds on a leaf node
-void set_node_bounds(BVHnode *node, const Triangle *tris) {
+void set_node_bounds(BVHNode *node, const Triangle *tris) {
   int last_tri = node->first + node->count;
   node->bound_min.x = INFINITY;
   node->bound_min.y = INFINITY;

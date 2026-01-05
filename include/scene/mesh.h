@@ -1,9 +1,16 @@
 #ifndef SCENE_MESH_H_
 #define SCENE_MESH_H_
 
-// index to first triangle of a mesh and a count of them
+#include "mat4.h"
 typedef struct {
-  int index, count;
+  unsigned int BVH_index;
+  unsigned int mat_index;
 } Mesh;
+
+typedef struct {
+  unsigned int mesh_index;
+  // local-to-world transformation of the mesh
+  Mat4 transform;
+} MeshInstance;
 
 #endif // SCENE_MESH_H_

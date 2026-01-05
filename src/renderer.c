@@ -31,7 +31,7 @@ Renderer Renderer_new(void) {
 void Renderer_load_scene(Renderer *self, const Scene *scene) {
   RendererBuffers_set_scene(&self->_buffers, scene);
   printf("Loaded triangles: %d\n", scene->triangles_count);
-  printf("Created nodes: %d\n", scene->bvh.nodes_count);
+  /* printf("Created nodes: %d\n", scene->bvh.nodes_count); */
 }
 
 void Renderer_set_camera(Renderer *self, Camera cam) {
