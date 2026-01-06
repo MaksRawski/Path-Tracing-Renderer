@@ -19,8 +19,6 @@ BVHTriCount split_group(Triangle *tris, vec3 *centroids, BVHTriCount first,
 void BVH_build(BVHNode *nodes, BVHNodeCount *nodes_offset,
                BVHTriCount *swaps_lut, Triangle triangles[],
                BVHTriCount tri_offset, BVHTriCount tri_count) {
-  /* bvh.nodes = calloc(count * 2 - 1, sizeof(BVHNode)); */
-  /* res.swaps_lut = malloc(count * sizeof(BVHTriCount)); */
   for (BVHTriCount i = 0; i < tri_count; ++i)
     swaps_lut[i] = tri_offset + i;
 
@@ -29,7 +27,7 @@ void BVH_build(BVHNode *nodes, BVHNodeCount *nodes_offset,
 
   nodes[*nodes_offset].first = tri_offset;
   nodes[*nodes_offset].count = tri_count;
-  subdivide(nodes, 0, triangles + tri_offset, centroids, nodes_offset,
+  subdivide(nodes, *nodes_offset, triangles, centroids, nodes_offset,
             swaps_lut);
 
   free(centroids);
