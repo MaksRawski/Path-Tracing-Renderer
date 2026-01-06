@@ -1,9 +1,8 @@
 #include "gui.h"
+#include "asserts.h"
 #include "cimgui.h"
 #include "cimgui_impl.h"
 #include "gui/settings.h"
-
-#define UNUSED (void)
 
 GUIOverlay GUIOverlay_new(OpenGLContext *ctx) {
   GUIOverlay self = {._imgui_ctx = igCreateContext(NULL),

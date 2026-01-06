@@ -16,8 +16,6 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-#define UNUSED (void)
-
 Renderer Renderer_new(void) {
   Renderer self = {
       ._shaders = RendererShaders_new(VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH),
