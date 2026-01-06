@@ -8,7 +8,7 @@
 
 int main(void) {
   TESTS_RUN(all_yawpitch_tests);
-  /* TESTS_RUN(all_gltf_tests); */
+  TESTS_RUN(all_gltf_tests);
   TESTS_RUN(all_bvh_lut_tests);
   TESTS_RUN(all_bvh_build_tests);
   TESTS_RUN(all_camera_tests);
