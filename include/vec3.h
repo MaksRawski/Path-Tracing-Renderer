@@ -37,7 +37,7 @@ bool vec3_is_zero(vec3 v);
 bool vec3_eq(vec3 a, vec3 b);
 
 typedef struct {
-  char s[32];
+  char s[64];
 } Vec3Str;
 
 // returns a string representation of a vector

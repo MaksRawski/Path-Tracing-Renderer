@@ -7,6 +7,10 @@
 #include "vec3.h"
 #include "vec3d.h"
 
+#define RED(_s) "\033[31m" _s "\033[0m"
+#define GREEN(_s) "\033[32m" _s "\033[0m"
+#define YELLOW(_s) "\033[33m" _s "\033[0m"
+
 // NOTE: consider using ASSERT(Q)_CUSTOM(_FMT) instead of calling these directly
 bool ASSERT_CUSTOM_impl(bool cond, const char *fail_reason,
                         const char *file_name, int line_num);
