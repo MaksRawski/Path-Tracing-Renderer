@@ -6,8 +6,6 @@
 #define STEP_SIZE_PER_FRAME 0.05
 #define CURSOR_SENSITIVITY 0.001
 
-#define UNUSED (void)
-
 bool Inputs_update_camera(Camera *cam, const WindowEventsData *events,
                           bool allow_rotate) {
   bool changed = false;

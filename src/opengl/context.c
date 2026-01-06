@@ -12,8 +12,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define UNUSED (void)
-
 // Function to handle glfw errors
 void glfw_error_callback(int error, const char *description) {
   fprintf(stderr, "Error (%d): %s\n", error, description);

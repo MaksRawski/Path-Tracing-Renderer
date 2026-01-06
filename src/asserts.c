@@ -1,6 +1,6 @@
 #include "asserts.h"
 #include "epsilon.h"
-#include "stdio.h" // (s)printf
+#include "stdio.h"
 #include <stdarg.h>
 #include <stdlib.h>
 
@@ -28,6 +28,23 @@ noreturn void UNREACHABLE_impl(const char *file_name, int line_num) {
   fprintf(stderr, "%s:%d: \033[31mUNREACHABLE REACHED!\033[0m", file_name,
           line_num);
   exit(1);
+}
+
+noreturn void ERROR_impl(const char *prefix, const char *msg) {
+  if (prefix == NULL)
+    fprintf(stderr, "%s\n", msg);
+  else
+    fprintf(stderr, RED("%s") "%s\n", prefix, msg);
+  exit(1);
+}
+
+noreturn void ERROR_FMT_impl(const char *prefix, const char *fmt, ...) {
+  char err_msg[1024];
+  va_list args;
+  va_start(args, fmt);
+  vsnprintf(err_msg, sizeof(err_msg), fmt, args);
+  va_end(args);
+  ERROR_impl(prefix, err_msg);
 }
 
 void exit_if_not_impl(bool cond) {

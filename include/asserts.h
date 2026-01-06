@@ -7,7 +7,23 @@
 #include "vec3.h"
 #include "vec3d.h"
 
-// NOTE: consider using ASSERT(Q)_CUSTOM(_FMT) instead of calling these directly
+#define RED(_s) "\033[31m" _s "\033[0m"
+#define GREEN(_s) "\033[32m" _s "\033[0m"
+#define YELLOW(_s) "\033[33m" _s "\033[0m"
+
+inline static void UNUSED_(void *_, ...) {}
+#define UNUSED(...) UNUSED_(NULL, __VA_ARGS__)
+
+noreturn void ERROR_impl(const char *prefix, const char *msg);
+noreturn void ERROR_FMT_impl(const char *prefix, const char *fmt, ...);
+
+#define ERROR(_msg) ERROR_impl("ERROR", _msg)
+#define ERROR_FMT(_fmt, ...) ERROR_FMT_impl("ERROR", _fmt, __VA_ARGS__)
+
+#define TODO(_msg)                                                             \
+  ERROR_FMT_impl(NULL, "%s:%d: " RED("NOT YET IMPLEMENTED") ": " _msg,         \
+                 __FILE__, __LINE__)
+
 bool ASSERT_CUSTOM_impl(bool cond, const char *fail_reason,
                         const char *file_name, int line_num);
 
