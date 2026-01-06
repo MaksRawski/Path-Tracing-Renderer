@@ -18,15 +18,15 @@ BVHTriCount split_group(Triangle *tris, vec3 *centroids, BVHTriCount first,
 // NOTE: nodes_offset afterwards will contain the index after the last node
 void BVH_build(BVHNode *nodes, BVHNodeCount *nodes_offset,
                BVHTriCount *swaps_lut, Triangle triangles[],
-               BVHTriCount tri_offset, BVHTriCount tri_count) {
-  for (BVHTriCount i = 0; i < tri_count; ++i)
+               BVHTriCount tri_offset, BVHTriCount t_count) {
+  for (BVHTriCount i = 0; i < t_count; ++i)
     swaps_lut[i] = tri_offset + i;
 
-  vec3 *centroids = malloc(tri_count * sizeof(vec3));
-  calculate_centroids(triangles + tri_offset, tri_count, centroids);
+  vec3 *centroids = malloc(t_count * sizeof(vec3));
+  calculate_centroids(triangles + tri_offset, t_count, centroids);
 
   nodes[*nodes_offset].first = tri_offset;
-  nodes[*nodes_offset].count = tri_count;
+  nodes[*nodes_offset].count = t_count;
   subdivide(nodes, *nodes_offset, triangles, centroids, nodes_offset,
             swaps_lut);
 
