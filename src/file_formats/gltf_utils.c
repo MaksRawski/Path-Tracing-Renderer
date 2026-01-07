@@ -206,15 +206,22 @@ void alloc_if_necessary(void **dst, size_t count, size_t element_size,
   }
 }
 
-void traverse_nodes(const char *path, const cgltf_data *data,
-                    const cgltf_node *nodes, size_t nodes_count, Scene *scene,
+void traverse_nodes_children(const char *path, const cgltf_data *data,
+                             const cgltf_node *node, Scene *scene,
+                             HandleNodeFn handle_node_fn) {
+  for (cgltf_size c = 0; c < node->children_count; ++c) {
+    handle_node_fn(path, data, node->children[c], scene);
+    traverse_nodes_children(path, data, node->children[c], scene,
+                            handle_node_fn);
+  }
+}
+
+void traverse_nodes(const char *path, const cgltf_data *data, Scene *scene,
                     HandleNodeFn handle_node_fn) {
-  for (cgltf_size n = 0; n < nodes_count; ++n) {
-    const cgltf_node *node = &nodes[n];
+  for (cgltf_size n = 0; n < data->nodes_count; ++n) {
+    cgltf_node *node = data->nodes + n;
     handle_node_fn(path, data, node, scene);
-    if (node->children_count > 0)
-      traverse_nodes(path, data, *node->children, node->children_count, scene,
-                     handle_node_fn);
+    traverse_nodes_children(path, data, node, scene, handle_node_fn);
   }
 }
 

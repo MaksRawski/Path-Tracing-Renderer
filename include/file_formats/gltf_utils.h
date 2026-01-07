@@ -19,10 +19,11 @@ unsigned int next_power_of_2(unsigned int x);
 
 typedef void(HandleNodeFn)(const char *path, const cgltf_data *data,
                            const cgltf_node *node, Scene *scene);
-void traverse_nodes(const char *path, const cgltf_data *data,
-                    const cgltf_node *nodes, size_t nodes_count, Scene *scene,
+
+void traverse_nodes(const char *path, const cgltf_data *data, Scene *scene,
                     HandleNodeFn handle_node_fn);
+
 HandleNodeFn count_mesh_instances;
 HandleNodeFn handle_node;
-// ===
+
 #endif // GLTF_UTILS_H_

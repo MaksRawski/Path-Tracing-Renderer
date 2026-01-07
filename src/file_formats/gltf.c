@@ -43,8 +43,7 @@ void load_gltf_scene(Scene *scene, const char *path) {
 
   // NOTE: populates scene->mesh_instances_count
   scene->mesh_instances_count = 0;
-  traverse_nodes(path, data, data->nodes, data->nodes_count, scene,
-                 count_mesh_instances);
+  traverse_nodes(path, data, scene, count_mesh_instances);
   unsigned int mesh_instances_count = scene->mesh_instances_count;
 
   scene->camera = Camera_default();
@@ -82,8 +81,7 @@ void load_gltf_scene(Scene *scene, const char *path) {
   scene->mesh_instances_count = 0;
   scene->tlas_nodes_count = 0;
 
-  traverse_nodes(path, data, data->nodes, data->nodes_count, scene,
-                 handle_node);
+  traverse_nodes(path, data, scene, handle_node);
 
   cgltf_free(data);
 }
