@@ -126,11 +126,12 @@ bool append_mesh_primitive(const char *path, const cgltf_data *data,
       cgltf_size index = cgltf_accessor_read_index(idx_accessor, 3 * t + v);
 
       vec3 *tv =
-          Triangle_get_vertex(&scene->triangles[scene->triangles_count++], v);
+          Triangle_get_vertex(&scene->triangles[scene->triangles_count], v);
       float tvf[3];
       cgltf_accessor_read_float(pos_accessor, index, tvf, 3);
       vec3_copy_from_float3(tv, tvf);
     }
+    ++scene->triangles_count;
   }
   unsigned int triangles_count = scene->triangles_count - triangles_first;
 
