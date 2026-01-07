@@ -8,6 +8,7 @@ typedef struct {
   // if `count` is 1 then this node is a leaf and `first` denotes
   // the mesh index
   unsigned int first, count;
+  long _;
 } TLASNode;
 
 typedef struct {

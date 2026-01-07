@@ -6,8 +6,11 @@
 // TODO: instead move normals to a different extension structure
 typedef struct {
   vec3 a, b, c;
-  vec3 na, nb, nc;
 } Triangle;
+
+typedef struct {
+  vec3 na, nb, nc;
+} TriangleEx;
 
 vec3 *Triangle_get_vertex(Triangle *t, int vertex);
 

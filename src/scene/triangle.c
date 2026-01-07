@@ -12,12 +12,6 @@ vec3 *Triangle_get_vertex(Triangle *t, int vertex) {
     return &t->b;
   case 2:
     return &t->c;
-  case 3:
-    return &t->na;
-  case 4:
-    return &t->nb;
-  case 5:
-    return &t->nc;
   default:
     printf("Invalid triangle vertex selected: %d\n", vertex);
     exit(1);
