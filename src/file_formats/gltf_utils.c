@@ -31,8 +31,8 @@ const char *cgltf_result_str(cgltf_result res) {
 }
 
 // https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+// HACK: returns 0 when x is 0
 unsigned int next_power_of_2(unsigned int x) {
-  // NOTE: ignoring the case where x is 0
   --x;
   x |= x >> 1;
   x |= x >> 2;
@@ -139,7 +139,7 @@ bool append_mesh_primitive(const char *path, const cgltf_data *data,
   }
   unsigned int triangles_count = scene->triangles_count - triangles_first;
 
-  unsigned int bvh_idnex = scene->bvh_nodes_count;
+  unsigned int bvh_index = scene->bvh_nodes_count;
   build_bvh(scene, triangles_first, triangles_count);
 
   unsigned int mat_index;
@@ -149,7 +149,7 @@ bool append_mesh_primitive(const char *path, const cgltf_data *data,
     mat_index = 0;
 
   scene->mesh_primitives[scene->mesh_primitives_count++] =
-      (MeshPrimitive){.BVH_index = bvh_idnex, .mat_index = mat_index};
+      (MeshPrimitive){.BVH_index = bvh_index, .mat_index = mat_index};
 
   return true;
 }
@@ -168,7 +168,7 @@ bool set_mesh(const char *path, const cgltf_data *data,
     return false;
 
   // NOTE: because indices have to be the same as in the glTF file, the count is
-  // NOT the same as the index of the first free element
+  // NOT the same thing as the index of the first free element
   scene->meshes[index] =
       (Mesh){.mesh_primitive_first = first, .mesh_primitive_count = count};
   ++scene->meshes_count;
