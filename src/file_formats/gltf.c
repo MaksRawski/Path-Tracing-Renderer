@@ -52,15 +52,15 @@ void load_gltf_scene(Scene *scene, const char *path) {
   alloc_if_necessary((void **)&scene->triangles, triangles_count,
                      sizeof(Triangle), &scene->triangles_capacity, false);
   alloc_if_necessary((void **)&scene->mats, mats_count, sizeof(Material),
-                     &scene->mats_capacity, false);
+                     &scene->mats_capacity, true);
   alloc_if_necessary((void **)&scene->mesh_primitives, mesh_primitives_count,
                      sizeof(MeshPrimitive), &scene->mesh_primitives_capacity,
-                     false);
+                     true);
   alloc_if_necessary((void **)&scene->meshes, meshes_count, sizeof(Mesh),
-                     &scene->meshes_capacity, false);
+                     &scene->meshes_capacity, true);
   alloc_if_necessary((void **)&scene->mesh_instances, mesh_instances_count,
                      sizeof(MeshInstance), &scene->mesh_instances_capacity,
-                     false);
+                     true);
 
   // Assuming that the worst case is each leaf containing a single triangle.
   // In practice BVH_build function shouldn't even create nodes this small.

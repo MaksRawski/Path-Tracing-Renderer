@@ -13,7 +13,9 @@ typedef struct {
   float roughness_factor;
   unsigned int emissive_texture;
   float emissive_factor[3];
-  long _;
+  // HACK: since padding must be added anyway, this allows to determine whether
+  // a given material has been set, or just allocated.
+  long _set;
 } Material;
 
 inline static Material Material_default(void) {
@@ -27,6 +29,7 @@ inline static Material Material_default(void) {
   mat.emissive_texture = NO_TEXTURE;
   mat.metallic_factor = 1.0;
   mat.roughness_factor = 1.0;
+  mat._set = 1;
   return mat;
 }
 

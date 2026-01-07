@@ -72,6 +72,10 @@ void build_bvh(Scene *scene, unsigned int tri_first, unsigned int tri_count) {
 unsigned int set_material(const char *path, const cgltf_data *data,
                           const cgltf_material *mat, Scene *scene) {
   unsigned int mat_index = cgltf_material_index(data, mat);
+
+  if (scene->mats[mat_index]._set)
+    return mat_index;
+
   gltf_assert(
       mat->has_pbr_metallic_roughness, path,
       "Material %s (index: %d) doesn't have a PBR metallic roughness model "
@@ -138,9 +142,11 @@ bool append_mesh_primitive(const char *path, const cgltf_data *data,
   unsigned int bvh_idnex = scene->bvh_nodes_count;
   build_bvh(scene, triangles_first, triangles_count);
 
-  // HACK: no good way to detect whether the material was defined so
-  // we set them every time we encounter them
-  unsigned int mat_index = set_material(path, data, gltf_prim->material, scene);
+  unsigned int mat_index;
+  if (gltf_prim->material != NULL)
+    mat_index = set_material(path, data, gltf_prim->material, scene);
+  else
+    mat_index = 0;
 
   scene->mesh_primitives[scene->mesh_primitives_count++] =
       (MeshPrimitive){.BVH_index = bvh_idnex, .mat_index = mat_index};
