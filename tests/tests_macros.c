@@ -2,12 +2,14 @@
 #include "asserts.h"
 #include <stdio.h>
 
-void TESTS_RUN_impl(bool tests_fn(void), const char *section_name) {
+void TESTS_RUN_impl(bool tests_fn(void), const char *section_name, bool *ok) {
   printf("=== %s ===\n", section_name);
   if (tests_fn())
     printf("=== %s: " GREEN("OK") " ===\n\n", section_name);
-  else
+  else {
     printf("=== %s: " RED("FAILED") " === \n\n", section_name);
+    *ok = false;
+  }
 }
 
 void TEST_RUN_impl(bool test_fn(void), const char *test_name, bool *ok) {
