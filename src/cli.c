@@ -189,7 +189,7 @@ void parse_arg(int argc, char **argv, int *i,
               argv[*i], argv[0]);
       exit(1);
     } else {
-      app_state->scene_paths.new_scene_path = FilePath_new_with(arg);
+      app_state->scene_paths.new_scene_path = SmallString_new(arg);
       return;
     }
   }
@@ -281,7 +281,7 @@ void handle_args(int argc, char *argv[], AppState *app_state) {
   }
 
   if (!app_state->gui_enabled &&
-      app_state->scene_paths.new_scene_path.file_path.str[0] == 0) {
+      SmallString_is_empty(&app_state->scene_paths.new_scene_path)) {
     fprintf(stderr, "GUI was disabled, yet no scene was specified. Exiting!\n");
     exit(1);
   }

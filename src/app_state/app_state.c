@@ -4,6 +4,7 @@
 #include "renderer.h"
 #include "renderer/inputs.h"
 #include "renderer/shaders.h"
+#include "utils.h"
 
 // this new is supposed to be an exhaustive constructor, i.e. should initalize
 // every field
@@ -50,16 +51,16 @@ void AppState__set_camera(AppState *app_state, Renderer *renderer) {
 
 // NOTE: handles scene_paths_changed signal and loads the scene if appropriate
 void AppState_update_scene(AppState *app_state, Renderer *renderer) {
-  FilePath *new_scene_path = &app_state->scene_paths.new_scene_path;
-  FilePath *loaded_scene_path = &app_state->scene_paths.loaded_scene_path;
+  SmallString *new_scene_path = &app_state->scene_paths.new_scene_path;
+  SmallString *loaded_scene_path = &app_state->scene_paths.loaded_scene_path;
 
-  if (app_state->scene_paths_changed && FilePath_exists(*new_scene_path)) {
+  if (app_state->scene_paths_changed && FilePath_exists(new_scene_path->str)) {
     app_state->scene_paths_changed = false;
-    app_state->scene = Scene_load_gltf(new_scene_path->file_path.str);
+    app_state->scene = Scene_load_gltf(new_scene_path->str);
     app_state->cam = app_state->scene.camera;
     Renderer_load_scene(renderer, &app_state->scene);
     AppState__restart_progressive_rendering(app_state, renderer);
-    FilePath_replace_copy(loaded_scene_path, new_scene_path->file_path.str);
+    *loaded_scene_path = SmallString_new(new_scene_path->str);
   }
 }
 

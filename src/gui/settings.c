@@ -1,8 +1,9 @@
 #include "gui/settings.h"
-#include "const_string.h"
+#include "small_string.h"
 #include "gui/file_browser.h"
 #include "opengl/scaling.h"
 #include "rad_deg.h"
+#include "utils.h"
 #include "yawpitch.h"
 
 #define CIMGUI_DEFINE_ENUMS_AND_STRUCTS
@@ -25,15 +26,14 @@ bool _Scene_settings(AppState *state) {
   if (igButton("Load scene", button_size)) {
     char *chosen_path = GuiFileBrowser_open_linux();
     if (chosen_path != NULL) {
-      ConstString_replace_copy(&state->scene_paths.new_scene_path.file_path,
-                               chosen_path);
+      state->scene_paths.new_scene_path = SmallString_new(chosen_path);
       changed = true;
     }
   }
 
-  if (!ConstString_is_empty(state->scene_paths.loaded_scene_path.file_path)) {
+  if (!SmallString_is_empty(&state->scene_paths.loaded_scene_path)) {
     igText("Loaded scene: %s",
-           FilePath_get_filename(state->scene_paths.loaded_scene_path));
+           FilePath_get_file_name(state->scene_paths.loaded_scene_path.str));
   }
 
   // TODO: build bvh checkbox (default on)

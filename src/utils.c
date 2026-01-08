@@ -1,9 +1,21 @@
+#include "utils.h"
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-void UNUSED_(void *_, ...) {}
+#if defined(__linux__)
+#include <sys/stat.h>
+#elif defined(_WIN32)
+#include <windows.h>
+#define stat _stat
+#endif
 
-char *read_file(const char *filename) {
+#if defined(__linux__)
+#define PATH_SEPARATOR '/'
+#elif defined(_WIN32)
+#define PATH_SEPARATOR '\\'
+#endif
   FILE *file = fopen(filename, "r");
   if (!file) {
     fprintf(stderr, "Error: Could not open file %s\n", filename);
@@ -25,4 +37,14 @@ char *read_file(const char *filename) {
 
   fclose(file);
   return buffer;
+}
+
+bool FilePath_exists(const char *path) {
+  struct stat stats = {0};
+  return stat(path, &stats) == 0;
+}
+
+const char *FilePath_get_file_name(const char *path) {
+  const char *last_path_sep = strrchr(path, PATH_SEPARATOR);
+  return last_path_sep ? last_path_sep + 1 : path;
 }

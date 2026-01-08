@@ -2,5 +2,9 @@
 #define UTILS_H_
 
 char *read_file(const char *filename);
+#include <stdbool.h>
+
+bool FilePath_exists(const char *path);
+const char *FilePath_get_file_name(const char *path);
 
 #endif // UTILS_H_
