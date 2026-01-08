@@ -28,7 +28,7 @@ float Camera_get_fov_deg(const Camera *self) {
 }
 
 void Camera_set_fov_deg(Camera *self, float deg) {
-  ASSERTQ_CONDF(deg > CAMERA_FOV_MIN_DEG && deg < CAMERA_FOV_MAX_DEG, deg);
+  ASSERTQ_COND(deg > CAMERA_FOV_MIN_DEG && deg < CAMERA_FOV_MAX_DEG, deg);
   self->fov_rad = deg_to_rad(deg);
 }
 

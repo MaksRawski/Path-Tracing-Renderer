@@ -47,28 +47,28 @@ bool test_traverse_nodes__count_mesh_instances(void) {
 
   Scene scene = {0};
   traverse_nodes("", data, &scene, count_mesh_instances);
-  ASSERT_EQI(scene.mesh_instances_count, TOTAL_NODES);
+  ASSERT_EQ(scene.mesh_instances_count, TOTAL_NODES);
   Arena_delete(&arena);
 
   return true;
 }
 
 bool test_next_power_of_2(void) {
-  ASSERT_EQI(next_power_of_2(1), 1);
-  ASSERT_EQI(next_power_of_2(2), 2);
-  ASSERT_EQI(next_power_of_2(3), 4);
-  ASSERT_EQI(next_power_of_2(4), 4);
-  ASSERT_EQI(next_power_of_2(5), 8);
-  ASSERT_EQI(next_power_of_2(10), 16);
-  ASSERT_EQI(next_power_of_2(100), 128);
-  ASSERT_EQI(next_power_of_2(500), 512);
-  ASSERT_EQI(next_power_of_2(1000), 1024);
-  ASSERT_EQI(next_power_of_2(10000), 16384);
-  ASSERT_EQI(next_power_of_2(50000), 65536);
-  ASSERT_EQI(next_power_of_2(100 * 1000), 131072);
-  ASSERT_EQI(next_power_of_2(1000 * 1000), 1048576);
-  ASSERT_EQI(next_power_of_2(1000 * 1000 * 1000), 1073741824);
-  ASSERT_EQI(next_power_of_2(2 * 1000 * 1000 * 1000), 2147483648);
+  ASSERT_EQ(next_power_of_2(1), 1);
+  ASSERT_EQ(next_power_of_2(2), 2);
+  ASSERT_EQ(next_power_of_2(3), 4);
+  ASSERT_EQ(next_power_of_2(4), 4);
+  ASSERT_EQ(next_power_of_2(5), 8);
+  ASSERT_EQ(next_power_of_2(10), 16);
+  ASSERT_EQ(next_power_of_2(100), 128);
+  ASSERT_EQ(next_power_of_2(500), 512);
+  ASSERT_EQ(next_power_of_2(1000), 1024);
+  ASSERT_EQ(next_power_of_2(10000), 16384);
+  ASSERT_EQ(next_power_of_2(50000), 65536);
+  ASSERT_EQ(next_power_of_2(100 * 1000), 131072);
+  ASSERT_EQ(next_power_of_2(1000 * 1000), 1048576);
+  ASSERT_EQ(next_power_of_2(1000 * 1000 * 1000), 1073741824);
+  ASSERT_EQ(next_power_of_2(2 * 1000 * 1000 * 1000), 2147483648);
 
   return true;
 }

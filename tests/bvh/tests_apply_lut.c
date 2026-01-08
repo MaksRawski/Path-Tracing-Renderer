@@ -3,6 +3,13 @@
 #include "scene/bvh.h"
 #include "tests_macros.h"
 
+bool assert_arrays_equal(BVHTriCount *a, BVHTriCount *b, size_t size) {
+  for (size_t i = 0; i < size; ++i) {
+    ASSERT_EQ(a[i], b[i]);
+  }
+  return true;
+}
+
 bool test_apply_swaps_lut__id(void) {
   BVHTriCount numbers[] = {0, 1, 2, 3, 4, 5};
   BVHTriCount lut[] = {0, 1, 2, 3, 4, 5};
@@ -11,7 +18,7 @@ bool test_apply_swaps_lut__id(void) {
   const unsigned int count = sizeof(lut) / sizeof(BVHTriCount);
   BVH_apply_swaps_lut(lut, numbers, BVHTriCount, count);
 
-  ASSERT_ARRAYN_EQ(numbers, expected, count);
+  assert_arrays_equal(numbers, expected, count);
   return true;
 }
 
@@ -23,7 +30,7 @@ bool test_apply_swaps_lut__rev(void) {
   const unsigned int count = sizeof(lut) / sizeof(BVHTriCount);
   BVH_apply_swaps_lut(lut, numbers, BVHTriCount, count);
 
-  ASSERT_ARRAYN_EQ(numbers, expected, count);
+  assert_arrays_equal(numbers, expected, count);
   return true;
 }
 
@@ -35,7 +42,7 @@ bool test_apply_swaps_lut__random(void) {
 
   BVH_apply_swaps_lut(lut, numbers, BVHTriCount, count);
 
-  ASSERT_ARRAYN_EQ(numbers, expected, count);
+  assert_arrays_equal(numbers, expected, count);
   return true;
 }
 
@@ -47,7 +54,7 @@ bool test_apply_swaps_lut__simplest_earlier_breaking_case(void) {
 
   BVH_apply_swaps_lut(lut, numbers, BVHTriCount, count);
 
-  ASSERT_ARRAYN_EQ(numbers, expected, count);
+  assert_arrays_equal(numbers, expected, count);
   return true;
 }
 

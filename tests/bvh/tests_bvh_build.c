@@ -1,10 +1,13 @@
 #include "tests_bvh_build.h"
 #include "asserts.h"
+#include "scene.h"
 #include "scene/bvh.h"
 #include "scene/triangle.h"
 #include "tests_macros.h"
+#include <stdio.h>
+#include <string.h>
 
-#define TRIS_LENGTH(_t) sizeof(_t) / sizeof(Triangle)
+#define TRIS_COUNT(_t) sizeof(_t) / sizeof(Triangle)
 
 bool test_bvh_build__basic(void) {
   Triangle tris[1] = {(Triangle){
@@ -19,9 +22,9 @@ bool test_bvh_build__basic(void) {
 
   BVH_build(nodes, &nodes_count, swaps_lut, tris, 0, 1);
   // only root node should have been created
-  ASSERT_EQI(nodes_count, 1);
-  ASSERT_EQI(nodes[0].first, 0);
-  ASSERT_EQI(nodes[0].count, 1);
+  ASSERT_EQ(nodes_count, 1);
+  ASSERT_EQ(nodes[0].first, 0);
+  ASSERT_EQ(nodes[0].count, 1);
   ASSERT_VEC3_EQ(nodes[0].bound_min, vec3_new(0, 0, 0));
   ASSERT_VEC3_EQ(nodes[0].bound_max, vec3_new(1, 1, 0));
 
@@ -45,18 +48,18 @@ bool test_bvh_build__offsets(void) {
 
   BVH_build(nodes, &nodes_offset, swaps_lut, tris, tris_offset, tris_count);
   unsigned int nodes_count = nodes_offset - initial_nodes_offset;
-  ASSERT_EQI(nodes_count, 1);
+  ASSERT_EQ(nodes_count, 1);
 
   for (unsigned int i = 0; i < sizeof(nodes) / sizeof(BVHNode); ++i) {
     if (i == initial_nodes_offset) {
-      ASSERT_EQI(nodes[i].first, 1);
-      ASSERT_EQI(nodes[i].count, 1);
+      ASSERT_EQ(nodes[i].first, 1);
+      ASSERT_EQ(nodes[i].count, 1);
       ASSERT_VEC3_EQ(nodes[i].bound_min, vec3_new(0, 0, 0));
       ASSERT_VEC3_EQ(nodes[i].bound_max, vec3_new(1, 1, 0));
     } else {
       // other nodes should be untouched
-      ASSERT_EQI(nodes[i].first, 0);
-      ASSERT_EQI(nodes[i].count, 0);
+      ASSERT_EQ(nodes[i].first, 0);
+      ASSERT_EQ(nodes[i].count, 0);
       ASSERT_VEC3_EQ(nodes[i].bound_min, vec3_new(0, 0, 0));
       ASSERT_VEC3_EQ(nodes[i].bound_max, vec3_new(0, 0, 0));
     }
@@ -80,7 +83,7 @@ bool test_bvh_build__swaps_lut(void) {
   unsigned int tris_count = 1;
 
   BVH_build(nodes, &nodes_count, swaps_lut, tris, tris_offset, tris_count);
-  ASSERT_EQI(swaps_lut[0], tris_offset);
+  ASSERT_EQ(swaps_lut[0], tris_offset);
 
   return true;
 }

@@ -38,10 +38,9 @@ void Vec3d_swap(Vec3d *a, Vec3d *b);
 bool Vec3d_eq(Vec3d a, Vec3d b);
 
 typedef struct {
-  char s[64];
+  char str[64];
 } Vec3dStr;
 
-// returns a string representation of a vector
 Vec3dStr Vec3d_str(Vec3d v);
 
 #endif // VEC3D_H_
