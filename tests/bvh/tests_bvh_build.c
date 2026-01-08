@@ -13,15 +13,15 @@ bool test_bvh_build__basic(void) {
   // NOTE: just in case when the function behaves wrong, we don't want it to
   // access other things on the stack, so we allocate way more memory than
   // necessary
-  BVHNode nodes[4 * TRIS_LENGTH(tris)] = {0};
-  BVHTriCount swaps_lut[TRIS_LENGTH(tris)] = {0};
+  BVHNode nodes[10] = {0};
+  BVHTriCount swaps_lut[1] = {0};
   unsigned int nodes_count = 0;
 
   BVH_build(nodes, &nodes_count, swaps_lut, tris, 0, 1);
-  // no nodes should have been created
-  ASSERT_EQI(nodes_count, 0);
-  ASSERT_EQI(nodes[0].count, 1);
+  // only root node should have been created
+  ASSERT_EQI(nodes_count, 1);
   ASSERT_EQI(nodes[0].first, 0);
+  ASSERT_EQI(nodes[0].count, 1);
   ASSERT_VEC3_EQ(nodes[0].bound_min, vec3_new(0, 0, 0));
   ASSERT_VEC3_EQ(nodes[0].bound_max, vec3_new(1, 1, 0));
 
@@ -37,15 +37,18 @@ bool test_bvh_build__offsets(void) {
                                 .c = vec3_new(1, 1, 0)}};
 
   BVHNode nodes[10] = {0};
-  BVHTriCount swaps_lut[TRIS_LENGTH(tris)] = {0};
-  unsigned int nodes_offset = 3;
-  unsigned int nodes_count = nodes_offset;
+  BVHTriCount swaps_lut[1] = {0};
+  const unsigned int initial_nodes_offset = 3;
+  unsigned int nodes_offset = initial_nodes_offset;
+  const unsigned int tris_offset = 1;
+  const unsigned int tris_count = 1;
 
-  BVH_build(nodes, &nodes_count, swaps_lut, tris, 1, 1);
-  // not expecting any nodes to be created with just a single triangle
-  ASSERT_EQI(nodes_count, nodes_offset);
+  BVH_build(nodes, &nodes_offset, swaps_lut, tris, tris_offset, tris_count);
+  unsigned int nodes_count = nodes_offset - initial_nodes_offset;
+  ASSERT_EQI(nodes_count, 1);
+
   for (unsigned int i = 0; i < sizeof(nodes) / sizeof(BVHNode); ++i) {
-    if (i == nodes_offset) {
+    if (i == initial_nodes_offset) {
       ASSERT_EQI(nodes[i].first, 1);
       ASSERT_EQI(nodes[i].count, 1);
       ASSERT_VEC3_EQ(nodes[i].bound_min, vec3_new(0, 0, 0));
@@ -71,12 +74,13 @@ bool test_bvh_build__swaps_lut(void) {
                                 .c = vec3_new(1, 1, 0)}};
 
   BVHNode nodes[10] = {0};
-  BVHTriCount swaps_lut[TRIS_LENGTH(tris)] = {0};
-  BVHTriCount expected_swaps_lut[TRIS_LENGTH(tris)] = {1};
+  BVHTriCount swaps_lut[1] = {0};
   unsigned int nodes_count = 10;
+  unsigned int tris_offset = 1;
+  unsigned int tris_count = 1;
 
-  BVH_build(nodes, &nodes_count, swaps_lut, tris, 1, 1);
-  ASSERT_ARRAYN_EQ(swaps_lut, expected_swaps_lut, 1);
+  BVH_build(nodes, &nodes_count, swaps_lut, tris, tris_offset, tris_count);
+  ASSERT_EQI(swaps_lut[0], tris_offset);
 
   return true;
 }

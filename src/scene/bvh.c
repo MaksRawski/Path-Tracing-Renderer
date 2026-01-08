@@ -29,6 +29,7 @@ void BVH_build(BVHNode *nodes, BVHNodeCount *nodes_offset,
   nodes[*nodes_offset].count = t_count;
   subdivide(nodes, *nodes_offset, triangles, centroids, nodes_offset,
             swaps_lut);
+  ++(*nodes_offset);
 
   free(centroids);
 }
@@ -40,7 +41,7 @@ void BVH_delete(BVH *self) {
 
 // recursively subdivide a node until there are 2 primitives left
 void subdivide(BVHNode nodes[], int node_idx, Triangle tris[], vec3 centroids[],
-               BVHNodeCount *created_nodes, BVHTriCount swaps_lut[]) {
+               BVHNodeCount *nodes_offset, BVHTriCount swaps_lut[]) {
   BVHNode *node = nodes + node_idx;
   // 0. first set the bounds, only a leaf node can be subdivided!
   set_node_bounds(node, tris);
@@ -71,8 +72,8 @@ void subdivide(BVHNode nodes[], int node_idx, Triangle tris[], vec3 centroids[],
   if (split_index == node->first || split_index == (node->first + node->count))
     return;
 
-  int left_node_idx = (*created_nodes)++;
-  int right_node_idx = (*created_nodes)++;
+  int left_node_idx = ++(*nodes_offset);
+  int right_node_idx = ++(*nodes_offset);
   BVHNode *left_node = &nodes[left_node_idx];
   BVHNode *right_node = &nodes[right_node_idx];
   left_node->first = node->first;
@@ -84,8 +85,8 @@ void subdivide(BVHNode nodes[], int node_idx, Triangle tris[], vec3 centroids[],
   node->count = 0;
   node->first = left_node_idx;
 
-  subdivide(nodes, left_node_idx, tris, centroids, created_nodes, swaps_lut);
-  subdivide(nodes, right_node_idx, tris, centroids, created_nodes, swaps_lut);
+  subdivide(nodes, left_node_idx, tris, centroids, nodes_offset, swaps_lut);
+  subdivide(nodes, right_node_idx, tris, centroids, nodes_offset, swaps_lut);
 }
 
 // centroids should already have an allocated memory for tri_count of vec3
@@ -108,7 +109,6 @@ void set_node_bounds(BVHNode *node, const Triangle *tris) {
   node->bound_max.z = -INFINITY;
 
   for (int t = node->first; t < last_tri; ++t) {
-
     node->bound_min = vec3_min(node->bound_min, tris[t].a);
     node->bound_min = vec3_min(node->bound_min, tris[t].b);
     node->bound_min = vec3_min(node->bound_min, tris[t].c);
