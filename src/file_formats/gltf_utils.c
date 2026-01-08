@@ -4,6 +4,7 @@
 #include "scene/material.h"
 #include "scene/mesh.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 

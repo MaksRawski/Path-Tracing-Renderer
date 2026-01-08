@@ -81,14 +81,13 @@ Option Option_new(enum Options option, const AppState *default_app_state) {
     RETURN_OPTION("-NH", "--no-hot-reload",
                   "Disable hot-reloading of shaders.");
   case Options_FLAG_NO_MOVEMENT:
-    RETURN_OPTION("-NM", "--no-movement",
-                  "Disable camera movement.");
+    RETURN_OPTION("-NM", "--no-movement", "Disable camera movement.");
   case Options_FLAG_HELP:
     RETURN_OPTION("-h", "--help", "Display this help");
   case Options_FLAG_JUST_RENDER:
     RETURN_OPTION("-J", "--just-render",
-                  "Alias for --no-gui --no-hot-reload --no-movement --save-after-rendering "
-                  "--exit-after-rendering.");
+                  "Alias for --no-gui --no-hot-reload --no-movement "
+                  "--save-after-rendering --exit-after-rendering.");
   case Options__COUNT:
     UNREACHABLE();
   }

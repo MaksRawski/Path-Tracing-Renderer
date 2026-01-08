@@ -43,11 +43,6 @@ OPENGL_CHECK_ARRAY_ELEMENT_SIZE(Mesh);
 OPENGL_CHECK_ARRAY_ELEMENT_SIZE(MeshInstance);
 OPENGL_CHECK_ARRAY_ELEMENT_SIZE(TLASNode);
 
-void Scene__add_mesh(Scene *scene, unsigned int tris_index,
-                     unsigned int tris_count, unsigned int mat_index);
-
-void Scene__build_tlas(Scene *scene);
-
 // NOTE: any Scene loading
 Scene Scene_load_gltf(const char *path);
 
