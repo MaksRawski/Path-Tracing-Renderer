@@ -2,16 +2,10 @@
 #include "cgltf.h"
 #include "file_formats/gltf_utils.h"
 #include "scene.h"
+#include "scene/material.h"
 
 #include <stdbool.h>
 #include <string.h>
-
-/* const Material DEFAULT_MATERIAL = { */
-/*     .albedo = {0.3, 0.3, 0.3}, */
-/*     .emission_color = {0, 0, 0}, */
-/*     .emission_strength = 0, */
-/*     .specular_component = 0, */
-/* }; */
 
 void load_gltf_scene(Scene *scene, const char *path) {
   cgltf_options options = {0};
@@ -75,12 +69,19 @@ void load_gltf_scene(Scene *scene, const char *path) {
 
   scene->triangles_count = 0;
   scene->bvh_nodes_count = 0;
-  scene->mats_count = 0;
   scene->mesh_primitives_count = 0;
   scene->meshes_count = 0;
   scene->mesh_instances_count = 0;
   scene->tlas_nodes_count = 0;
 
+  scene->camera = Camera_default();
+
+  if (scene->mats_count == 0) {
+    scene->mats[0] = Material_default();
+  }
+  scene->mats_count = 1;
+
+  // === glTF data loading ===
   traverse_nodes(path, data, scene, handle_node);
 
   cgltf_free(data);
