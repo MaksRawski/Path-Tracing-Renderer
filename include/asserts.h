@@ -76,14 +76,14 @@ static const char *_GENERIC_FMT_STRING__EXAMPLE =
   exit_if_not(ASSERT_CUSTOM_FMT_(_cond, _fmt, __VA_ARGS__))
 
 #define ASSERT_CUSTOM(_cond, _msg)                                             \
-  return_if_not(ASSERT_CUSTOM_FMT_(_cond, _msg "%0.0f", 0))
+  return_if_not(ASSERT_CUSTOM_FMT_(_cond, _msg "%s", ""))
 
 #define ASSERTQ_CUSTOM(_cond, _msg)                                            \
-  exit_if_not(ASSERT_CUSTOM_FMT_(_cond, _msg "%0.0f", 0))
+  exit_if_not(ASSERT_CUSTOM_FMT_(_cond, _msg "%s", ""))
 
 static inline void test_ASSERT_CUSTOM_FMT(void) {
   bool test_cond = true;
-  ASSERT_CUSTOM_FMT_(test_cond, "fail reason fmt string %s %s", "1st value",
+  ASSERTQ_CUSTOM_FMT(test_cond, "fail reason fmt string %s %s", "1st value",
                      "2nd value");
 }
 // -----------------------------------------------------------------------------
@@ -99,7 +99,8 @@ static inline void test_ASSERT_CUSTOM_FMT(void) {
 
 static inline void test_ASSERT_COND(void) {
   int x = 2;
-  ASSERTQ_COND(x < 10, x); // will exit if x fails the condition
+  // will print value of x and exit if x fails the condition
+  ASSERTQ_COND(x < 10, x);
 }
 // -----------------------------------------------------------------------------
 
@@ -125,8 +126,8 @@ bool ASSERT_EQ_impl(bool equal, const char *a_name, const char *b_name,
 #define ASSERT_EQ(_a, _b) return_if_not(ASSERT_EQ_(_a, _b));
 #define ASSERTQ_EQ(_a, _b) exit_if_not(ASSERT_EQ_(_a, _b));
 
-// NOTE: functions _type_eq and _type_str must exist! _type_str should return a
-// SmallString
+// NOTE: functions _type_eq and _type_str must exist!
+// _type_str should return a SmallString
 #define ASSERT_TYPE_EQ_(_type, _a, _b)                                         \
   ASSERT_EQ_impl(_type##_eq(_a, _b), #_a, #_b, __FILE__, __LINE__, "%s",       \
                  _type##_str(_a).str, _type##_str(_b).str)
