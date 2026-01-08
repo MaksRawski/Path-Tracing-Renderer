@@ -35,7 +35,6 @@ static inline double Vec3d_get_by_axis(const Vec3d *const v, int axis) {
 
 void Vec3d_copy_from_double3(Vec3d *const dst, const double *const src);
 void Vec3d_swap(Vec3d *a, Vec3d *b);
-bool Vec3d_is_zero(Vec3d v);
 bool Vec3d_eq(Vec3d a, Vec3d b);
 
 typedef struct {

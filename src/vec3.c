@@ -1,5 +1,6 @@
 #include "vec3.h"
 #include "epsilon.h"
+#include <float.h>
 #include <math.h>
 #include <stdio.h>
 
@@ -60,10 +61,11 @@ void vec3_copy_from_float3(vec3 *const dst, const float *const src) {
   dst->z = src[2];
 }
 
-bool vec3_is_zero(vec3 v) {
-  return is_zero(v.x) && is_zero(v.y) && is_zero(v.z);
+bool vec3_eq(vec3 a, vec3 b) {
+  return double_equal(a.x, b.x, FLT_EPSILON) &&
+         double_equal(a.y, b.y, FLT_EPSILON) &&
+         double_equal(a.z, b.z, FLT_EPSILON);
 }
-bool vec3_eq(vec3 a, vec3 b) { return vec3_is_zero(vec3_sub(a, b)); }
 
 float vec3_mag(vec3 v) { return sqrtf(v.x * v.x + v.y * v.y + v.z * v.z); }
 vec3 vec3_norm(vec3 v) { return vec3_mult(v, 1.0f / vec3_mag(v)); }
@@ -78,6 +80,6 @@ vec3 vec3_cross(vec3 a, vec3 b) {
 
 Vec3Str vec3_str(vec3 v) {
   Vec3Str res = {0};
-  snprintf(res.s, sizeof(res.s), "%+.3f %+.3f %+.3f", v.x, v.y, v.z);
+  snprintf(res.str, sizeof(res.str), "%+.3f %+.3f %+.3f", v.x, v.y, v.z);
   return res;
 }

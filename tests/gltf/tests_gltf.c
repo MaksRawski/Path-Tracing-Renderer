@@ -3,6 +3,7 @@
 #include "file_formats/gltf.h"
 #include "rad_deg.h"
 #include "tests_macros.h"
+#include <float.h>
 
 bool test_load_gltf_scene__cube_camera(void) {
   Scene scene = {0};
@@ -16,7 +17,7 @@ bool test_load_gltf_scene__cube_camera(void) {
 
   ASSERT_VEC3_EQ(scene.camera.pos, vec3_new(-3.8, 0, 0));
   ASSERT_VEC3_EQ(scene.camera.dir, vec3_new(1, 0, 0));
-  ASSERT_EQF(scene.camera.fov_rad, deg_to_rad(39.6));
+  ASSERT_EQF(scene.camera.fov_rad, deg_to_rad(39.6), FLT_EPSILON);
 
   ASSERT_CONDF(0 < scene.bvh_nodes_count &&
                    scene.bvh_nodes_count < scene.triangles_count,

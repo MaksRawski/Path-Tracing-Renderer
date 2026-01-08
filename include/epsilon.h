@@ -1,12 +1,22 @@
 #ifndef EPSILON_H_
 #define EPSILON_H_
 
+#include <float.h>
+#include <math.h>
 #include <stdbool.h>
 
-// yes, this value is chosen kind of arbitrarly since it's just for
-// comparing values and how close can they be before considering them equal
-#define EPSILON (1.0 / (1 << 20))
+static inline bool is_zerof(float x) {
+  return -FLT_EPSILON < x && x < FLT_EPSILON;
+}
 
-static inline bool is_zero(double x) { return x < EPSILON && x > -EPSILON; }
+static inline bool is_zero(double x) {
+  return -DBL_EPSILON < x && x < DBL_EPSILON;
+}
+
+#define BIG_EPSILON 10 * FLT_EPSILON
+
+static inline bool double_equal(double a, double b, double epsilon) {
+  return fabs(a - b) <= ((fabs(a) > fabs(b) ? fabs(b) : fabs(a)) * epsilon);
+}
 
 #endif // EPSILON_H_
