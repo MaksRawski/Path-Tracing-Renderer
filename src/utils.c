@@ -16,6 +16,8 @@
 #elif defined(_WIN32)
 #define PATH_SEPARATOR '\\'
 #endif
+
+char *File_read(const char *filename) {
   FILE *file = fopen(filename, "r");
   if (!file) {
     fprintf(stderr, "Error: Could not open file %s\n", filename);
