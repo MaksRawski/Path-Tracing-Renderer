@@ -53,7 +53,7 @@ bool test_load_gltf_scene__suzanne(void) {
 
   for (unsigned int n = 0; n < scene.bvh_nodes_count; ++n) {
     // non-leaf nodes should point to other (defined later) nodes
-    if (scene.bvh_nodes[n].count > 0)
+    if (scene.bvh_nodes[n].count == 0)
       ASSERT_COND(scene.bvh_nodes[n].first > n, n);
 
     float node_bound_volume = vec3_mag(
