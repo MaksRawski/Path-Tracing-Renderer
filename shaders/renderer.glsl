@@ -270,55 +270,6 @@ HitInfo RayTriangleIntersection(Ray ray, Triangle tri) {
     return hitInfo;
 }
 
-const int NUM_OF_SPHERES = 5;
-const Sphere SPHERES[NUM_OF_SPHERES] = Sphere[NUM_OF_SPHERES](
-        Sphere(vec3(4.0, -2, -5.0), 1.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 0.0, 0.0), 0.0)), // red
-        Sphere(vec3(3.0, -1, -2.0), 1.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 1.0, 0.0), 0.0)), // green
-        Sphere(vec3(2.0, -0, 0.0), 1.0, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(0.0, 0.0, 1.0), 0.0)), // blue
-        Sphere(vec3(0.4, -0.3, -1.0), 0.5, Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 1.0, 1.0), 1.0)), // mirror
-        Sphere(vec3(3.0, 3, 1.0), 1.0, Material(vec3(1.0, 1.0, 0.96), 1.0, vec3(1.0, 0.0, 0.0), 0.0)) // emitter
-    );
-
-// we hit the sphere if ||ray.origin + ray.dir * distance||² = r²
-// o := ray.origin, d := ray.dir, s := distance
-// ||o + d * s||² = r²
-// sqrt((o_1 + s * d_1)² + (o_2 + s * d_2)² + (o_3 + s * d_3)²)² = r²
-// (o_1 + s * d_1)² + (o_2 + s * d_2)² + (o_3 + s * d_3)² = r²
-// (o_1² + 2*s*o_1*d_1 + s²d_1²) + (o_2² + 2*s*o_2*d_2 + s²d_2²) + (o_3² + 2*s*o_3*d_3 + s²d_3²) = r²
-// s²(d_1² + d_2² + d_3²) + 2s(o_1*d_1 + o_2*d_2 + o_3*d_3) + (o_1²+o_2²+0_3²) = r²
-// s² * dot(d, d) + 2s * dot(d, o), + dot(o,o) = r²
-// quadratic equation for s
-HitInfo RaySphereIntersection(Ray ray, Sphere s) {
-    HitInfo hitInfo;
-    hitInfo.didHit = false;
-    vec3 offsetRay = ray.origin - s.pos;
-
-    // this is 1 only if the vector is normalized, so it's safer to just calculate it
-    float a = dot(ray.dir, ray.dir);
-    float b = 2.0 * dot(ray.dir, offsetRay);
-    float c = dot(offsetRay, offsetRay) - s.r * s.r;
-
-    float d = b * b - 4.0 * a * c;
-    if (d >= EPSILON) {
-        float dst1 = (-b - sqrt(d)) / (2.0 * a);
-        float dst2 = (-b + sqrt(d)) / (2.0 * a);
-        if (dst1 < EPSILON && dst2 < EPSILON) return hitInfo;
-        bool outside = dst1 >= EPSILON;
-        // hitInfo.dst = dst1;
-        hitInfo.dst = outside ? dst1 : dst2;
-
-        if (hitInfo.dst > EPSILON) {
-            hitInfo.didHit = true;
-            hitInfo.hitPoint = ray.origin + hitInfo.dst * ray.dir;
-            // hitInfo.normal = normalize(hitInfo.hitPoint - s.pos);
-            hitInfo.normal = (outside ? 1.0 : -1.0) * normalize(hitInfo.hitPoint - s.pos);
-            hitInfo.mat = s.mat;
-        }
-    }
-
-    return hitInfo;
-}
-
 // using slab method
 // Imagine that we put two parallel planes per each axis, such that
 // distance between those planes will be that of the bounding box.
