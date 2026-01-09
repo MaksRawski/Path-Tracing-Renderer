@@ -1,6 +1,7 @@
 #include "renderer/buffers_scene.h"
 #include "opengl/generate_ssbo.h"
 #include "opengl/gl_call.h"
+#include "scene/mesh.h"
 #include <stddef.h>
 
 RendererBuffersScene RendererBuffersScene_new(const Scene *scene) {
@@ -12,7 +13,15 @@ RendererBuffersScene RendererBuffersScene_new(const Scene *scene) {
                 scene->bvh_nodes_count * sizeof(BVHNode), 2);
   generate_ssbo(&self.mats_ssbo, scene->mats,
                 scene->mats_count * sizeof(Material), 3);
-  generate_ssbo(&self.camera_ssbo, &scene->camera, sizeof(Camera), 5);
+  generate_ssbo(&self.mesh_primitives_ssbo, &scene->mesh_primitives,
+                scene->mesh_primitives_count * sizeof(MeshPrimitive), 4);
+  generate_ssbo(&self.meshes_ssbo, &scene->meshes,
+                scene->meshes_count * sizeof(Mesh), 5);
+  generate_ssbo(&self.mesh_instances_ssbo, &scene->mesh_instances,
+                scene->mesh_instances_count * sizeof(MeshInstance), 6);
+  generate_ssbo(&self.tlas_nodes_ssbo, &scene->tlas_nodes,
+                scene->tlas_nodes_count * sizeof(TLASNode), 7);
+  generate_ssbo(&self.camera_ssbo, &scene->camera, sizeof(Camera), 8);
 
   return self;
 }
@@ -28,10 +37,13 @@ void RendererBuffersScene_set_camera(RendererBuffersScene *self,
 }
 
 void RendererBuffersScene_delete(RendererBuffersScene *self) {
-  GL_CALL(glDeleteBuffers(1, &self->bvh_nodes_ssbo));
   GL_CALL(glDeleteBuffers(1, &self->triangles_ssbo));
+  GL_CALL(glDeleteBuffers(1, &self->bvh_nodes_ssbo));
   GL_CALL(glDeleteBuffers(1, &self->mats_ssbo));
-  GL_CALL(glDeleteBuffers(1, &self->primitives_ssbo));
+  GL_CALL(glDeleteBuffers(1, &self->mesh_primitives_ssbo));
+  GL_CALL(glDeleteBuffers(1, &self->meshes_ssbo));
+  GL_CALL(glDeleteBuffers(1, &self->mesh_instances_ssbo));
+  GL_CALL(glDeleteBuffers(1, &self->tlas_nodes_ssbo));
   GL_CALL(glDeleteBuffers(1, &self->camera_ssbo));
 
   self = NULL;

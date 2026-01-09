@@ -5,8 +5,8 @@
 #include <glad/gl.h> // GLuint
 
 typedef struct {
-  GLuint triangles_ssbo, bvh_nodes_ssbo, mats_ssbo;
-  GLuint primitives_ssbo, camera_ssbo;
+  GLuint triangles_ssbo, bvh_nodes_ssbo, mats_ssbo, mesh_primitives_ssbo,
+      meshes_ssbo, mesh_instances_ssbo, tlas_nodes_ssbo, camera_ssbo;
   Camera _camera;
 } RendererBuffersScene;
 

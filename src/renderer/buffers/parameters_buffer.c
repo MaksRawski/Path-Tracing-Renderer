@@ -9,7 +9,7 @@
 RendererParametersBuffer RendererParametersBuffer_default(void) {
   RendererParametersBuffer self = {0};
   RendererParameters params = RendererParameters_default();
-  generate_ssbo(&self.params_ssbo, &params, sizeof(params), 6);
+  generate_ssbo(&self.params_ssbo, &params, sizeof(params), 10);
   return self;
 }
 

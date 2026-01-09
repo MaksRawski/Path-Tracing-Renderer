@@ -43,7 +43,6 @@ struct Ray {
 // blocks which have layouts that pad them to 16 bytes turning `vec3`s in to `vec4`s
 struct Triangle {
     vec4 a, b, c;
-    vec4 _na, _nb, _nc;
 };
 
 // NOTE: same as above
@@ -54,46 +53,67 @@ struct BVHnode {
 };
 
 struct Material {
-    // what color it emits
-    vec3 emissionColor;
-    // how much light it emits, in range [0; 1]
-    float emissionStrength;
-    // what color it is under white light
-    vec3 albedo;
-    // how reflective a surface is, in range [0; 1]
-    // when 0, diffuse
-    // when 1, reflect
-    float specularComponent;
+    uint base_color_texture;
+    vec4 base_color_factor;
+    uint metallic_texture;
+    float metallic_factor;
+    uint roughness_texture;
+    float roughness_factor;
+    uint emissive_texture;
+    vec3 emissive_factor;
+    int _, _1;
 };
 
-struct Primitive {
-    // index of the material in materialsBuffer
-    uint mat;
+struct MeshPrimitive {
+    uint bvh_index;
+    uint mat_index;
+    int _, _1;
+};
+
+struct Mesh {
+    uint mesh_primitives_first, mesh_primitives_count;
+    vec4 aabbMin, aabbMax;
+    int _, _1;
+};
+
+struct MeshInstance {
+    mat4 transform;
+    uint mesh_index;
+    int _, _1;
+};
+
+struct TLASNode {
+    vec4 aabbMin, aabbMax;
+    uint first, isLeaf;
+    int _, _1;
 };
 
 layout(std430, binding = 1) readonly buffer trianglesBuffer {
     Triangle triangles[];
 };
 layout(std430, binding = 2) readonly buffer bvhNodesBuffer {
-    BVHnode nodes[];
+    BVHnode bvh_nodes[];
 };
 layout(std430, binding = 3) readonly buffer materialsBuffer {
     Material mats[];
 };
-layout(std430, binding = 4) readonly buffer primitivesBuffer {
-    Primitive primitives[];
+layout(std430, binding = 4) readonly buffer meshPrimitivesBuffer {
+    MeshPrimitive mesh_primitives[];
 };
-layout(std430, binding = 5) readonly buffer cameraBuffer {
+layout(std430, binding = 5) readonly buffer meshesBuffer {
+    Mesh meshes[];
+};
+layout(std430, binding = 6) readonly buffer meshInstancesBuffer {
+    MeshInstance mesh_instances[];
+};
+layout(std430, binding = 7) readonly buffer TLASNodesBuffer {
+    TLASNode tlas_nodes[];
+};
+layout(std430, binding = 8) readonly buffer cameraBuffer {
     Camera camera;
 };
-layout(std430, binding = 6) readonly buffer rendererParametersBuffer {
+layout(std430, binding = 10) readonly buffer rendererParametersBuffer {
     Parameters params;
-};
-
-struct Sphere {
-    vec3 pos;
-    float r;
-    Material mat;
 };
 
 struct HitInfo {
