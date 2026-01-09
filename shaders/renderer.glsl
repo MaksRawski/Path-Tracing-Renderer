@@ -344,14 +344,15 @@ HitInfo RaySphereIntersection(Ray ray, Sphere s) {
 // calculate the distance to that point.
 // if there is no intersection we will end up with infinities which
 // funnily enough get automagically handled
-bool RayBVHnodeIntersection(Ray ray, BVHnode bb) {
-    float tx1 = (bb.boundsMin.x - ray.origin.x) * ray.inv_dir.x, tx2 = (bb.boundsMax.x - ray.origin.x) * ray.inv_dir.x;
+float RayAABBIntersection(Ray ray, vec3 aabbMin, vec3 aabbMax) {
+    float tx1 = (aabbMin.x - ray.origin.x) * ray.inv_dir.x, tx2 = (aabbMax.x - ray.origin.x) * ray.inv_dir.x;
     float tmin = min(tx1, tx2), tmax = max(tx1, tx2);
-    float ty1 = (bb.boundsMin.y - ray.origin.y) * ray.inv_dir.y, ty2 = (bb.boundsMax.y - ray.origin.y) * ray.inv_dir.y;
+    float ty1 = (aabbMin.y - ray.origin.y) * ray.inv_dir.y, ty2 = (aabbMax.y - ray.origin.y) * ray.inv_dir.y;
     tmin = max(tmin, min(ty1, ty2)), tmax = min(tmax, max(ty1, ty2));
-    float tz1 = (bb.boundsMin.z - ray.origin.z) * ray.inv_dir.z, tz2 = (bb.boundsMax.z - ray.origin.z) * ray.inv_dir.z;
+    float tz1 = (aabbMin.z - ray.origin.z) * ray.inv_dir.z, tz2 = (aabbMax.z - ray.origin.z) * ray.inv_dir.z;
     tmin = max(tmin, min(tz1, tz2)), tmax = min(tmax, max(tz1, tz2));
-    return tmax >= tmin && tmax > 0;
+
+    return tmax >= tmin && tmin > 0 ? tmin : -INFINITY;
 }
 
 // TODO: this is just for debugging
@@ -362,6 +363,53 @@ vec3 hsv2rgb(vec3 c)
     return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 }
 
+struct TLASIntersectResult {
+    int mesh_primitive;
+    mat4 transform;
+};
+
+TLASIntersectResult TLASIntersect(Ray ray) {
+    TLASIntersectResult result;
+    uint closestMeshInstance = 0;
+    float closestMeshInstanceDistance = INFINITY;
+    result.mesh_primitive = -1;
+    // result.transform = mat4();
+
+    uint stack[STACK_SIZE], stack_ptr = 0;
+    stack[stack_ptr++] = 0;
+    int max_iterations = MAX_ITERATIONS;
+    while (stack_ptr > 0 && max_iterations-- > 0) {
+        TLASNode node = tlas_nodes[stack[--stack_ptr]];
+        if (node.isLeaf == 1) {
+            MeshInstance mi = mesh_instances[node.first];
+            Mesh m = meshes[mi.mesh_index];
+            for (uint p = m.mesh_primitives_first; p < m.mesh_primitives_count; ++p) {
+                MeshPrimitive mp = mesh_primitives[p];
+                BVHnode bvh_node = bvh_nodes[mp.bvh_index];
+                Ray offsetRay = ray;
+                offsetRay.origin = vec3(mi.transform * vec4(ray.origin, 1.0));
+                offsetRay.dir = vec3(mi.transform * vec4(ray.origin, 0.0));
+                offsetRay.inv_dir = 1.0 / offsetRay.dir;
+                float t = RayAABBIntersection(ray, bvh_node.boundsMin.xyz, bvh_node.boundsMax.xyz);
+                if (t > -INFINITY && t < closestMeshInstance) {
+                    closestMeshInstanceDistance = t;
+                    closestMeshInstance = node.first;
+                    result.mesh_primitive = int(mi.mesh_index);
+                    result.transform = mesh_instances[closestMeshInstance].transform;
+                }
+                if (stack_ptr == 0) {
+                    return result;
+                }
+            }
+        } else {
+            stack[stack_ptr++] = node.first + 1;
+            stack[stack_ptr++] = node.first + 0;
+        }
+    }
+
+    return result;
+}
+
 // returns info about the nearest point which the ray hits
 HitInfo CalculateRayCollision(Ray ray) {
     HitInfo closestHit;
@@ -369,13 +417,20 @@ HitInfo CalculateRayCollision(Ray ray) {
     // TODO: with finite camera projection this will be zfar
     closestHit.dst = INFINITY;
 
+    TLASIntersectResult tlas_results = TLASIntersect(ray);
+    if (tlas_results.mesh_primitive < 0) return closestHit;
+    closestHit.didHit = true;
+    closestHit.mat = mats[0];
+    return closestHit;
+
+    MeshPrimitive mp = mesh_primitives[tlas_results.mesh_primitive];
     uint stack[STACK_SIZE], stack_ptr = 0;
-    stack[stack_ptr++] = 0;
+    stack[stack_ptr++] = mp.bvh_index;
     int max_iterations = MAX_ITERATIONS;
     while (stack_ptr > 0 && max_iterations-- > 0) {
-        BVHnode node = nodes[stack[--stack_ptr]];
+        BVHnode node = bvh_nodes[stack[--stack_ptr]];
 
-        if (!RayBVHnodeIntersection(ray, node))
+        if (RayAABBIntersection(ray, node.boundsMin.xyz, node.boundsMax.xyz) == -INFINITY)
         {
             if (stack_ptr == 0) return closestHit;
             else continue;
@@ -388,8 +443,7 @@ HitInfo CalculateRayCollision(Ray ray) {
                 HitInfo hit = RayTriangleIntersection(ray, t);
                 if (hit.didHit && hit.dst < closestHit.dst) {
                     closestHit = hit;
-                    closestHit.mat = mats[primitives[t_index].mat];
-                    // closestHit.mat = Material(vec3(0.0, 0.0, 0.0), 0.0, hsv2rgb(vec3(float(stack_ptr) / float(bvhNodeCount), 0.5, 0.5)), 0.0);
+                    closestHit.mat = mats[mp.mat_index];
                 }
             }
         } else {
@@ -398,25 +452,6 @@ HitInfo CalculateRayCollision(Ray ray) {
             stack[stack_ptr++] = node.first + 0;
         }
     }
-
-    // iterate through all triangles
-    // for (int i = 0; i < 10; ++i) {
-    //     // BVHnode node = getNode(i);
-    //     Triangle t = triangles[i];
-    //     HitInfo hit = RayTriangleIntersection(ray, t);
-    //     if (hit.didHit && hit.dst < closestHit.dst) {
-    //         closestHit = hit;
-    //         closestHit.mat = Material(vec3(0.0, 0.0, 0.0), 0.0, vec3(1.0, 0.0, 0.0), 0.0);
-    //     }
-    // }
-
-    // iterate through all the spheres
-    // for (int i = 0; i < NUM_OF_SPHERES; ++i) {
-    //     HitInfo hit = RaySphereIntersection(ray, SPHERES[i]);
-    //     if (hit.didHit && hit.dst < closestHit.dst) {
-    //         closestHit = hit;
-    //     }
-    // }
 
     return closestHit;
 }
@@ -432,10 +467,10 @@ vec3 ReflectDirection(vec3 dir, vec3 normal) {
 vec3 GetColorForRay(Ray ray, inout uint rngState) {
     vec3 c = vec3(1.0, 1.0, 1.0);
     vec3 incomingLight = vec3(0.0, 0.0, 0.0);
-    // return hitInfo.didHit ? hitInfo.mat.albedo : vec3(0.0, 0.0, 0.0);
 
     for (int i = 0; i <= params.max_bounce_count; ++i) {
         HitInfo hitInfo = CalculateRayCollision(ray);
+        return hitInfo.didHit ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 0.0, 0.0);
         if (hitInfo.didHit) {
             // bounce
             ray.origin = hitInfo.hitPoint;
@@ -443,16 +478,17 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
             vec3 diffuseDir = DiffuseDirection(hitInfo.normal, rngState);
             vec3 reflectDir = ReflectDirection(ray.dir, hitInfo.normal);
 
-            ray.dir = mix(diffuseDir, reflectDir, hitInfo.mat.specularComponent);
+            ray.dir = diffuseDir;
+            // ray.dir = mix(diffuseDir, reflectDir, hitInfo.mat.specularComponent);
             ray.inv_dir = 1.0 / ray.dir;
 
             // calculate the potential light that the object is emitting
-            vec3 emittedLight = hitInfo.mat.emissionColor * hitInfo.mat.emissionStrength;
+            vec3 emittedLight = hitInfo.mat.emissive_factor;
 
             incomingLight += emittedLight * c;
 
             // tint the final color by hit point's material color
-            c *= hitInfo.mat.albedo;
+            c *= hitInfo.mat.base_color_factor.rgb;
         } else {
             // get color from environment
             // incomingLight += vec3(58, 58, 58) / 255 * c;

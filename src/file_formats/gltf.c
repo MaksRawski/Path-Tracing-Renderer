@@ -83,5 +83,8 @@ void load_gltf_scene(Scene *scene, const char *path) {
   // === glTF data loading ===
   traverse_nodes(path, data, scene, handle_node);
 
+  // === Building TLAS ===
+  build_tlas(scene);
+
   cgltf_free(data);
 }

@@ -5,9 +5,9 @@
 
 typedef struct {
   vec3 aabbMin, aabbMax;
-  // if `count` is 1 then this node is a leaf and `first` denotes
-  // the mesh index
-  unsigned int first, count;
+  // if node is a leaf then `first` denotes the mesh_instance index
+  // otherwise the left child of this node
+  unsigned int first, isLeaf;
   long _;
 } TLASNode;
 

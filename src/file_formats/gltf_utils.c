@@ -3,7 +3,9 @@
 #include "scene/bvh.h"
 #include "scene/material.h"
 #include "scene/mesh.h"
+#include "scene/tlas.h"
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -273,4 +275,41 @@ void handle_node(const char *path, const cgltf_data *data,
     handle_mesh_instance(path, data, node, scene);
   if (node->camera)
     handle_camera(path, node, scene);
+}
+
+static void set_tlas_node_bounds(const Scene *scene, TLASNode *node) {
+  node->aabbMin.x = INFINITY;
+  node->aabbMin.y = INFINITY;
+  node->aabbMin.z = INFINITY;
+
+  node->aabbMax.x = -INFINITY;
+  node->aabbMax.y = -INFINITY;
+  node->aabbMax.z = -INFINITY;
+
+  if (node->isLeaf) {
+    ASSERTQ_COND(node->first < scene->mesh_instances_count, node->first);
+    MeshInstance *mesh_instance = &scene->mesh_instances[node->first];
+    ASSERTQ_COND(mesh_instance->mesh_index < scene->meshes_count,
+                 mesh_instance->mesh_index);
+    Mesh *mesh = &scene->meshes[mesh_instance->mesh_index];
+
+    for (unsigned int p = mesh->mesh_primitive_first;
+         p < mesh->mesh_primitive_count; ++p) {
+      MeshPrimitive *mp = &scene->mesh_primitives[p];
+      ASSERTQ_COND(mp->BVH_index < scene->bvh_nodes_count, mp->BVH_index);
+      BVHNode *bvh = &scene->bvh_nodes[mp->BVH_index];
+      node->aabbMin = vec3_min(node->aabbMin, bvh->bound_min);
+      node->aabbMax = vec3_max(node->aabbMax, bvh->bound_max);
+    }
+  }
+}
+
+void build_tlas(Scene *scene) {
+  // TODO: do it properly
+  TLASNode root = {0};
+  root.first = 0;
+  root.isLeaf = 1;
+  set_tlas_node_bounds(scene, &root);
+
+  scene->tlas_nodes[scene->tlas_nodes_count++] = root;
 }

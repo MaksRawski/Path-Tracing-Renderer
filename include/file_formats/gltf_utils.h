@@ -26,4 +26,6 @@ void traverse_nodes(const char *path, const cgltf_data *data, Scene *scene,
 HandleNodeFn count_mesh_instances;
 HandleNodeFn handle_node;
 
+void build_tlas(Scene *scene);
+
 #endif // GLTF_UTILS_H_
