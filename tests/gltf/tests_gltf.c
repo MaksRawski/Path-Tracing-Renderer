@@ -67,5 +67,6 @@ bool test_load_gltf_scene__suzanne(void) {
 bool all_gltf_tests(void) {
   bool ok = true;
   TEST_RUN(test_load_gltf_scene__cube_camera, &ok);
+  TEST_RUN(test_load_gltf_scene__suzanne, &ok);
   return ok;
 }
