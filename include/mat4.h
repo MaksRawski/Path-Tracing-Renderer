@@ -2,10 +2,11 @@
 #define MAT4_H_
 
 #include "vec3.h"
-#include "vec3d.h"
+
 typedef float Mat4[16];
 
 vec3 Mat4_mul_vec3(const Mat4 mat, const vec3 vec);
-Vec3d Mat4_mul_Vec3d(const Mat4 mat, const Vec3d vec);
+
+void Mat4_trs_inverse(const Mat4 mat, Mat4 out_inverse);
 
 #endif // MAT4_H_
