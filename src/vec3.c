@@ -93,6 +93,6 @@ vec3 vec3_cross(vec3 a, vec3 b) {
 
 Vec3Str vec3_str(vec3 v) {
   Vec3Str res = {0};
-  snprintf(res.str, sizeof(res.str), "%+.3f %+.3f %+.3f", v.x, v.y, v.z);
+  snprintf(res.str, sizeof(res.str), "%+.15f %+.15f %+.15f", v.x, v.y, v.z);
   return res;
 }

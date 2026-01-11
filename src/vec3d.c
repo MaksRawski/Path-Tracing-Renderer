@@ -84,6 +84,6 @@ Vec3d Vec3d_cross(Vec3d a, Vec3d b) {
 
 Vec3dStr Vec3d_str(Vec3d v) {
   Vec3dStr res = {0};
-  sprintf(res.str, "%+.3f %+.3f %+.3f", v.x, v.y, v.z);
+  snprintf(res.str, sizeof(res.str), "%+.20f %+.20f %+.20f", v.x, v.y, v.z);
   return res;
 }
