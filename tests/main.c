@@ -4,11 +4,13 @@
 #include "file_watcher/tests_file_watcher.h"
 #include "gltf/tests_gltf.h"
 #include "gltf/tests_utils.h"
+#include "mat4/tests_mat4.h"
 #include "tests_macros.h"
 #include "yaw_pitch/tests_yawpitch.h"
 
 int main(void) {
   bool ok = true;
+  TESTS_RUN(all_mat4_tests, &ok);
   TESTS_RUN(all_yawpitch_tests, &ok);
   TESTS_RUN(all_gltf_tests, &ok);
   TESTS_RUN(all_gltf_utils_tests, &ok);
