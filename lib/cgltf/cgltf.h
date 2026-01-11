@@ -2137,7 +2137,7 @@ void cgltf_node_transform_local(const cgltf_node* node, cgltf_float* out_matrix)
 	{
 		memcpy(lm, node->matrix, sizeof(float) * 16);
 	}
-    else if (node->has_translation && node->has_rotation && node->has_scale)
+	else
 	{
 		float tx = node->translation[0];
 		float ty = node->translation[1];
@@ -2172,13 +2172,6 @@ void cgltf_node_transform_local(const cgltf_node* node, cgltf_float* out_matrix)
 		lm[14] = tz;
 		lm[15] = 1.f;
 	}
-    else
-    {
-      for (cgltf_size i = 0; i < 16; ++i)
-      {
-        lm[i] = i % 5 == 0 ? 1.0 : 0.0;
-      }
-    }
 }
 
 void cgltf_node_transform_world(const cgltf_node* node, cgltf_float* out_matrix)
