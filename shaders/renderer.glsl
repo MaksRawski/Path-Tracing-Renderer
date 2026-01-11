@@ -303,7 +303,7 @@ float RayAABBIntersection(Ray ray, vec3 aabbMin, vec3 aabbMax) {
     float tz1 = (aabbMin.z - ray.origin.z) * ray.inv_dir.z, tz2 = (aabbMax.z - ray.origin.z) * ray.inv_dir.z;
     tmin = max(tmin, min(tz1, tz2)), tmax = min(tmax, max(tz1, tz2));
 
-    return tmax >= tmin && tmin > 0 ? tmin : -INFINITY;
+    return (tmax >= tmin && tmin > 0) ? tmin : -INFINITY;
 }
 
 // TODO: this is just for debugging
