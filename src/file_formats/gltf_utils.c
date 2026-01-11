@@ -74,8 +74,10 @@ void build_bvh(Scene *scene, unsigned int tri_first, unsigned int tri_count) {
 // returns mat_index in Scene->mats for the provided mat
 unsigned int set_material(const char *path, const cgltf_data *data,
                           const cgltf_material *mat, Scene *scene) {
-  unsigned int mat_index = cgltf_material_index(data, mat);
+  // NOTE: must offset by 1 as we have a default material at index 0
+  unsigned int mat_index = cgltf_material_index(data, mat) + 1;
 
+  ASSERTQ_COND(mat_index < scene->mats_capacity, mat_index);
   if (scene->mats[mat_index]._set)
     return mat_index;
 
@@ -92,9 +94,9 @@ unsigned int set_material(const char *path, const cgltf_data *data,
   material.roughness_factor = mat->pbr_metallic_roughness.roughness_factor;
   memcpy(material.emissive_factor, mat->emissive_factor, 3);
 
-  scene->mats[mat_index + 1] = material;
+  scene->mats[mat_index] = material;
   ++scene->mats_count;
-  return mat_index + 1;
+  return mat_index;
 }
 
 // returns false in case of an invalid primitve
