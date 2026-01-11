@@ -1,9 +1,11 @@
 #include "file_formats/gltf_utils.h"
 #include "asserts.h"
+#include "mat4.h"
 #include "scene/bvh.h"
 #include "scene/material.h"
 #include "scene/mesh.h"
 #include "scene/tlas.h"
+#include "vec3.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -294,14 +296,18 @@ static void set_tlas_node_bounds(const Scene *scene, TLASNode *node) {
     ASSERTQ_COND(mesh_instance->mesh_index < scene->meshes_count,
                  mesh_instance->mesh_index);
     Mesh *mesh = &scene->meshes[mesh_instance->mesh_index];
+    Mat4 local_to_world_transform = {0};
+    Mat4_trs_inverse(mesh_instance->transform, local_to_world_transform);
 
     for (unsigned int p = mesh->mesh_primitive_first;
          p < mesh->mesh_primitive_count; ++p) {
       MeshPrimitive *mp = &scene->mesh_primitives[p];
       ASSERTQ_COND(mp->BVH_index < scene->bvh_nodes_count, mp->BVH_index);
       BVHNode *bvh = &scene->bvh_nodes[mp->BVH_index];
-      node->aabbMin = vec3_min(node->aabbMin, bvh->bound_min);
-      node->aabbMax = vec3_max(node->aabbMax, bvh->bound_max);
+      vec3 min_bound = Mat4_mul_vec3(local_to_world_transform, bvh->bound_min);
+      vec3 max_bound = Mat4_mul_vec3(local_to_world_transform, bvh->bound_max);
+      node->aabbMin = vec3_min(node->aabbMin, min_bound);
+      node->aabbMax = vec3_max(node->aabbMax, max_bound);
     }
   }
 }
