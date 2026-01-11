@@ -194,7 +194,7 @@ void handle_mesh_instance(const char *path, const cgltf_data *data,
   Mat4 transform;
   cgltf_node_transform_world(node, transform);
   MeshInstance mi = {0};
-  memcpy(&mi.transform, transform, sizeof(mi) / sizeof(float));
+  memcpy(&mi.transform, transform, 16 * sizeof(float));
   scene->mesh_instances[scene->mesh_instances_count++] = mi;
 }
 
