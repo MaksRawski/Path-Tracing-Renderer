@@ -137,8 +137,8 @@ BVHTriCount split_group(Triangle tris[], vec3 centroids[], BVHTriCount first,
       ++i;
     else {
       SWAP(tris[i], tris[j], Triangle);
-      SWAP(centroids[i], centroids[j], vec3);
-      SWAP(swaps_lut[i], swaps_lut[j], BVHTriCount)
+      SWAP(centroids[i - first], centroids[j - first], vec3);
+      SWAP(swaps_lut[i - first], swaps_lut[j - first], BVHTriCount)
 
       --j;
     }

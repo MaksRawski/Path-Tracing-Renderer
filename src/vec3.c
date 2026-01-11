@@ -1,4 +1,5 @@
 #include "vec3.h"
+#include "asserts.h"
 #include "epsilon.h"
 #include <float.h>
 #include <math.h>
@@ -59,6 +60,19 @@ void vec3_copy_from_float3(vec3 *const dst, const float *const src) {
   dst->x = src[0];
   dst->y = src[1];
   dst->z = src[2];
+}
+
+float vec3_get_by_axis(const vec3 *const v, int axis) {
+  switch (axis) {
+  case 0:
+    return v->x;
+  case 1:
+    return v->y;
+  case 2:
+    return v->z;
+  default:
+    UNREACHABLE();
+  }
 }
 
 bool vec3_eq(vec3 a, vec3 b) {
