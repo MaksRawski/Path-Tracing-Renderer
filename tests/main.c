@@ -1,3 +1,4 @@
+#include "asserts/test_asserts.h"
 #include "bvh/tests_apply_lut.h"
 #include "bvh/tests_bvh_build.h"
 #include "camera/tests_camera.h"
@@ -10,6 +11,7 @@
 
 int main(void) {
   bool ok = true;
+  TESTS_RUN(all_asserts_tests, &ok);
   TESTS_RUN(all_mat4_tests, &ok);
   TESTS_RUN(all_yawpitch_tests, &ok);
   TESTS_RUN(all_gltf_tests, &ok);
