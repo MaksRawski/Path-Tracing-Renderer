@@ -1,9 +1,7 @@
 #include "scene/camera.h"
+#include <math.h>
 #include "asserts.h"
 #include "rad_deg.h"
-#include "vec3d.h"
-#include "yawpitch.h"
-#include <math.h>
 
 // NOTE: right now this is basically assuming that up is (0,1,0)
 Camera Camera_new(vec3 pos, vec3 dir, vec3 up, float fov, float focal_length) {
@@ -30,12 +28,6 @@ float Camera_get_fov_deg(const Camera *self) {
 void Camera_set_fov_deg(Camera *self, float deg) {
   ASSERTQ_COND(deg > CAMERA_FOV_MIN_DEG && deg < CAMERA_FOV_MAX_DEG, deg);
   self->fov_rad = deg_to_rad(deg);
-}
-
-bool Camera_eq(Camera a, Camera b) {
-  return vec3_eq(a.pos, b.pos) && vec3_eq(a.dir, b.dir) &&
-         vec3_eq(a.up, b.up) && a.fov_rad == b.fov_rad &&
-         a.focal_length == b.focal_length;
 }
 
 void Camera_move_up(Camera *cam, float dir, float step_size) {
