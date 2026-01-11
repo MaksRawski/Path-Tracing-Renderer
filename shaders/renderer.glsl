@@ -23,16 +23,6 @@ struct Parameters {
     uint width, height;
 };
 
-// https://raytracing.github.io/books/RayTracingInOneWeekend.html#positionablecamera (12.2)
-struct Camera {
-    vec4 pos;
-    vec4 dir;
-    vec4 up;
-    // horizontal field of view in radians
-    float fov;
-    float focal_length;
-};
-
 struct Ray {
     vec3 origin;
     vec3 dir;
@@ -86,6 +76,16 @@ struct TLASNode {
     vec4 aabbMin, aabbMax;
     uint first, isLeaf;
     int _, _1;
+};
+
+// https://raytracing.github.io/books/RayTracingInOneWeekend.html#positionablecamera (12.2)
+struct Camera {
+    vec4 pos;
+    vec4 dir;
+    vec4 up;
+    // horizontal field of view in radians
+    float fov;
+    float focal_length;
 };
 
 layout(std430, binding = 1) readonly buffer trianglesBuffer {
