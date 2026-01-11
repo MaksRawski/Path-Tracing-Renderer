@@ -1,7 +1,6 @@
 #include "yawpitch.h"
 
 #include "asserts.h"
-#include "epsilon.h"
 #include "vec3d.h"
 #include <math.h>
 
@@ -11,10 +10,9 @@
 
 Vec3d YawPitch_to_dir(YawPitch yp) {
   // yaw is expected to be in range [0, 2*PI] but it'd be ok if it wasn't
-  ASSERTQ_COND(yp.yaw_rad >= 0 && yp.yaw_rad <= 2 * M_PI, yp.yaw_rad);
+  ASSERTQ_RANGE_IN(yp.yaw_rad, 0, 2 * M_PI);
   // this function explodes if pitch is out of exclusive range (-PI/2, PI/2)
-  ASSERTQ_COND(yp.pitch_rad > -M_PI / 2.0 && yp.pitch_rad < M_PI / 2.0,
-               yp.pitch_rad);
+  ASSERTQ_RANGE_EX(yp.pitch_rad, -M_PI / 2.0, M_PI / 2.0);
 
   // we can imagine (x, z) of dir as being a point on a unit circle
   // then as we want yp.yaw = 0 to correspond to x = 0 and z = -1
@@ -35,8 +33,8 @@ YawPitch YawPitch_from_dir(Vec3d dir) {
   //  x =  sin yaw
   //  z = -cos yaw
   // since the point described by these coordinates must lie on the unit circle,
-  ASSERTQ_COND(-1.0 <= dir.x && dir.x <= 1.0, dir.x);
-  ASSERTQ_COND(-1.0 <= dir.z && dir.z <= 1.0, dir.z);
+  ASSERTQ_RANGE_IN(dir.x, -1.0, 1.0);
+  ASSERTQ_RANGE_IN(dir.z, -1.0, 1.0);
   // knowing z allows us to already derive the absolute value of an angle,
   // then we only need to check the sign of x to know on which half is the
   // point.
@@ -60,10 +58,10 @@ YawPitch YawPitch_from_dir(Vec3d dir) {
     yaw = 2 * M_PI - yaw; // [PI, 2PI]
 
   // yaw must be in [0, 2PI]
-  ASSERTQ_COND(yaw > -BIG_EPSILON && yaw < 2.0 * M_PI + BIG_EPSILON, yaw);
+  ASSERTQ_RANGE_IN(yaw, 0, 2.0 * M_PI);
 
   double pitch = atan(dir.y); // [-PI / 2, PI / 2]
-  ASSERTQ_COND(pitch > (-M_PI / 2.0) && pitch < (M_PI / 2.0), pitch);
+  ASSERTQ_RANGE_IN(pitch, -M_PI / 2.0, M_PI / 2.0);
 
   return (YawPitch){.yaw_rad = yaw, .pitch_rad = pitch};
 }

@@ -1,11 +1,8 @@
 #include "tests_bvh_build.h"
 #include "asserts.h"
-#include "scene.h"
 #include "scene/bvh.h"
 #include "scene/triangle.h"
 #include "tests_macros.h"
-#include <stdio.h>
-#include <string.h>
 
 #define TRIS_COUNT(_t) sizeof(_t) / sizeof(Triangle)
 
@@ -25,8 +22,8 @@ bool test_bvh_build__basic(void) {
   ASSERT_EQ(nodes_count, 1);
   ASSERT_EQ(nodes[0].first, 0);
   ASSERT_EQ(nodes[0].count, 1);
-  ASSERT_VEC3_EQ(nodes[0].bound_min, vec3_new(0, 0, 0));
-  ASSERT_VEC3_EQ(nodes[0].bound_max, vec3_new(1, 1, 0));
+  ASSERT_VEC3_EQ(nodes[0].bound_min, vec3_new(0, 0, 0), FLT_EPSILON);
+  ASSERT_VEC3_EQ(nodes[0].bound_max, vec3_new(1, 1, 0), FLT_EPSILON);
 
   return true;
 }
@@ -54,14 +51,14 @@ bool test_bvh_build__offsets(void) {
     if (i == initial_nodes_offset) {
       ASSERT_EQ(nodes[i].first, 1);
       ASSERT_EQ(nodes[i].count, 1);
-      ASSERT_VEC3_EQ(nodes[i].bound_min, vec3_new(0, 0, 0));
-      ASSERT_VEC3_EQ(nodes[i].bound_max, vec3_new(1, 1, 0));
+      ASSERT_VEC3_EQ(nodes[i].bound_min, vec3_new(0, 0, 0), FLT_EPSILON);
+      ASSERT_VEC3_EQ(nodes[i].bound_max, vec3_new(1, 1, 0), FLT_EPSILON);
     } else {
       // other nodes should be untouched
       ASSERT_EQ(nodes[i].first, 0);
       ASSERT_EQ(nodes[i].count, 0);
-      ASSERT_VEC3_EQ(nodes[i].bound_min, vec3_new(0, 0, 0));
-      ASSERT_VEC3_EQ(nodes[i].bound_max, vec3_new(0, 0, 0));
+      ASSERT_VEC3_EQ(nodes[i].bound_min, vec3_new(0, 0, 0), FLT_EPSILON);
+      ASSERT_VEC3_EQ(nodes[i].bound_max, vec3_new(0, 0, 0), FLT_EPSILON);
     }
   }
 

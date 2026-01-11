@@ -2,6 +2,7 @@
 
 #include "renderer/inputs.h"
 #include "scene/camera.h"
+#include <float.h>
 
 #define STEP_SIZE_PER_FRAME 0.05
 #define CURSOR_SENSITIVITY 0.001
@@ -13,13 +14,13 @@ bool Inputs_update_camera(Camera *cam, const WindowEventsData *events,
   if (!GUIOverlay_is_focused()) {
     vec3 old_cam_pos = cam->pos;
     Camera_move(cam, Inputs_move(events), STEP_SIZE_PER_FRAME);
-    changed |= !vec3_eq(old_cam_pos, cam->pos);
+    changed |= !vec3_eq(old_cam_pos, cam->pos, FLT_EPSILON);
   }
 
   if (allow_rotate) {
     vec3 old_cam_dir = cam->dir;
     Camera_rotate(cam, Inputs_rotate(events));
-    changed |= !vec3_eq(old_cam_dir, cam->dir);
+    changed |= !vec3_eq(old_cam_dir, cam->dir, FLT_EPSILON);
   }
 
   return changed;

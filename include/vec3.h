@@ -30,7 +30,7 @@ float vec3_get_by_axis(const vec3 *const v, int axis);
 
 void vec3_copy_from_float3(vec3 *const dst, const float *const src);
 void vec3_swap(vec3 *a, vec3 *b);
-bool vec3_eq(vec3 a, vec3 b);
+bool vec3_eq(vec3 a, vec3 b, float epsilon);
 
 typedef struct {
   char str[64];

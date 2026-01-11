@@ -94,7 +94,6 @@ static inline void test_ASSERT_CUSTOM_FMT(void) {
                      #_cond, #_val, _val)
 
 #define ASSERT_COND(_cond, _val) return_if_not(ASSERT_COND_(_cond, _val))
-
 #define ASSERTQ_COND(_cond, _val) exit_if_not(ASSERT_COND_(_cond, _val))
 
 static inline void test_ASSERT_COND(void) {
@@ -108,16 +107,35 @@ static inline void test_ASSERT_COND(void) {
 bool ASSERT_EQ_impl(bool equal, const char *a_name, const char *b_name,
                     const char *file_name, int line_num,
                     const char *single_val_fmt, ...);
-
+#include "epsilon.h"
 #define ASSERT_EQF_(_a, _b, _epsilon)                                          \
-  ASSERT_EQ_impl(-(_epsilon) < (_a - _b) && (_a - _b) < (_epsilon), #_a, #_b,  \
-                 __FILE__, __LINE__, "%f", _a, _b)
+  ASSERT_EQ_impl(double_equal(_a, _b, _epsilon), #_a, #_b, __FILE__, __LINE__, \
+                 "%.15f", _a, _b)
 
 #define ASSERT_EQF(_a, _b, _epsilon)                                           \
   return_if_not(ASSERT_EQF_(_a, _b, _epsilon));
 
 #define ASSERTQ_EQF(_a, _b, _epsilon)                                          \
   exit_if_not(ASSERT_EQF_(_a, _b, _epsilon));
+
+#define ASSERT_RANGE_EX_(_v, _min, _max)                                       \
+  ASSERT_CUSTOM_FMT_(((_min) < (_v)) && ((_v) < (_max)),                       \
+                     "%s (%f) < %s (%f) < %s (%f)", #_min, _min, #_v, _v,      \
+                     #_max, _max)
+#define ASSERT_RANGE_IN_(_v, _min, _max)                                       \
+  ASSERT_CUSTOM_FMT_(((_min) <= (_v)) && ((_v) <= (_max)),                     \
+                     "%s (%f) <= %s (%f) <= %s (%f)", #_min, _min, #_v, _v,    \
+                     #_max, _max)
+
+#define ASSERT_RANGE_EX(_v, _min, _max)                                        \
+  return_if_not(ASSERT_RANGE_EX_(_v, _min, _max))
+#define ASSERTQ_RANGE_EX(_v, _min, _max)                                       \
+  exit_if_not(ASSERT_RANGE_EX_(_v, _min, _max))
+
+#define ASSERT_RANGE_IN(_v, _min, _max)                                        \
+  return_if_not(ASSERT_RANGE_IN_(_v, _min, _max))
+#define ASSERTQ_RANGE_IN(_v, _min, _max)                                       \
+  exit_if_not(ASSERT_RANGE_IN_(_v, _min, _max))
 
 #define ASSERT_EQ_(_a, _b)                                                     \
   ASSERT_EQ_impl(_a == _b, #_a, #_b, __FILE__, __LINE__,                       \
@@ -132,11 +150,19 @@ bool ASSERT_EQ_impl(bool equal, const char *a_name, const char *b_name,
   ASSERT_EQ_impl(_type##_eq(_a, _b), #_a, #_b, __FILE__, __LINE__, "%s",       \
                  _type##_str(_a).str, _type##_str(_b).str)
 
-#define ASSERT_VEC3_EQ(_a, _b) return_if_not(ASSERT_TYPE_EQ_(vec3, _a, _b));
-#define ASSERTQ_VEC3_EQ(_a, _b) exit_if_not(ASSERT_TYPE_EQ_(vec3, _a, _b));
+#define ASSERT_TYPE_EQ_EXTRA_ARGS(_type, _a, _b, ...)                          \
+  ASSERT_EQ_impl(_type##_eq(_a, _b, __VA_ARGS__), #_a, #_b, __FILE__,          \
+                 __LINE__, "%s", _type##_str(_a).str, _type##_str(_b).str)
 
-#define ASSERT_VEC3D_EQ(_a, _b) return_if_not(ASSERT_TYPE_EQ_(Vec3d, _a, _b));
-#define ASSERTQ_VEC3D_EQ(_a, _b) exit_if_not(ASSERT_TYPE_EQ_(Vec3d, _a, _b));
+#define ASSERT_VEC3_EQ(_a, _b, _epsilon)                                       \
+  return_if_not(ASSERT_TYPE_EQ_EXTRA_ARGS(vec3, _a, _b, _epsilon));
+#define ASSERTQ_VEC3_EQ(_a, _b, _epsilon)                                      \
+  exit_if_not(ASSERT_TYPE_EQ_EXTRA_ARGS(vec3, _a, _b, _epsilon));
+
+#define ASSERT_VEC3D_EQ(_a, _b, _epsilon)                                      \
+  return_if_not(ASSERT_TYPE_EQ_EXTRA_ARGS(Vec3d, _a, _b, _epsilon));
+#define ASSERTQ_VEC3D_EQ(_a, _b, _epsilon)                                     \
+  exit_if_not(ASSERT_TYPE_EQ_EXTRA_ARGS(Vec3d, _a, _b, _epsilon));
 
 // -----------------------------------------------------------------------------
 

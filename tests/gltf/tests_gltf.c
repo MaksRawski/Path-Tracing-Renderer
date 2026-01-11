@@ -15,15 +15,19 @@ bool test_load_gltf_scene__cube_camera(void) {
   ASSERT_EQ(scene.meshes_count, 1);
   ASSERT_EQ(scene.mesh_instances_count, 1);
 
-  ASSERT_VEC3_EQ(scene.camera.pos, vec3_new(-3.8, 0, 0));
-  ASSERT_VEC3_EQ(scene.camera.dir, vec3_new(1, 0, 0));
+  ASSERT_VEC3_EQ(scene.camera.pos, vec3_new(-3.8, 0, 0), FLT_EPSILON);
+  ASSERT_VEC3_EQ(scene.camera.dir, vec3_new(1, 0, 0), FLT_EPSILON);
   ASSERT_EQF(scene.camera.fov_rad, deg_to_rad(39.6), FLT_EPSILON);
 
-  ASSERT_COND(0 < scene.bvh_nodes_count &&
-                  scene.bvh_nodes_count < 0 * 2 * scene.triangles_count,
-              scene.bvh_nodes_count);
-  ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_min, vec3_new(-1, -1, -1));
-  ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_max, vec3_new(1, 1, 1));
+  ASSERT_RANGE_EX(0, scene.bvh_nodes_count, 2 * scene.triangles_count);
+  ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_min, vec3_new(-1, -1, -1),
+                 FLT_EPSILON);
+  ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_max, vec3_new(1, 1, 1), FLT_EPSILON);
+
+  ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_min, scene.tlas_nodes[0].aabbMin,
+                 FLT_EPSILON);
+  ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_max, scene.tlas_nodes[0].aabbMax,
+                 FLT_EPSILON);
 
   return true;
 }
@@ -39,9 +43,9 @@ bool test_load_gltf_scene__suzanne(void) {
   ASSERT_EQ(scene.mesh_instances_count, 1);
 
   Camera default_cam = Camera_default();
-  ASSERT_VEC3_EQ(scene.camera.pos, default_cam.pos);
-  ASSERT_VEC3_EQ(scene.camera.dir, default_cam.dir);
-  ASSERT_VEC3_EQ(scene.camera.up, default_cam.up);
+  ASSERT_VEC3_EQ(scene.camera.pos, default_cam.pos, FLT_EPSILON);
+  ASSERT_VEC3_EQ(scene.camera.dir, default_cam.dir, FLT_EPSILON);
+  ASSERT_VEC3_EQ(scene.camera.up, default_cam.up, FLT_EPSILON);
   ASSERT_EQF(scene.camera.fov_rad, default_cam.fov_rad, FLT_EPSILON);
   ASSERT_EQF(scene.camera.focal_length, default_cam.focal_length, FLT_EPSILON);
 

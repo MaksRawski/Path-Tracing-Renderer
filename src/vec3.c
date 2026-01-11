@@ -75,10 +75,9 @@ float vec3_get_by_axis(const vec3 *const v, int axis) {
   }
 }
 
-bool vec3_eq(vec3 a, vec3 b) {
-  return double_equal(a.x, b.x, FLT_EPSILON) &&
-         double_equal(a.y, b.y, FLT_EPSILON) &&
-         double_equal(a.z, b.z, FLT_EPSILON);
+bool vec3_eq(vec3 a, vec3 b, float epsilon) {
+  return double_equal(a.x, b.x, epsilon) && double_equal(a.y, b.y, epsilon) &&
+         double_equal(a.z, b.z, epsilon);
 }
 
 float vec3_mag(vec3 v) { return sqrtf(v.x * v.x + v.y * v.y + v.z * v.z); }

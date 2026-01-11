@@ -66,10 +66,9 @@ void Vec3d_copy_from_double3(Vec3d *const dst, const double *const src) {
   dst->z = src[2];
 }
 
-bool Vec3d_eq(Vec3d a, Vec3d b) {
-  return double_equal(a.x, b.x, DBL_EPSILON) &&
-         double_equal(a.y, b.y, DBL_EPSILON) &&
-         double_equal(a.z, b.z, DBL_EPSILON);
+bool Vec3d_eq(Vec3d a, Vec3d b, double epsilon) {
+  return double_equal(a.x, b.x, epsilon) && double_equal(a.y, b.y, epsilon) &&
+         double_equal(a.z, b.z, epsilon);
 }
 
 double Vec3d_mag(Vec3d v) { return sqrt(v.x * v.x + v.y * v.y + v.z * v.z); }

@@ -13,10 +13,8 @@ static inline bool is_zero(double x) {
   return -DBL_EPSILON < x && x < DBL_EPSILON;
 }
 
-#define BIG_EPSILON 10 * FLT_EPSILON
-
-static inline bool double_equal(double a, double b, double epsilon) {
-  return fabs(a - b) <= ((fabs(a) > fabs(b) ? fabs(b) : fabs(a)) * epsilon);
+static inline bool double_equal(double a, double b, double relative_epsilon) {
+  return fabs(a - b) <= ((fabs(a) > fabs(b) ? fabs(b) : fabs(a)) * relative_epsilon);
 }
 
 #endif // EPSILON_H_

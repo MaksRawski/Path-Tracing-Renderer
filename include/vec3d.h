@@ -4,9 +4,6 @@
 #include "vec3.h"
 #include <stdbool.h>
 
-// NOTE: Adding padding, so that this structure
-// takes up exactly 16 bytes. It's necessary as OpenGL
-// requires that all array elements in SSBOs are multiples of 16 bytes.
 typedef struct {
   double x, y, z;
 } Vec3d;
@@ -28,17 +25,12 @@ Vec3d Vec3d_cross(Vec3d a, Vec3d b);
 
 double Vec3d_mag(Vec3d v);
 
-// 0 - x, 1 - y, 2 - z
-static inline double Vec3d_get_by_axis(const Vec3d *const v, int axis) {
-  return ((const double *)v)[axis];
-}
-
 void Vec3d_copy_from_double3(Vec3d *const dst, const double *const src);
 void Vec3d_swap(Vec3d *a, Vec3d *b);
-bool Vec3d_eq(Vec3d a, Vec3d b);
+bool Vec3d_eq(Vec3d a, Vec3d b, double epsilon);
 
 typedef struct {
-  char str[64];
+  char str[256];
 } Vec3dStr;
 
 Vec3dStr Vec3d_str(Vec3d v);
