@@ -62,6 +62,24 @@ void exit_if_not_impl(bool cond);
       long: _pre "%ld" _post,                                                  \
       char *: _pre "%s" _post)
 
+#include <stdio.h>
+#define DBG(_v) fprintf(stderr, GENERIC_FMT_STRING(#_v " = ", _v, "\n"), _v);
+
+#define DBG2(_v1, _v2)                                                         \
+  do {                                                                         \
+    fprintf(stderr, GENERIC_FMT_STRING(#_v1 " = ", _v1, ", "), _v1);           \
+    fprintf(stderr, GENERIC_FMT_STRING(#_v2 " = ", _v2, "\n"), _v2);           \
+  } while (0);
+
+#define DBG3(_v1, _v2, _v3)                                                    \
+  do {                                                                         \
+    fprintf(stderr, GENERIC_FMT_STRING(#_v1 " = ", _v1, ", "), _v1);           \
+    fprintf(stderr, GENERIC_FMT_STRING(#_v2 " = ", _v2, ", "), _v2);           \
+    fprintf(stderr, GENERIC_FMT_STRING(#_v3 " = ", _v3, "\n"), _v3);           \
+  } while (0);
+
+#define DBG_VEC3(_v) fprintf(stderr, #_v " = %s\n", vec3_str(_v).str);
+
 static const char *_GENERIC_FMT_STRING__EXAMPLE =
     GENERIC_FMT_STRING("abc ", 1.337, " def"); // equivalent to abc %f def
 
