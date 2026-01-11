@@ -324,7 +324,6 @@ TLASIntersectResult TLASIntersect(Ray ray) {
     uint closestMeshInstance = 0;
     float closestMeshInstanceDistance = INFINITY;
     result.mesh_primitive = -1;
-    // result.transform = mat4();
 
     uint stack[STACK_SIZE], stack_ptr = 0;
     stack[stack_ptr++] = 0;
@@ -342,7 +341,7 @@ TLASIntersectResult TLASIntersect(Ray ray) {
                 offsetRay.dir = vec3(mi.transform * vec4(ray.origin, 0.0));
                 offsetRay.inv_dir = 1.0 / offsetRay.dir;
                 float t = RayAABBIntersection(ray, bvh_node.boundsMin.xyz, bvh_node.boundsMax.xyz);
-                if (t > -INFINITY && t < closestMeshInstance) {
+                if (t > -INFINITY && t < closestMeshInstanceDistance) {
                     closestMeshInstanceDistance = t;
                     closestMeshInstance = node.first;
                     result.mesh_primitive = int(mi.mesh_index);
@@ -369,10 +368,7 @@ HitInfo CalculateRayCollision(Ray ray) {
     closestHit.dst = INFINITY;
 
     TLASIntersectResult tlas_results = TLASIntersect(ray);
-    if (tlas_results.mesh_primitive < 0) return closestHit;
-    closestHit.didHit = true;
-    closestHit.mat = mats[0];
-    return closestHit;
+    if (tlas_results.mesh_primitive == -1) return closestHit;
 
     MeshPrimitive mp = mesh_primitives[tlas_results.mesh_primitive];
     uint stack[STACK_SIZE], stack_ptr = 0;
@@ -421,7 +417,7 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
 
     for (int i = 0; i <= params.max_bounce_count; ++i) {
         HitInfo hitInfo = CalculateRayCollision(ray);
-        return hitInfo.didHit ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 0.0, 0.0);
+        // return hitInfo.didHit ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 0.0, 0.0);
         if (hitInfo.didHit) {
             // bounce
             ray.origin = hitInfo.hitPoint;
