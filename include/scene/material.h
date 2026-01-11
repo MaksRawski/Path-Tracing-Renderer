@@ -5,14 +5,14 @@
 
 // *_texture are set to MAX_INT if no texture is used
 typedef struct {
-  unsigned int base_color_texture;
   float base_color_factor[4];
+  float emissive_factor[3];
+  unsigned int base_color_texture;
   unsigned int metallic_texture;
   float metallic_factor;
   unsigned int roughness_texture;
   float roughness_factor;
   unsigned int emissive_texture;
-  float emissive_factor[3];
   // HACK: since padding must be added anyway, this allows to determine whether
   // a given material has been set, or just allocated.
   long _set;

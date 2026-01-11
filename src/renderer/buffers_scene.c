@@ -13,13 +13,13 @@ RendererBuffersScene RendererBuffersScene_new(const Scene *scene) {
                 scene->bvh_nodes_count * sizeof(BVHNode), 2);
   generate_ssbo(&self.mats_ssbo, scene->mats,
                 scene->mats_count * sizeof(Material), 3);
-  generate_ssbo(&self.mesh_primitives_ssbo, &scene->mesh_primitives,
+  generate_ssbo(&self.mesh_primitives_ssbo, scene->mesh_primitives,
                 scene->mesh_primitives_count * sizeof(MeshPrimitive), 4);
-  generate_ssbo(&self.meshes_ssbo, &scene->meshes,
+  generate_ssbo(&self.meshes_ssbo, scene->meshes,
                 scene->meshes_count * sizeof(Mesh), 5);
-  generate_ssbo(&self.mesh_instances_ssbo, &scene->mesh_instances,
+  generate_ssbo(&self.mesh_instances_ssbo, scene->mesh_instances,
                 scene->mesh_instances_count * sizeof(MeshInstance), 6);
-  generate_ssbo(&self.tlas_nodes_ssbo, &scene->tlas_nodes,
+  generate_ssbo(&self.tlas_nodes_ssbo, scene->tlas_nodes,
                 scene->tlas_nodes_count * sizeof(TLASNode), 7);
   generate_ssbo(&self.camera_ssbo, &scene->camera, sizeof(Camera), 8);
 

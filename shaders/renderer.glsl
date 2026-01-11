@@ -53,14 +53,14 @@ struct BVHnode {
 };
 
 struct Material {
-    uint base_color_texture;
     vec4 base_color_factor;
+    vec3 emissive_factor;
+    uint base_color_texture;
     uint metallic_texture;
     float metallic_factor;
     uint roughness_texture;
     float roughness_factor;
     uint emissive_texture;
-    vec3 emissive_factor;
     int _, _1;
 };
 
