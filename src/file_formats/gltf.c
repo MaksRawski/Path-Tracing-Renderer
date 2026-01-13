@@ -75,7 +75,7 @@ void load_gltf_scene(Scene *scene, const char *path) {
 
   scene->camera = Camera_default();
 
-  if (scene->mats_count == 0) {
+  if (scene->last_mat_index == 0) {
     scene->mats[0] = Material_default();
   }
   scene->mats_count = 1;

@@ -100,7 +100,7 @@ static unsigned int set_material(const char *path, const cgltf_data *data,
   memcpy(material.emissive_factor, mat->emissive_factor, 3);
 
   scene->mats[mat_index] = material;
-  ++scene->mats_count;
+  scene->last_mat_index = MAX(scene->last_mat_index, mat_index);
   return mat_index;
 }
 
