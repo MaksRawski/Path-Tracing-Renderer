@@ -118,11 +118,57 @@ bool test_load_gltf_scene__transformed_cube(void) {
   return true;
 }
 
+bool test_load_gltf_scene__two_cubes__copies(void) {
+  Scene scene = {0};
+  load_gltf_scene(&scene, "tests/gltf/two-cubes.glb");
+
+  ASSERT_EQ(scene.triangles_count, 24);
+  ASSERT_EQ(scene.mats_count, 1); // just the default material
+  ASSERT_EQ(scene.mesh_primitives_count, 2);
+  ASSERT_EQ(scene.meshes_count, 2);
+  ASSERT_EQ(scene.mesh_instances_count, 2);
+
+  ASSERT_RANGE_EX(scene.bvh_nodes_count, 0, 2 * scene.triangles_count);
+
+  ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_min, vec3_new(-1, -1, -1),
+                 FLT_EPSILON);
+  ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_max, vec3_new(1, 1, 1), FLT_EPSILON);
+
+  ASSERT_VEC3_EQ(scene.tlas_nodes[0].aabbMin, vec3_new(-2, 0, -2), FLT_EPSILON);
+  ASSERT_VEC3_EQ(scene.tlas_nodes[0].aabbMax, vec3_new(2, 4, 2), FLT_EPSILON);
+
+  return true;
+}
+
+bool test_load_gltf_scene__two_cubes__instancing(void) {
+  Scene scene = {0};
+  load_gltf_scene(&scene, "tests/gltf/two-cubes-instancing.glb");
+
+  ASSERT_EQ(scene.triangles_count, 12);
+  ASSERT_EQ(scene.mats_count, 1); // just the default material
+  ASSERT_EQ(scene.mesh_primitives_count, 1);
+  ASSERT_EQ(scene.meshes_count, 1);
+  ASSERT_EQ(scene.mesh_instances_count, 2);
+
+  ASSERT_RANGE_EX(scene.bvh_nodes_count, 0, 2 * scene.triangles_count);
+
+  ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_min, vec3_new(-1, -1, -1),
+                 FLT_EPSILON);
+  ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_max, vec3_new(1, 1, 1), FLT_EPSILON);
+
+  ASSERT_VEC3_EQ(scene.tlas_nodes[0].aabbMin, vec3_new(-2, 0, -2), FLT_EPSILON);
+  ASSERT_VEC3_EQ(scene.tlas_nodes[0].aabbMax, vec3_new(2, 4, 2), FLT_EPSILON);
+
+  return true;
+}
+
 bool all_gltf_tests(void) {
   bool ok = true;
   TEST_RUN(test_load_gltf_scene__cube_camera, &ok);
   TEST_RUN(test_load_gltf_scene__suzanne, &ok);
   TEST_RUN(test_load_gltf_scene__rotated_cube, &ok);
   TEST_RUN(test_load_gltf_scene__transformed_cube, &ok);
+  TEST_RUN(test_load_gltf_scene__two_cubes__copies, &ok);
+  TEST_RUN(test_load_gltf_scene__two_cubes__instancing, &ok);
   return ok;
 }
