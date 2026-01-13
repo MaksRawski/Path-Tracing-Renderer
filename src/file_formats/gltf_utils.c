@@ -165,6 +165,18 @@ static bool append_mesh_primitive(const char *path, const cgltf_data *data,
   return true;
 }
 
+static void set_mesh_bounds(Mesh *mesh, const Scene *scene) {
+  mesh->aabbMin = vec3_new(INFINITY, INFINITY, INFINITY);
+  mesh->aabbMax = vec3_new(-INFINITY, -INFINITY, -INFINITY);
+
+  for (cgltf_size p = mesh->mesh_primitive_first;
+       p < (mesh->mesh_primitive_first + mesh->mesh_primitive_count); ++p) {
+    BVHNode *bvh = &scene->bvh_nodes[scene->mesh_primitives[p].BVH_index];
+    mesh->aabbMin = vec3_min(mesh->aabbMin, bvh->bound_min);
+    mesh->aabbMax = vec3_max(mesh->aabbMax, bvh->bound_max);
+  }
+}
+
 // returns false in case a mesh doesn't have any valid primitives
 static bool set_mesh(const char *path, const cgltf_data *data,
                      const cgltf_mesh *gltf_mesh, unsigned int index,
@@ -181,6 +193,7 @@ static bool set_mesh(const char *path, const cgltf_data *data,
 
   ASSERTQ_COND(index < scene->meshes_capacity, index);
   Mesh mesh = {.mesh_primitive_first = first, .mesh_primitive_count = count};
+  set_mesh_bounds(&mesh, scene);
   scene->meshes[index] = mesh;
   scene->last_mesh_index = MAX(scene->last_mesh_index, index);
 
