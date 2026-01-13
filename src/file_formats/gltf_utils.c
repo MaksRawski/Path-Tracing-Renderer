@@ -231,12 +231,16 @@ void traverse_nodes_children(const char *path, const cgltf_data *data,
   }
 }
 
+// NOTE: the `scene` root-level property is ignored and all the `scenes` are loaded
 void traverse_nodes(const char *path, const cgltf_data *data, Scene *scene,
                     HandleNodeFn handle_node_fn) {
-  for (cgltf_size n = 0; n < data->nodes_count; ++n) {
-    cgltf_node *node = data->nodes + n;
-    handle_node_fn(path, data, node, scene);
-    traverse_nodes_children(path, data, node, scene, handle_node_fn);
+  for (cgltf_size s = 0; s < data->scenes_count; ++s) {
+    cgltf_scene *gltf_scene = &data->scenes[s];
+    for (cgltf_size n = 0; n < gltf_scene->nodes_count; ++n) {
+      cgltf_node *node = gltf_scene->nodes[n];
+      handle_node_fn(path, data, node, scene);
+      traverse_nodes_children(path, data, node, scene, handle_node_fn);
+    }
   }
 }
 

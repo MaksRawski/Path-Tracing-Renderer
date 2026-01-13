@@ -16,10 +16,13 @@ bool test_traverse_nodes__count_mesh_instances(void) {
 #define L2_NODES 4
 #define L3_NODES 3
 
-  data->nodes = Arena_alloc(&arena, L1_NODES * sizeof(cgltf_node));
-  data->nodes_count = L1_NODES;
+  data->scenes = Arena_alloc(&arena, sizeof(cgltf_scene));
+  data->scenes_count = 1;
+  data->scenes[0].nodes = Arena_alloc(&arena, L1_NODES * sizeof(cgltf_node *));
+  data->scenes[0].nodes_count = L1_NODES;
   for (size_t n = 0; n < L1_NODES; ++n) {
-    cgltf_node *l1_node = data->nodes + n;
+    cgltf_node *l1_node = Arena_alloc(&arena, sizeof(cgltf_node));
+    data->scenes[0].nodes[n] = l1_node;
     l1_node->mesh = Arena_alloc(&arena, sizeof(cgltf_mesh));
 
     l1_node->children = Arena_alloc(&arena, L2_NODES * sizeof(cgltf_node *));
