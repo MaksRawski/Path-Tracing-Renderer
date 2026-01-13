@@ -199,6 +199,7 @@ void handle_mesh_instance(const char *path, const cgltf_data *data,
   cgltf_node_transform_world(node, transform);
   MeshInstance mi = {0};
   memcpy(&mi.transform, transform, 16 * sizeof(float));
+  Mat4_trs_inverse(mi.transform, mi.inv_transform);
   scene->mesh_instances[scene->mesh_instances_count++] = mi;
 }
 
@@ -281,6 +282,29 @@ void handle_node(const char *path, const cgltf_data *data,
     handle_camera(path, node, scene);
 }
 
+// NOTE: only sets bounds_min and bounds_max on the returned node
+BVHNode transform_bvh_node_bounds(const BVHNode *node, Mat4 transform) {
+  vec3 min = node->bound_min;
+  vec3 max = node->bound_max;
+
+  vec3 corners[8] = {
+      vec3_new(min.x, min.y, min.z), vec3_new(min.x, min.y, max.z),
+      vec3_new(min.x, max.y, min.z), vec3_new(min.x, max.y, max.z),
+      vec3_new(max.x, min.y, min.z), vec3_new(max.x, min.y, max.z),
+      vec3_new(max.x, max.y, min.z), vec3_new(max.x, max.y, max.z),
+  };
+
+  vec3 new_min = vec3_new(INFINITY, INFINITY, INFINITY);
+  vec3 new_max = vec3_new(-INFINITY, -INFINITY, -INFINITY);
+  for (unsigned int c = 0; c < 8; ++c) {
+    vec3 transformed = Mat4_mul_vec3(transform, corners[c]);
+    new_min = vec3_min(new_min, transformed);
+    new_max = vec3_max(new_max, transformed);
+  }
+
+  return (BVHNode){.bound_min = new_min, .bound_max = new_max};
+}
+
 static void set_tlas_node_bounds(const Scene *scene, TLASNode *node) {
   node->aabbMin.x = INFINITY;
   node->aabbMin.y = INFINITY;
@@ -296,18 +320,16 @@ static void set_tlas_node_bounds(const Scene *scene, TLASNode *node) {
     ASSERTQ_COND(mesh_instance->mesh_index < scene->meshes_count,
                  mesh_instance->mesh_index);
     Mesh *mesh = &scene->meshes[mesh_instance->mesh_index];
-    Mat4 local_to_world_transform = {0};
-    Mat4_trs_inverse(mesh_instance->transform, local_to_world_transform);
 
     for (unsigned int p = mesh->mesh_primitive_first;
          p < mesh->mesh_primitive_count; ++p) {
       MeshPrimitive *mp = &scene->mesh_primitives[p];
       ASSERTQ_COND(mp->BVH_index < scene->bvh_nodes_count, mp->BVH_index);
       BVHNode *bvh = &scene->bvh_nodes[mp->BVH_index];
-      vec3 min_bound = Mat4_mul_vec3(local_to_world_transform, bvh->bound_min);
-      vec3 max_bound = Mat4_mul_vec3(local_to_world_transform, bvh->bound_max);
-      node->aabbMin = vec3_min(node->aabbMin, min_bound);
-      node->aabbMax = vec3_max(node->aabbMax, max_bound);
+      BVHNode transformed_bvh =
+          transform_bvh_node_bounds(bvh, mesh_instance->transform);
+      node->aabbMin = vec3_min(node->aabbMin, transformed_bvh.bound_min);
+      node->aabbMax = vec3_max(node->aabbMax, transformed_bvh.bound_max);
     }
   }
 }

@@ -23,8 +23,10 @@ typedef struct {
 } Mesh;
 
 typedef struct {
-  // world to local transformation
+  // local to world transformation
   Mat4 transform;
+  // world to local transformation
+  Mat4 inv_transform;
   unsigned int mesh_index;
   long _;
 } MeshInstance;
