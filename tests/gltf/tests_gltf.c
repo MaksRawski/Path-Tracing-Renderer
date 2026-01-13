@@ -72,7 +72,7 @@ bool test_load_gltf_scene__suzanne(void) {
   return true;
 }
 
-bool test_load_gltf_scene__rotated_cube__tlas(void) {
+bool test_load_gltf_scene__rotated_cube(void) {
   Scene scene = {0};
   load_gltf_scene(&scene, "tests/gltf/rotated-cube.glb");
 
@@ -90,8 +90,30 @@ bool test_load_gltf_scene__rotated_cube__tlas(void) {
 
   ASSERT_VEC3_EQ(scene.tlas_nodes[0].aabbMin,
                  vec3_new(0, -sqrt(2.0), -sqrt(2.0)), FLT_EPSILON);
-  ASSERT_VEC3_EQ(scene.tlas_nodes[0].aabbMin, vec3_new(2, sqrt(2.0), sqrt(2.0)),
+  ASSERT_VEC3_EQ(scene.tlas_nodes[0].aabbMax, vec3_new(2, sqrt(2.0), sqrt(2.0)),
                  FLT_EPSILON);
+
+  return true;
+}
+
+bool test_load_gltf_scene__transformed_cube(void) {
+  Scene scene = {0};
+  load_gltf_scene(&scene, "tests/gltf/transformed-cube.glb");
+
+  ASSERT_EQ(scene.triangles_count, 12);
+  ASSERT_EQ(scene.mats_count, 1); // just the default material
+  ASSERT_EQ(scene.mesh_primitives_count, 1);
+  ASSERT_EQ(scene.meshes_count, 1);
+  ASSERT_EQ(scene.mesh_instances_count, 1);
+
+  ASSERT_RANGE_EX(scene.bvh_nodes_count, 0, 2 * scene.triangles_count);
+
+  ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_min, vec3_new(-1, -1, -1),
+                 FLT_EPSILON);
+  ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_max, vec3_new(1, 1, 1), FLT_EPSILON);
+
+  ASSERT_VEC3_EQ(scene.tlas_nodes[0].aabbMin, vec3_new(2.9, 1.4, -11.6), 0.1);
+  ASSERT_VEC3_EQ(scene.tlas_nodes[0].aabbMax, vec3_new(7.1, 6.6, -6.4), 0.1);
 
   return true;
 }
@@ -100,6 +122,7 @@ bool all_gltf_tests(void) {
   bool ok = true;
   TEST_RUN(test_load_gltf_scene__cube_camera, &ok);
   TEST_RUN(test_load_gltf_scene__suzanne, &ok);
-  TEST_RUN(test_load_gltf_scene__rotated_cube__tlas, &ok);
+  TEST_RUN(test_load_gltf_scene__rotated_cube, &ok);
+  TEST_RUN(test_load_gltf_scene__transformed_cube, &ok);
   return ok;
 }
