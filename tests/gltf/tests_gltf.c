@@ -10,7 +10,7 @@ bool test_load_gltf_scene__cube_camera(void) {
   load_gltf_scene(&scene, "tests/gltf/cube-camera.glb");
 
   ASSERT_EQ(scene.triangles_count, 12);
-  ASSERT_EQ(scene.last_mat_index, 1); // just the default material
+  ASSERT_EQ(scene.last_mat_index, 0); 
   ASSERT_EQ(scene.mesh_primitives_count, 1);
   ASSERT_EQ(scene.last_mesh_index, 0);
   ASSERT_EQ(scene.mesh_instances_count, 1);
@@ -37,7 +37,7 @@ bool test_load_gltf_scene__suzanne(void) {
   load_gltf_scene(&scene, "tests/gltf/suzanne.glb");
 
   ASSERT_EQ(scene.triangles_count, 968);
-  ASSERT_EQ(scene.last_mat_index, 1); // just the default material
+  ASSERT_EQ(scene.last_mat_index, 0);
   ASSERT_EQ(scene.mesh_primitives_count, 1);
   ASSERT_EQ(scene.last_mesh_index, 0);
   ASSERT_EQ(scene.mesh_instances_count, 1);
@@ -77,7 +77,7 @@ bool test_load_gltf_scene__rotated_cube(void) {
   load_gltf_scene(&scene, "tests/gltf/rotated-cube.glb");
 
   ASSERT_EQ(scene.triangles_count, 12);
-  ASSERT_EQ(scene.last_mat_index, 1); // just the default material
+  ASSERT_EQ(scene.last_mat_index, 0); 
   ASSERT_EQ(scene.mesh_primitives_count, 1);
   ASSERT_EQ(scene.last_mesh_index, 0);
   ASSERT_EQ(scene.mesh_instances_count, 1);
@@ -101,7 +101,7 @@ bool test_load_gltf_scene__transformed_cube(void) {
   load_gltf_scene(&scene, "tests/gltf/transformed-cube.glb");
 
   ASSERT_EQ(scene.triangles_count, 12);
-  ASSERT_EQ(scene.last_mat_index, 1); // just the default material
+  ASSERT_EQ(scene.last_mat_index, 0);
   ASSERT_EQ(scene.mesh_primitives_count, 1);
   ASSERT_EQ(scene.last_mesh_index, 0);
   ASSERT_EQ(scene.mesh_instances_count, 1);
@@ -123,7 +123,7 @@ bool test_load_gltf_scene__two_cubes__copies(void) {
   load_gltf_scene(&scene, "tests/gltf/two-cubes.glb");
 
   ASSERT_EQ(scene.triangles_count, 24);
-  ASSERT_EQ(scene.last_mat_index, 1); // just the default material
+  ASSERT_EQ(scene.last_mat_index, 0); 
   ASSERT_EQ(scene.mesh_primitives_count, 2);
   ASSERT_EQ(scene.last_mesh_index, 1);
   ASSERT_EQ(scene.mesh_instances_count, 2);
@@ -145,7 +145,7 @@ bool test_load_gltf_scene__two_cubes__instancing(void) {
   load_gltf_scene(&scene, "tests/gltf/two-cubes-instancing.glb");
 
   ASSERT_EQ(scene.triangles_count, 12);
-  ASSERT_EQ(scene.last_mat_index, 1); // just the default material
+  ASSERT_EQ(scene.last_mat_index, 0); 
   ASSERT_EQ(scene.mesh_primitives_count, 1);
   ASSERT_EQ(scene.last_mesh_index, 0);
   ASSERT_EQ(scene.mesh_instances_count, 2);

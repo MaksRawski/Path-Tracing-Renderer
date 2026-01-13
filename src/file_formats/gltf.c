@@ -78,7 +78,6 @@ void load_gltf_scene(Scene *scene, const char *path) {
   if (scene->last_mat_index == 0) {
     scene->mats[0] = Material_default();
   }
-  scene->mats_count = 1;
 
   // === glTF data loading ===
   traverse_nodes(path, data, scene, handle_node);
