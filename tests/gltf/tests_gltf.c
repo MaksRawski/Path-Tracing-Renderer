@@ -12,7 +12,7 @@ bool test_load_gltf_scene__cube_camera(void) {
   ASSERT_EQ(scene.triangles_count, 12);
   ASSERT_EQ(scene.mats_count, 1); // just the default material
   ASSERT_EQ(scene.mesh_primitives_count, 1);
-  ASSERT_EQ(scene.meshes_count, 1);
+  ASSERT_EQ(scene.last_mesh_index, 0);
   ASSERT_EQ(scene.mesh_instances_count, 1);
 
   ASSERT_VEC3_EQ(scene.camera.pos, vec3_new(-3.8, 0, 0), FLT_EPSILON);
@@ -39,7 +39,7 @@ bool test_load_gltf_scene__suzanne(void) {
   ASSERT_EQ(scene.triangles_count, 968);
   ASSERT_EQ(scene.mats_count, 1); // just the default material
   ASSERT_EQ(scene.mesh_primitives_count, 1);
-  ASSERT_EQ(scene.meshes_count, 1);
+  ASSERT_EQ(scene.last_mesh_index, 0);
   ASSERT_EQ(scene.mesh_instances_count, 1);
 
   Camera default_cam = Camera_default();
@@ -79,7 +79,7 @@ bool test_load_gltf_scene__rotated_cube(void) {
   ASSERT_EQ(scene.triangles_count, 12);
   ASSERT_EQ(scene.mats_count, 1); // just the default material
   ASSERT_EQ(scene.mesh_primitives_count, 1);
-  ASSERT_EQ(scene.meshes_count, 1);
+  ASSERT_EQ(scene.last_mesh_index, 0);
   ASSERT_EQ(scene.mesh_instances_count, 1);
 
   ASSERT_RANGE_EX(scene.bvh_nodes_count, 0, 2 * scene.triangles_count);
@@ -103,7 +103,7 @@ bool test_load_gltf_scene__transformed_cube(void) {
   ASSERT_EQ(scene.triangles_count, 12);
   ASSERT_EQ(scene.mats_count, 1); // just the default material
   ASSERT_EQ(scene.mesh_primitives_count, 1);
-  ASSERT_EQ(scene.meshes_count, 1);
+  ASSERT_EQ(scene.last_mesh_index, 0);
   ASSERT_EQ(scene.mesh_instances_count, 1);
 
   ASSERT_RANGE_EX(scene.bvh_nodes_count, 0, 2 * scene.triangles_count);
@@ -125,7 +125,7 @@ bool test_load_gltf_scene__two_cubes__copies(void) {
   ASSERT_EQ(scene.triangles_count, 24);
   ASSERT_EQ(scene.mats_count, 1); // just the default material
   ASSERT_EQ(scene.mesh_primitives_count, 2);
-  ASSERT_EQ(scene.meshes_count, 2);
+  ASSERT_EQ(scene.last_mesh_index, 1);
   ASSERT_EQ(scene.mesh_instances_count, 2);
 
   ASSERT_RANGE_EX(scene.bvh_nodes_count, 0, 2 * scene.triangles_count);
@@ -147,7 +147,7 @@ bool test_load_gltf_scene__two_cubes__instancing(void) {
   ASSERT_EQ(scene.triangles_count, 12);
   ASSERT_EQ(scene.mats_count, 1); // just the default material
   ASSERT_EQ(scene.mesh_primitives_count, 1);
-  ASSERT_EQ(scene.meshes_count, 1);
+  ASSERT_EQ(scene.last_mesh_index, 0);
   ASSERT_EQ(scene.mesh_instances_count, 2);
 
   ASSERT_RANGE_EX(scene.bvh_nodes_count, 0, 2 * scene.triangles_count);

@@ -69,7 +69,7 @@ void load_gltf_scene(Scene *scene, const char *path) {
   scene->triangles_count = 0;
   scene->bvh_nodes_count = 0;
   scene->mesh_primitives_count = 0;
-  scene->meshes_count = 0;
+  scene->last_mesh_index = 0;
   scene->mesh_instances_count = 0;
   scene->tlas_nodes_count = 0;
 

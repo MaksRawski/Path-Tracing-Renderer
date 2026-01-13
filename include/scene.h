@@ -21,7 +21,7 @@ typedef struct {
   MeshInstance *mesh_instances;
   TLASNode *tlas_nodes;
   unsigned int triangles_count, bvh_nodes_count, mats_count,
-      mesh_primitives_count, meshes_count, mesh_instances_count,
+      mesh_primitives_count, last_mesh_index, mesh_instances_count,
       tlas_nodes_count;
   size_t triangles_capacity, bvh_nodes_capacity, mats_capacity,
       mesh_primitives_capacity, meshes_capacity, mesh_instances_capacity,

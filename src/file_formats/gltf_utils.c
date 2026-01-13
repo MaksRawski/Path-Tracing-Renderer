@@ -12,6 +12,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define MAX(_x, _y) _x > _y ? _x : _y
+
 const char *cgltf_result_str(cgltf_result res) {
   switch (res) {
   case cgltf_result_success:
@@ -174,11 +176,10 @@ bool set_mesh(const char *path, const cgltf_data *data,
   if (count == 0)
     return false;
 
-  // NOTE: because indices have to be the same as in the glTF file, the count is
-  // NOT the same thing as the index of the first free element
-  scene->meshes[index] =
-      (Mesh){.mesh_primitive_first = first, .mesh_primitive_count = count};
-  ++scene->meshes_count;
+  ASSERTQ_COND(index < scene->meshes_capacity, index);
+  Mesh mesh = {.mesh_primitive_first = first, .mesh_primitive_count = count};
+  scene->meshes[index] = mesh;
+  scene->last_mesh_index = MAX(scene->last_mesh_index, index);
 
   return true;
 }
@@ -321,7 +322,7 @@ static void set_tlas_node_bounds(const Scene *scene, TLASNode *node) {
   if (node->isLeaf) {
     ASSERTQ_COND(node->first < scene->mesh_instances_count, node->first);
     MeshInstance *mesh_instance = &scene->mesh_instances[node->first];
-    ASSERTQ_COND(mesh_instance->mesh_index < scene->meshes_count,
+    ASSERTQ_COND(mesh_instance->mesh_index <= scene->last_mesh_index,
                  mesh_instance->mesh_index);
     Mesh *mesh = &scene->meshes[mesh_instance->mesh_index];
 
