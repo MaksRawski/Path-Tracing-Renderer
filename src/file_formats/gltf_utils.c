@@ -64,7 +64,8 @@ void gltf_assert(bool cond, const char *path, const char *err_msg_fmt, ...) {
 static unsigned int *swaps_lut;
 static size_t swaps_lut_capacity = 0;
 
-void build_bvh(Scene *scene, unsigned int tri_first, unsigned int tri_count) {
+static void build_bvh(Scene *scene, unsigned int tri_first,
+                      unsigned int tri_count) {
   if (swaps_lut_capacity < tri_count) {
     swaps_lut_capacity = next_power_of_2(tri_count);
     swaps_lut = malloc(tri_count * sizeof(BVHTriCount));
@@ -76,8 +77,8 @@ void build_bvh(Scene *scene, unsigned int tri_first, unsigned int tri_count) {
 }
 
 // returns mat_index in Scene->mats for the provided mat
-unsigned int set_material(const char *path, const cgltf_data *data,
-                          const cgltf_material *mat, Scene *scene) {
+static unsigned int set_material(const char *path, const cgltf_data *data,
+                                 const cgltf_material *mat, Scene *scene) {
   // NOTE: must offset by 1 as we have a default material at index 0
   unsigned int mat_index = cgltf_material_index(data, mat) + 1;
 
@@ -104,8 +105,9 @@ unsigned int set_material(const char *path, const cgltf_data *data,
 }
 
 // returns false in case of an invalid primitve
-bool append_mesh_primitive(const char *path, const cgltf_data *data,
-                           const cgltf_primitive *gltf_prim, Scene *scene) {
+static bool append_mesh_primitive(const char *path, const cgltf_data *data,
+                                  const cgltf_primitive *gltf_prim,
+                                  Scene *scene) {
   cgltf_accessor *pos_accessor = NULL;
   cgltf_accessor *norm_accessor = NULL;
   cgltf_size attrs_count = gltf_prim->attributes_count;
@@ -164,8 +166,9 @@ bool append_mesh_primitive(const char *path, const cgltf_data *data,
 }
 
 // returns false in case a mesh doesn't have any valid primitives
-bool set_mesh(const char *path, const cgltf_data *data,
-              const cgltf_mesh *gltf_mesh, unsigned int index, Scene *scene) {
+static bool set_mesh(const char *path, const cgltf_data *data,
+                     const cgltf_mesh *gltf_mesh, unsigned int index,
+                     Scene *scene) {
   cgltf_size first = scene->mesh_primitives_count;
   cgltf_size count = 0;
   for (cgltf_size p = 0; p < gltf_mesh->primitives_count; ++p) {
@@ -184,12 +187,12 @@ bool set_mesh(const char *path, const cgltf_data *data,
   return true;
 }
 
-bool is_mesh_initialized(const Scene *scene, unsigned int mesh_index) {
+static bool is_mesh_initialized(const Scene *scene, unsigned int mesh_index) {
   return scene->meshes[mesh_index].mesh_primitive_count > 0;
 }
 
-void handle_mesh_instance(const char *path, const cgltf_data *data,
-                          const cgltf_node *node, Scene *scene) {
+static void handle_mesh_instance(const char *path, const cgltf_data *data,
+                                 const cgltf_node *node, Scene *scene) {
   cgltf_mesh *mesh = node->mesh;
   unsigned int mesh_index = cgltf_mesh_index(data, node->mesh);
 
@@ -222,9 +225,9 @@ void alloc_if_necessary(void **dst, size_t count, size_t element_size,
   }
 }
 
-void traverse_nodes_children(const char *path, const cgltf_data *data,
-                             const cgltf_node *node, Scene *scene,
-                             HandleNodeFn handle_node_fn) {
+static void traverse_nodes_children(const char *path, const cgltf_data *data,
+                                    const cgltf_node *node, Scene *scene,
+                                    HandleNodeFn handle_node_fn) {
   for (cgltf_size c = 0; c < node->children_count; ++c) {
     handle_node_fn(path, data, node->children[c], scene);
     traverse_nodes_children(path, data, node->children[c], scene,
@@ -256,7 +259,8 @@ void count_mesh_instances(const char *path, const cgltf_data *data,
     ++scene->mesh_instances_count;
 }
 
-void handle_camera(const char *path, const cgltf_node *node, Scene *scene) {
+static void handle_camera(const char *path, const cgltf_node *node,
+                          Scene *scene) {
   gltf_assert(node->camera->type == cgltf_camera_type_perspective, path,
               "Only perspective camera type is supported! Got type %d\n",
               node->camera->type);
@@ -288,7 +292,7 @@ void handle_node(const char *path, const cgltf_data *data,
 }
 
 // NOTE: only sets bounds_min and bounds_max on the returned node
-BVHNode transform_bvh_node_bounds(const BVHNode *node, Mat4 transform) {
+static BVHNode transform_bvh_node_bounds(const BVHNode *node, Mat4 transform) {
   vec3 min = node->bound_min;
   vec3 max = node->bound_max;
 
