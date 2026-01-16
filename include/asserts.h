@@ -127,8 +127,10 @@ bool ASSERT_EQ_impl(bool equal, const char *a_name, const char *b_name,
                     const char *single_val_fmt, ...);
 #include "epsilon.h"
 #define ASSERT_EQF_(_a, _b, _epsilon)                                          \
-  ASSERT_EQ_impl(double_equal(_a, _b, _epsilon), #_a, #_b, __FILE__, __LINE__, \
-                 "%.15f", _a, _b)
+  ASSERT_EQ_impl(_Generic(((_a) - (_b)),                                       \
+                     float: float_equal(_a, _b, _epsilon),                     \
+                     double: double_equal(_a, _b, _epsilon)),                  \
+                 #_a, #_b, __FILE__, __LINE__, "%.15f", _a, _b)
 
 #define ASSERT_EQF(_a, _b, _epsilon)                                           \
   return_if_not(ASSERT_EQF_(_a, _b, _epsilon));
@@ -156,7 +158,7 @@ bool ASSERT_EQ_impl(bool equal, const char *a_name, const char *b_name,
   exit_if_not(ASSERT_RANGE_IN_(_v, _min, _max))
 
 #define ASSERT_EQ_(_a, _b)                                                     \
-  ASSERT_EQ_impl(_a == _b, #_a, #_b, __FILE__, __LINE__,                       \
+  ASSERT_EQ_impl((_a) == (_b), #_a, #_b, __FILE__, __LINE__,                       \
                  GENERIC_FMT_STRING("", _a, ""), _a, _b)
 
 #define ASSERT_EQ(_a, _b) return_if_not(ASSERT_EQ_(_a, _b));

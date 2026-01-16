@@ -14,7 +14,13 @@ static inline bool is_zero(double x) {
 }
 
 static inline bool double_equal(double a, double b, double relative_epsilon) {
-  return fabs(a - b) <= ((fabs(a) > fabs(b) ? fabs(b) : fabs(a)) * relative_epsilon);
+  return fabs(a - b) <=
+         ((fabs(a) > fabs(b) ? fabs(a) : fabs(b)) * relative_epsilon);
+}
+
+static inline bool float_equal(float a, float b, float relative_epsilon) {
+  return fabsf(a - b) <=
+         ((fabsf(a) > fabsf(b) ? fabsf(b) : fabsf(a)) * relative_epsilon);
 }
 
 #endif // EPSILON_H_
