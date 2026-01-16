@@ -39,6 +39,20 @@ void BVH_delete(BVH *self) {
   self = NULL;
 }
 
+static void find_best_split_longest_mid(const BVHNode *node, int *axis,
+                                        float *split_pos) {
+  vec3 extent = vec3_sub(node->bound_max, node->bound_min);
+  // find out longest axis
+  *axis = 0;
+  if (extent.y > extent.x)
+    *axis = 1;
+  if (extent.z > extent.y && extent.z > extent.x)
+    *axis = 2;
+
+  *split_pos = vec3_get_by_axis(&extent, *axis) * 0.5f +
+               vec3_get_by_axis(&node->bound_min, *axis);
+}
+
 // recursively subdivide a node until there are 2 primitives left
 void subdivide(BVHNode nodes[], int node_idx, Triangle tris[], vec3 centroids[],
                BVHNodeCount *nodes_offset, BVHTriCount swaps_lut[]) {
@@ -50,17 +64,9 @@ void subdivide(BVHNode nodes[], int node_idx, Triangle tris[], vec3 centroids[],
     return;
 
   // 1. determine axis and position of a split
-  // (right now choosing the longest axis and splitting in half)
-  vec3 extent = vec3_sub(node->bound_max, node->bound_min);
-  // find out longest axis
-  int axis = 0;
-  if (extent.y > extent.x)
-    axis = 1;
-  if (extent.z > extent.y && extent.z > extent.x)
-    axis = 2;
-
-  float split_pos = vec3_get_by_axis(&extent, axis) * 0.5f +
-                    vec3_get_by_axis(&node->bound_min, axis);
+  int axis;
+  float split_pos;
+  find_best_split_longest_mid(node, &axis, &split_pos);
 
   // 2.
   BVHTriCount split_index = split_group(
