@@ -322,7 +322,6 @@ struct TLASIntersectResult {
 
 TLASIntersectResult TLASIntersect(Ray ray) {
     TLASIntersectResult result;
-    uint closestMeshInstance = 0;
     float closestMeshInstanceDistance = INFINITY;
     result.mesh_primitive = -1;
 

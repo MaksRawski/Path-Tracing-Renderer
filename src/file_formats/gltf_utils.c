@@ -250,7 +250,8 @@ static void traverse_nodes_children(const char *path, const cgltf_data *data,
   }
 }
 
-// NOTE: the `scene` root-level property is ignored and all the `scenes` are loaded
+// NOTE: the `scene` root-level property is ignored and all the `scenes` are
+// loaded
 void traverse_nodes(const char *path, const cgltf_data *data, Scene *scene,
                     HandleNodeFn handle_node_fn) {
   for (cgltf_size s = 0; s < data->scenes_count; ++s) {
@@ -262,10 +263,6 @@ void traverse_nodes(const char *path, const cgltf_data *data, Scene *scene,
     }
   }
 }
-
-void handle_camera(const char *path, const cgltf_node *node, Scene *scene);
-void handle_mesh_instance(const char *path, const cgltf_data *data,
-                          const cgltf_node *node, Scene *scene);
 
 void count_mesh_instances(const char *path, const cgltf_data *data,
                           const cgltf_node *node, Scene *scene) {
@@ -304,66 +301,4 @@ void handle_node(const char *path, const cgltf_data *data,
     handle_mesh_instance(path, data, node, scene);
   if (node->camera)
     handle_camera(path, node, scene);
-}
-
-// NOTE: only sets bounds_min and bounds_max on the returned node
-static BVHNode transform_bvh_node_bounds(const BVHNode *node, Mat4 transform) {
-  vec3 min = node->bound_min;
-  vec3 max = node->bound_max;
-
-  vec3 corners[8] = {
-      vec3_new(min.x, min.y, min.z), vec3_new(min.x, min.y, max.z),
-      vec3_new(min.x, max.y, min.z), vec3_new(min.x, max.y, max.z),
-      vec3_new(max.x, min.y, min.z), vec3_new(max.x, min.y, max.z),
-      vec3_new(max.x, max.y, min.z), vec3_new(max.x, max.y, max.z),
-  };
-
-  vec3 new_min = vec3_new(INFINITY, INFINITY, INFINITY);
-  vec3 new_max = vec3_new(-INFINITY, -INFINITY, -INFINITY);
-  for (unsigned int c = 0; c < 8; ++c) {
-    vec3 transformed = Mat4_mul_vec3(transform, corners[c]);
-    new_min = vec3_min(new_min, transformed);
-    new_max = vec3_max(new_max, transformed);
-  }
-
-  return (BVHNode){.bound_min = new_min, .bound_max = new_max};
-}
-
-static void set_tlas_node_bounds(const Scene *scene, TLASNode *node) {
-  node->aabbMin.x = INFINITY;
-  node->aabbMin.y = INFINITY;
-  node->aabbMin.z = INFINITY;
-
-  node->aabbMax.x = -INFINITY;
-  node->aabbMax.y = -INFINITY;
-  node->aabbMax.z = -INFINITY;
-
-  if (node->isLeaf) {
-    ASSERTQ_COND(node->first < scene->mesh_instances_count, node->first);
-    MeshInstance *mesh_instance = &scene->mesh_instances[node->first];
-    ASSERTQ_COND(mesh_instance->mesh_index <= scene->last_mesh_index,
-                 mesh_instance->mesh_index);
-    Mesh *mesh = &scene->meshes[mesh_instance->mesh_index];
-
-    for (unsigned int p = mesh->mesh_primitive_first;
-         p < mesh->mesh_primitive_count; ++p) {
-      MeshPrimitive *mp = &scene->mesh_primitives[p];
-      ASSERTQ_COND(mp->BVH_index < scene->bvh_nodes_count, mp->BVH_index);
-      BVHNode *bvh = &scene->bvh_nodes[mp->BVH_index];
-      BVHNode transformed_bvh =
-          transform_bvh_node_bounds(bvh, mesh_instance->transform);
-      node->aabbMin = vec3_min(node->aabbMin, transformed_bvh.bound_min);
-      node->aabbMax = vec3_max(node->aabbMax, transformed_bvh.bound_max);
-    }
-  }
-}
-
-void build_tlas(Scene *scene) {
-  // TODO: do it properly
-  TLASNode root = {0};
-  root.first = 0;
-  root.isLeaf = 1;
-  set_tlas_node_bounds(scene, &root);
-
-  scene->tlas_nodes[scene->tlas_nodes_count++] = root;
 }
