@@ -7,7 +7,7 @@
 
 bool test_load_gltf_scene__cube_camera(void) {
   Scene scene = {0};
-  load_gltf_scene(&scene, "tests/gltf/cube-camera.glb");
+  load_gltf_scene(&scene, "tests/gltf/scenes/cube-camera.glb");
 
   ASSERT_EQ(scene.triangles_count, 12);
   ASSERT_EQ(scene.last_mat_index, 0); 
@@ -34,7 +34,7 @@ bool test_load_gltf_scene__cube_camera(void) {
 
 bool test_load_gltf_scene__suzanne(void) {
   Scene scene = {0};
-  load_gltf_scene(&scene, "tests/gltf/suzanne.glb");
+  load_gltf_scene(&scene, "tests/gltf/scenes/suzanne.glb");
 
   ASSERT_EQ(scene.triangles_count, 968);
   ASSERT_EQ(scene.last_mat_index, 0);
@@ -74,7 +74,7 @@ bool test_load_gltf_scene__suzanne(void) {
 
 bool test_load_gltf_scene__rotated_cube(void) {
   Scene scene = {0};
-  load_gltf_scene(&scene, "tests/gltf/rotated-cube.glb");
+  load_gltf_scene(&scene, "tests/gltf/scenes/rotated-cube.glb");
 
   ASSERT_EQ(scene.triangles_count, 12);
   ASSERT_EQ(scene.last_mat_index, 0); 
@@ -98,7 +98,7 @@ bool test_load_gltf_scene__rotated_cube(void) {
 
 bool test_load_gltf_scene__transformed_cube(void) {
   Scene scene = {0};
-  load_gltf_scene(&scene, "tests/gltf/transformed-cube.glb");
+  load_gltf_scene(&scene, "tests/gltf/scenes/transformed-cube.glb");
 
   ASSERT_EQ(scene.triangles_count, 12);
   ASSERT_EQ(scene.last_mat_index, 0);
@@ -120,7 +120,7 @@ bool test_load_gltf_scene__transformed_cube(void) {
 
 bool test_load_gltf_scene__two_cubes__copies(void) {
   Scene scene = {0};
-  load_gltf_scene(&scene, "tests/gltf/two-cubes.glb");
+  load_gltf_scene(&scene, "tests/gltf/scenes/two-cubes.glb");
 
   ASSERT_EQ(scene.triangles_count, 24);
   ASSERT_EQ(scene.last_mat_index, 0); 
@@ -142,7 +142,7 @@ bool test_load_gltf_scene__two_cubes__copies(void) {
 
 bool test_load_gltf_scene__two_cubes__instancing(void) {
   Scene scene = {0};
-  load_gltf_scene(&scene, "tests/gltf/two-cubes-instancing.glb");
+  load_gltf_scene(&scene, "tests/gltf/scenes/two-cubes-instancing.glb");
 
   ASSERT_EQ(scene.triangles_count, 12);
   ASSERT_EQ(scene.last_mat_index, 0); 
@@ -162,6 +162,28 @@ bool test_load_gltf_scene__two_cubes__instancing(void) {
   return true;
 }
 
+bool test_load_gltf_scene__cube_from_planes(void) {
+  Scene scene = {0};
+  load_gltf_scene(&scene, "tests/gltf/scenes/cube-from-planes.glb");
+
+  ASSERT_EQ(scene.triangles_count, 2);
+  ASSERT_EQ(scene.last_mat_index, 0); 
+  ASSERT_EQ(scene.mesh_primitives_count, 1);
+  ASSERT_EQ(scene.last_mesh_index, 0);
+  ASSERT_EQ(scene.mesh_instances_count, 6);
+
+  ASSERT_RANGE_EX(scene.bvh_nodes_count, 0, 2 * scene.triangles_count);
+
+  ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_min, vec3_new(-1, 0, -1),
+                 FLT_EPSILON);
+  ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_max, vec3_new(1, 0, 1), FLT_EPSILON);
+
+  ASSERT_VEC3_EQ(scene.tlas_nodes[0].aabbMin, vec3_new(-1, 0, -1), 0.1);
+  ASSERT_VEC3_EQ(scene.tlas_nodes[0].aabbMax, vec3_new(1, 2, 1), FLT_EPSILON);
+
+  return true;
+}
+
 bool all_gltf_tests(void) {
   bool ok = true;
   TEST_RUN(test_load_gltf_scene__cube_camera, &ok);
@@ -170,5 +192,6 @@ bool all_gltf_tests(void) {
   TEST_RUN(test_load_gltf_scene__transformed_cube, &ok);
   TEST_RUN(test_load_gltf_scene__two_cubes__copies, &ok);
   TEST_RUN(test_load_gltf_scene__two_cubes__instancing, &ok);
+  TEST_RUN(test_load_gltf_scene__cube_from_planes, &ok);
   return ok;
 }
