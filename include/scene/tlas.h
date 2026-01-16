@@ -2,18 +2,17 @@
 #define SCENE_TLAS_H_
 
 #include "vec3.h"
+#include <stdint.h>
 
+// if left and right are 0 then this node is a leaf
 typedef struct {
   vec3 aabbMin, aabbMax;
-  // if node is a leaf then `first` denotes the mesh_instance index
-  // otherwise the left child of this node
-  unsigned int first, isLeaf;
+  uint16_t left;
+  uint16_t right;
+
+  // valid only if node is a leaf
+  unsigned int mesh_instance;
   long _;
 } TLASNode;
-
-typedef struct {
-  TLASNode *nodes;
-  unsigned int count;
-} TLAS;
 
 #endif // SCENE_TLAS_H_

@@ -74,7 +74,8 @@ struct MeshInstance {
 
 struct TLASNode {
     vec4 aabbMin, aabbMax;
-    uint first, isLeaf;
+    uint leftRight;
+    uint mesh_instance;
     int _, _1;
 };
 
@@ -330,26 +331,27 @@ TLASIntersectResult TLASIntersect(Ray ray) {
     int max_iterations = MAX_ITERATIONS;
     while (stack_ptr > 0 && max_iterations-- > 0) {
         TLASNode node = tlas_nodes[stack[--stack_ptr]];
-        if (node.isLeaf == 1) {
-            MeshInstance mi = mesh_instances[node.first];
+        uint node_left = node.leftRight >> 16;
+        uint node_right = node.leftRight & uint(0xFFFF);
+        if (node.leftRight == 0) {
+            MeshInstance mi = mesh_instances[node.mesh_instance];
             Mesh m = meshes[mi.mesh_index];
-			Ray offsetRay = ray;
-			offsetRay.origin = vec3(mi.inv_transform * vec4(ray.origin, 1.0));
-			offsetRay.dir = vec3(mi.inv_transform * vec4(ray.dir, 0.0));
-			offsetRay.inv_dir = 1.0 / offsetRay.dir;
+            Ray offsetRay = ray;
+            offsetRay.origin = vec3(mi.inv_transform * vec4(ray.origin, 1.0));
+            offsetRay.dir = vec3(mi.inv_transform * vec4(ray.dir, 0.0));
+            offsetRay.inv_dir = 1.0 / offsetRay.dir;
 
-			// TODO: this makes even the floor disappear
-			// if (RayAABBIntersection(offsetRay, m.aabbMin.xyz, m.aabbMax.xyz) == -INFINITY) {
-			// 	continue;
-			// }
+            // TODO: this makes even the floor disappear
+            // if (RayAABBIntersection(offsetRay, m.aabbMin.xyz, m.aabbMax.xyz) == -INFINITY) {
+            //     continue;
+            // }
             for (uint p = m.mesh_primitives_first; p < m.mesh_primitives_count; ++p) {
                 MeshPrimitive mp = mesh_primitives[p];
                 BVHnode bvh_node = bvh_nodes[mp.bvh_index];
                 float t = RayAABBIntersection(offsetRay, bvh_node.boundsMin.xyz, bvh_node.boundsMax.xyz);
                 if (t > -INFINITY && t < closestMeshInstanceDistance) {
                     closestMeshInstanceDistance = t;
-                    closestMeshInstance = node.first;
-                    result.mesh_primitive = int(mi.mesh_index);
+                    result.mesh_primitive = int(p);
                     result.transform = mi.transform;
                     result.inv_transform = mi.inv_transform;
                 }
@@ -358,8 +360,8 @@ TLASIntersectResult TLASIntersect(Ray ray) {
                 }
             }
         } else {
-            stack[stack_ptr++] = node.first + 1;
-            stack[stack_ptr++] = node.first + 0;
+            stack[stack_ptr++] = node_right;
+            stack[stack_ptr++] = node_left;
         }
     }
 

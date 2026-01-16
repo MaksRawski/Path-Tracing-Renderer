@@ -2,6 +2,7 @@
 #include "cgltf.h"
 #include "file_formats/gltf_utils.h"
 #include "scene.h"
+#include "scene/build_tlas.h"
 #include "scene/material.h"
 
 #include <stdbool.h>
@@ -83,7 +84,7 @@ void load_gltf_scene(Scene *scene, const char *path) {
   traverse_nodes(path, data, scene, handle_node);
 
   // === Building TLAS ===
-  build_tlas(scene);
+  Scene__build_tlas(scene);
 
   cgltf_free(data);
 }
