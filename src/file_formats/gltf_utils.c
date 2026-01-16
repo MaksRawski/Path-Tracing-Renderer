@@ -68,6 +68,8 @@ static void build_bvh(Scene *scene, unsigned int tri_first,
                       unsigned int tri_count) {
   if (swaps_lut_capacity < tri_count) {
     swaps_lut_capacity = next_power_of_2(tri_count);
+    if (swaps_lut != NULL)
+      free(swaps_lut);
     swaps_lut = malloc(tri_count * sizeof(BVHTriCount));
   }
 
