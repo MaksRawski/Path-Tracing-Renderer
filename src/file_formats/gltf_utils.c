@@ -95,11 +95,21 @@ static unsigned int set_material(const char *path, const cgltf_data *data,
       mat->name, mat_index);
 
   Material material = Material_default();
-  memcpy(material.base_color_factor,
-         mat->pbr_metallic_roughness.base_color_factor, 4);
+
+  material.base_color_factor[0] = mat->pbr_metallic_roughness.base_color_factor[0];
+  material.base_color_factor[1] = mat->pbr_metallic_roughness.base_color_factor[1];
+  material.base_color_factor[2] = mat->pbr_metallic_roughness.base_color_factor[2];
+  material.base_color_factor[3] = mat->pbr_metallic_roughness.base_color_factor[3];
+
   material.metallic_factor = mat->pbr_metallic_roughness.metallic_factor;
   material.roughness_factor = mat->pbr_metallic_roughness.roughness_factor;
-  memcpy(material.emissive_factor, mat->emissive_factor, 3);
+
+  float emissive_strength = mat->has_emissive_strength
+                                ? mat->emissive_strength.emissive_strength
+                                : 1.0;
+  material.emissive_factor[0] = mat->emissive_factor[0] * emissive_strength;
+  material.emissive_factor[1] = mat->emissive_factor[1] * emissive_strength;
+  material.emissive_factor[2] = mat->emissive_factor[2] * emissive_strength;
 
   scene->mats[mat_index] = material;
   scene->last_mat_index = MAX(scene->last_mat_index, mat_index);
