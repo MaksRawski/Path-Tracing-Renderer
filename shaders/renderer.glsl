@@ -316,55 +316,56 @@ vec3 hsv2rgb(vec3 c)
 }
 
 struct TLASIntersectResult {
-    int mesh_primitive;
-    mat4 transform, inv_transform;
+    int mesh_instance;
 };
 
 TLASIntersectResult TLASIntersect(Ray ray) {
     TLASIntersectResult result;
     float closestMeshInstanceDistance = INFINITY;
-    result.mesh_primitive = -1;
-
+    result.mesh_instance = -1;
     uint stack[STACK_SIZE], stack_ptr = 0;
     stack[stack_ptr++] = 0;
-    int max_iterations = MAX_ITERATIONS;
-    while (stack_ptr > 0 && max_iterations-- > 0) {
+    int max_iterations_left = MAX_ITERATIONS;
+    while (stack_ptr > 0 && max_iterations_left-- > 0) {
         TLASNode node = tlas_nodes[stack[--stack_ptr]];
         uint node_left = node.leftRight >> 16;
         uint node_right = node.leftRight & uint(0xFFFF);
-        if (node.leftRight == 0) {
-            MeshInstance mi = mesh_instances[node.mesh_instance];
-            Mesh m = meshes[mi.mesh_index];
-            Ray offsetRay = ray;
-            offsetRay.origin = vec3(mi.inv_transform * vec4(ray.origin, 1.0));
-            offsetRay.dir = vec3(mi.inv_transform * vec4(ray.dir, 0.0));
-            offsetRay.inv_dir = 1.0 / offsetRay.dir;
-
-            // TODO: this makes even the floor disappear
-            // if (RayAABBIntersection(offsetRay, m.aabbMin.xyz, m.aabbMax.xyz) == -INFINITY) {
-            //     continue;
-            // }
-            for (uint p = m.mesh_primitives_first; p < m.mesh_primitives_count; ++p) {
-                MeshPrimitive mp = mesh_primitives[p];
-                BVHnode bvh_node = bvh_nodes[mp.bvh_index];
-                float t = RayAABBIntersection(offsetRay, bvh_node.boundsMin.xyz, bvh_node.boundsMax.xyz);
-                if (t > -INFINITY && t < closestMeshInstanceDistance) {
-                    closestMeshInstanceDistance = t;
-                    result.mesh_primitive = int(p);
-                    result.transform = mi.transform;
-                    result.inv_transform = mi.inv_transform;
-                }
-                if (stack_ptr == 0) {
-                    return result;
-                }
+        float t = RayAABBIntersection(ray, node.aabbMin.xyz, node.aabbMax.xyz);
+        if (t == -INFINITY) {
+            continue;
+        } else if (t < closestMeshInstanceDistance) {
+            // if node is a leaf
+            if (node.leftRight == 0) {
+                result.mesh_instance = int(node.mesh_instance);
+                closestMeshInstanceDistance = t;
+            } else {
+                uint node_left = node.leftRight >> 16;
+                uint node_right = node.leftRight & uint(0xFFFF);
+                // TODO: ordered traversal
+                stack[stack_ptr++] = node_right;
+                stack[stack_ptr++] = node_left;
             }
-        } else {
-            stack[stack_ptr++] = node_right;
-            stack[stack_ptr++] = node_left;
         }
     }
-
     return result;
+}
+
+// linear search for a closest mesh primitve, offsetRay must be in mesh local coordinates
+int FindMeshPrimitive(Ray offsetRay, uint first, uint count) {
+    float closestMeshPrimitiveDistance = INFINITY;
+    int closestMeshPrimitive = -1;
+    uint end = first + count;
+    for (uint i = first; i < end; ++i) {
+        MeshPrimitive mp = mesh_primitives[i];
+        BVHnode bvh_node = bvh_nodes[mp.bvh_index];
+        float t = RayAABBIntersection(offsetRay, bvh_node.boundsMin.xyz, bvh_node.boundsMax.xyz);
+        if (t == -INFINITY) continue;
+        else if (t < closestMeshPrimitiveDistance) {
+            closestMeshPrimitiveDistance = t;
+            closestMeshPrimitive = int(i);
+        }
+    }
+    return closestMeshPrimitive;
 }
 
 // returns info about the nearest point which the ray hits
@@ -375,13 +376,19 @@ HitInfo CalculateRayCollision(Ray ray) {
     closestHit.dst = INFINITY;
 
     TLASIntersectResult tlas_results = TLASIntersect(ray);
-    if (tlas_results.mesh_primitive == -1) return closestHit;
+    if (tlas_results.mesh_instance == -1) return closestHit;
+
+    MeshInstance mi = mesh_instances[tlas_results.mesh_instance];
     Ray offsetRay;
-    offsetRay.origin = vec3(tlas_results.inv_transform * vec4(ray.origin, 1.0));
-    offsetRay.dir = vec3(tlas_results.inv_transform * vec4(ray.dir, 0.0));
+    offsetRay.origin = vec3(mi.inv_transform * vec4(ray.origin, 1.0));
+    offsetRay.dir = vec3(mi.inv_transform * vec4(ray.dir, 0.0));
     offsetRay.inv_dir = 1.0 / offsetRay.dir;
 
-    MeshPrimitive mp = mesh_primitives[tlas_results.mesh_primitive];
+    Mesh m = meshes[mi.mesh_index];
+    int mp_index = FindMeshPrimitive(offsetRay, m.mesh_primitives_first, m.mesh_primitives_count);
+    if (mp_index == -1) return closestHit;
+
+    MeshPrimitive mp = mesh_primitives[mp_index];
     uint stack[STACK_SIZE], stack_ptr = 0;
     stack[stack_ptr++] = mp.bvh_index;
     int max_iterations = MAX_ITERATIONS;
@@ -390,8 +397,7 @@ HitInfo CalculateRayCollision(Ray ray) {
 
         if (RayAABBIntersection(offsetRay, node.boundsMin.xyz, node.boundsMax.xyz) == -INFINITY)
         {
-            if (stack_ptr == 0) return closestHit;
-            else continue;
+            continue;
         }
         // if node is a leaf
         if (node.count > 0) {
@@ -429,7 +435,7 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
 
     for (int i = 0; i <= params.max_bounce_count; ++i) {
         HitInfo hitInfo = CalculateRayCollision(ray);
-        return hitInfo.didHit ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 0.0, 0.0);
+        return hitInfo.didHit ? hitInfo.mat.base_color_factor.rgb : vec3(0.0, 0.0, 0.0);
         if (hitInfo.didHit) {
             // bounce
             ray.origin = hitInfo.hitPoint;
@@ -539,3 +545,10 @@ void main() {
 
     FragColor = vec4(totalIncomingLight, 1.0);
 }
+
+// void main() {
+//     // FragColor = vec4(meshes[0].mesh_primitives_first, 0, 0, 1.0);
+//     // FragColor = vec4(meshes[0].mesh_primitives_count -1 , 0, 0, 1.0);
+//     // FragColor = vec4(meshes[0].aabbMax.xyz - vec3(1,1,1), 1.0);
+//     // FragColor = vec4(meshes[0]._1 - 1, 0, 0, 1.0);
+// }
