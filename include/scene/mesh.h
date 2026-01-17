@@ -16,8 +16,8 @@ typedef struct {
 } MeshPrimitive;
 
 typedef struct {
-  unsigned int mesh_primitive_first, mesh_primitive_count;
   vec3 aabbMin, aabbMax;
+  unsigned int mesh_primitive_first, mesh_primitive_count;
   long _;
 } Mesh;
 
