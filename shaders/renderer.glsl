@@ -151,6 +151,15 @@ vec2 RandomPointInCircle(inout uint state) {
     vec2 pointOnCircle = vec2(cos(angle), sin(angle));
     return pointOnCircle * sqrt(RandomFloat(state));
 }
+
+vec3 TransformPoint(mat4 transform, vec3 point) {
+    return vec3(transform * vec4(point, 1.0));
+}
+
+vec3 TransformDir(mat4 transform, vec3 dir) {
+    return vec3(transform * vec4(dir, 0.0));
+}
+
 // using Möller-Trumbore intersection algorithm
 // https://www.youtube.com/watch?v=fK1RPmF_zjQ
 // https://cadxfem.org/inf/Fast%20MinimumStorage%20RayTriangle%20Intersection.pdf
@@ -315,102 +324,19 @@ vec3 hsv2rgb(vec3 c)
     return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 }
 
-struct TLASIntersectResult {
-    int mesh_instance;
-    int mesh_primitive;
-};
-
-// linear search for a closest mesh primitve, offsetRay must be in mesh local coordinates
-int FindMeshPrimitive(Ray offsetRay, uint first, uint count) {
-    float closestMeshPrimitiveDistance = INFINITY;
-    int closestMeshPrimitive = -1;
-    uint end = first + count;
-    for (uint i = first; i < end; ++i) {
-        MeshPrimitive mp = mesh_primitives[i];
-        BVHnode bvh_node = bvh_nodes[mp.bvh_index];
-        float t = RayAABBIntersection(offsetRay, bvh_node.boundsMin.xyz, bvh_node.boundsMax.xyz);
-        if (t == -INFINITY) continue;
-        else if (t < closestMeshPrimitiveDistance) {
-            closestMeshPrimitiveDistance = t;
-            closestMeshPrimitive = int(i);
-        }
-    }
-    return closestMeshPrimitive;
-}
-
-TLASIntersectResult TLASIntersect(Ray ray) {
-    TLASIntersectResult result;
-    float closestMeshInstanceDistance = INFINITY;
-    result.mesh_instance = -1;
-    uint stack[STACK_SIZE], stack_ptr = 0;
-    stack[stack_ptr++] = 0;
-    int max_iterations_left = MAX_ITERATIONS;
-    while (stack_ptr > 0 && max_iterations_left-- > 0) {
-        TLASNode node = tlas_nodes[stack[--stack_ptr]];
-        uint node_left = node.leftRight >> 16;
-        uint node_right = node.leftRight & uint(0xFFFF);
-        float t = RayAABBIntersection(ray, node.aabbMin.xyz, node.aabbMax.xyz);
-        if (t == -INFINITY) {
-            continue;
-        } else if (t < closestMeshInstanceDistance) {
-            // if node is a leaf
-            if (node.leftRight == 0) {
-                // check if it hits any mesh primitive, if not continue
-                MeshInstance mi = mesh_instances[node.mesh_instance];
-                Ray offsetRay;
-                offsetRay.origin = vec3(mi.inv_transform * vec4(ray.origin, 1.0));
-                offsetRay.dir = vec3(mi.inv_transform * vec4(ray.dir, 0.0));
-                offsetRay.inv_dir = 1.0 / offsetRay.dir;
-
-                Mesh m = meshes[mi.mesh_index];
-                // TODO: check the mesh bounds
-                int mp_index = FindMeshPrimitive(offsetRay, m.mesh_primitives_first, m.mesh_primitives_count);
-
-                if (mp_index == -1) continue;
-                result.mesh_instance = int(node.mesh_instance);
-                result.mesh_primitive = mp_index;
-                closestMeshInstanceDistance = t;
-            } else {
-                uint node_left = node.leftRight >> 16;
-                uint node_right = node.leftRight & uint(0xFFFF);
-                // TODO: ordered traversal
-                stack[stack_ptr++] = node_right;
-                stack[stack_ptr++] = node_left;
-            }
-        }
-    }
-    return result;
-}
-
-// returns info about the nearest point which the ray hits
-HitInfo CalculateRayCollision(Ray ray) {
+HitInfo FindClosestTriangleIntersection(Ray offsetRay, uint bvh_node) {
     HitInfo closestHit;
-    closestHit.didHit = false;
-    // TODO: with finite camera projection this will be zfar
     closestHit.dst = INFINITY;
+    closestHit.didHit = false;
 
-    TLASIntersectResult tlas_results = TLASIntersect(ray);
-    if (tlas_results.mesh_instance == -1) return closestHit;
-
-    MeshInstance mi = mesh_instances[tlas_results.mesh_instance];
-    Ray offsetRay;
-    offsetRay.origin = vec3(mi.inv_transform * vec4(ray.origin, 1.0));
-    offsetRay.dir = vec3(mi.inv_transform * vec4(ray.dir, 0.0));
-    offsetRay.inv_dir = 1.0 / offsetRay.dir;
-
-    Mesh m = meshes[mi.mesh_index];
-    int mp_index = tlas_results.mesh_primitive;
-
-    MeshPrimitive mp = mesh_primitives[mp_index];
     uint stack[STACK_SIZE], stack_ptr = 0;
-    stack[stack_ptr++] = mp.bvh_index;
+    stack[stack_ptr++] = bvh_node;
     int max_iterations = MAX_ITERATIONS;
     while (stack_ptr > 0 && max_iterations-- > 0) {
         BVHnode node = bvh_nodes[stack[--stack_ptr]];
+        float bvh_dist = RayAABBIntersection(offsetRay, node.boundsMin.xyz, node.boundsMax.xyz);
+        if (bvh_dist == -INFINITY || bvh_dist > closestHit.dst) continue;
 
-        if (RayAABBIntersection(offsetRay, node.boundsMin.xyz, node.boundsMax.xyz) == -INFINITY) {
-            continue;
-        }
         // if node is a leaf
         if (node.count > 0) {
             for (int i = 0; i < node.count; ++i) {
@@ -423,17 +349,76 @@ HitInfo CalculateRayCollision(Ray ray) {
                 }
             }
         } else {
-            // left will be checked first, so must push the right one first
             // TODO: ordered traversal
             stack[stack_ptr++] = node.first + 1;
             stack[stack_ptr++] = node.first + 0;
         }
     }
-    // convert from mesh-local coordinates to global coordinates
-    closestHit.hitPoint = vec3(mi.transform * vec4(closestHit.hitPoint, 1));
-    closestHit.normal = vec3(mi.transform * vec4(closestHit.normal, 0));
 
-    closestHit.mat_index = mp.mat_index;
+    return closestHit;
+}
+
+// linear search for the closest hit through given mesh primitives, offsetRay must be in mesh local coordinates
+HitInfo FindClosestHitInMesh(Ray offsetRay, uint first, uint count) {
+    HitInfo closestHit;
+    closestHit.didHit = false;
+    closestHit.dst = INFINITY;
+
+    uint end = first + count;
+    for (uint i = first; i < end; ++i) {
+        MeshPrimitive mp = mesh_primitives[i];
+        HitInfo hit = FindClosestTriangleIntersection(offsetRay, mp.bvh_index);
+        if (hit.didHit && hit.dst < closestHit.dst) {
+            closestHit = hit;
+            closestHit.mat_index = mp.mat_index;
+        }
+    }
+    return closestHit;
+}
+
+// returns info about the nearest point which the ray hits
+HitInfo CalculateRayCollision(Ray ray) {
+    HitInfo closestHit;
+    closestHit.dst = INFINITY;
+    closestHit.didHit = false;
+
+    uint stack[STACK_SIZE], stack_ptr = 0;
+    stack[stack_ptr++] = 0;
+    int max_iterations_left = MAX_ITERATIONS;
+    while (stack_ptr > 0 && max_iterations_left-- > 0) {
+        TLASNode node = tlas_nodes[stack[--stack_ptr]];
+        uint node_left = node.leftRight >> 16;
+        uint node_right = node.leftRight & uint(0xFFFF);
+        float tlas_dst = RayAABBIntersection(ray, node.aabbMin.xyz, node.aabbMax.xyz);
+        if (tlas_dst == -INFINITY || tlas_dst > closestHit.dst) continue;
+
+        // if node is a leaf
+        if (node.leftRight == 0) {
+            MeshInstance mi = mesh_instances[node.mesh_instance];
+            Mesh m = meshes[mi.mesh_index];
+
+            Ray offsetRay;
+            offsetRay.origin = TransformPoint(mi.inv_transform, ray.origin);
+            offsetRay.dir = TransformDir(mi.inv_transform, ray.dir);
+            offsetRay.inv_dir = 1.0 / offsetRay.dir;
+
+            float mesh_dst = RayAABBIntersection(offsetRay, m.aabbMin.xyz, m.aabbMax.xyz);
+            if (mesh_dst == -INFINITY || mesh_dst > closestHit.dst) continue;
+
+            HitInfo hit = FindClosestHitInMesh(offsetRay, m.mesh_primitives_first, m.mesh_primitives_count);
+            if (hit.didHit && hit.dst < closestHit.dst) {
+                closestHit = hit;
+                closestHit.hitPoint = TransformPoint(mi.transform, closestHit.hitPoint);
+                closestHit.normal = TransformDir(mi.transform, closestHit.normal);
+            }
+        } else {
+            uint node_left = node.leftRight >> 16;
+            uint node_right = node.leftRight & uint(0xFFFF);
+            // TODO: ordered traversal
+            stack[stack_ptr++] = node_right;
+            stack[stack_ptr++] = node_left;
+        }
+    }
 
     return closestHit;
 }
