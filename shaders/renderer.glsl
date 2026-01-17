@@ -449,7 +449,7 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
     vec3 c = vec3(1.0, 1.0, 1.0);
     vec3 incomingLight = vec3(0.0, 0.0, 0.0);
 
-    for (int i = 0; i <= params.max_bounce_count; ++i) {
+    for (int i = 0; i < params.max_bounce_count; ++i) {
         HitInfo hitInfo = CalculateRayCollision(ray);
         Material mat = mats[hitInfo.mat_index - 0];
         // return hitInfo.didHit ? vec3(mat.base_color_factor.rgb) : vec3(0.0, 0.0, 0.0);
