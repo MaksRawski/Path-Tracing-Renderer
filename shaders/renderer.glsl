@@ -51,7 +51,7 @@ struct Material {
     uint roughness_texture;
     float roughness_factor;
     uint emissive_texture;
-    int _, _1;
+    int _, _1, _2;
 };
 
 struct MeshPrimitive {

@@ -15,7 +15,8 @@ typedef struct {
   unsigned int emissive_texture;
   // HACK: since padding must be added anyway, this allows to determine whether
   // a given material has been set, or just allocated.
-  long _set;
+  int _set;
+  long _;
 } Material;
 
 inline static Material Material_default(void) {
