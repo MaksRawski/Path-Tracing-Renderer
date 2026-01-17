@@ -122,7 +122,7 @@ struct HitInfo {
     float dst;
     vec3 hitPoint;
     vec3 normal;
-    Material mat;
+    uint mat_index;
 };
 
 // RNG
@@ -317,38 +317,8 @@ vec3 hsv2rgb(vec3 c)
 
 struct TLASIntersectResult {
     int mesh_instance;
+    int mesh_primitive;
 };
-
-TLASIntersectResult TLASIntersect(Ray ray) {
-    TLASIntersectResult result;
-    float closestMeshInstanceDistance = INFINITY;
-    result.mesh_instance = -1;
-    uint stack[STACK_SIZE], stack_ptr = 0;
-    stack[stack_ptr++] = 0;
-    int max_iterations_left = MAX_ITERATIONS;
-    while (stack_ptr > 0 && max_iterations_left-- > 0) {
-        TLASNode node = tlas_nodes[stack[--stack_ptr]];
-        uint node_left = node.leftRight >> 16;
-        uint node_right = node.leftRight & uint(0xFFFF);
-        float t = RayAABBIntersection(ray, node.aabbMin.xyz, node.aabbMax.xyz);
-        if (t == -INFINITY) {
-            continue;
-        } else if (t < closestMeshInstanceDistance) {
-            // if node is a leaf
-            if (node.leftRight == 0) {
-                result.mesh_instance = int(node.mesh_instance);
-                closestMeshInstanceDistance = t;
-            } else {
-                uint node_left = node.leftRight >> 16;
-                uint node_right = node.leftRight & uint(0xFFFF);
-                // TODO: ordered traversal
-                stack[stack_ptr++] = node_right;
-                stack[stack_ptr++] = node_left;
-            }
-        }
-    }
-    return result;
-}
 
 // linear search for a closest mesh primitve, offsetRay must be in mesh local coordinates
 int FindMeshPrimitive(Ray offsetRay, uint first, uint count) {
@@ -368,6 +338,50 @@ int FindMeshPrimitive(Ray offsetRay, uint first, uint count) {
     return closestMeshPrimitive;
 }
 
+TLASIntersectResult TLASIntersect(Ray ray) {
+    TLASIntersectResult result;
+    float closestMeshInstanceDistance = INFINITY;
+    result.mesh_instance = -1;
+    uint stack[STACK_SIZE], stack_ptr = 0;
+    stack[stack_ptr++] = 0;
+    int max_iterations_left = MAX_ITERATIONS;
+    while (stack_ptr > 0 && max_iterations_left-- > 0) {
+        TLASNode node = tlas_nodes[stack[--stack_ptr]];
+        uint node_left = node.leftRight >> 16;
+        uint node_right = node.leftRight & uint(0xFFFF);
+        float t = RayAABBIntersection(ray, node.aabbMin.xyz, node.aabbMax.xyz);
+        if (t == -INFINITY) {
+            continue;
+        } else if (t < closestMeshInstanceDistance) {
+            // if node is a leaf
+            if (node.leftRight == 0) {
+                // check if it hits any mesh primitive, if not continue
+                MeshInstance mi = mesh_instances[node.mesh_instance];
+                Ray offsetRay;
+                offsetRay.origin = vec3(mi.inv_transform * vec4(ray.origin, 1.0));
+                offsetRay.dir = vec3(mi.inv_transform * vec4(ray.dir, 0.0));
+                offsetRay.inv_dir = 1.0 / offsetRay.dir;
+
+				Mesh m = meshes[mi.mesh_index];
+				// TODO: check the mesh bounds
+                int mp_index = FindMeshPrimitive(offsetRay, m.mesh_primitives_first, m.mesh_primitives_count);
+
+				if (mp_index == -1) continue;
+                result.mesh_instance = int(node.mesh_instance);
+				result.mesh_primitive = mp_index;
+                closestMeshInstanceDistance = t;
+            } else {
+                uint node_left = node.leftRight >> 16;
+                uint node_right = node.leftRight & uint(0xFFFF);
+                // TODO: ordered traversal
+                stack[stack_ptr++] = node_right;
+                stack[stack_ptr++] = node_left;
+            }
+        }
+    }
+    return result;
+}
+
 // returns info about the nearest point which the ray hits
 HitInfo CalculateRayCollision(Ray ray) {
     HitInfo closestHit;
@@ -385,8 +399,7 @@ HitInfo CalculateRayCollision(Ray ray) {
     offsetRay.inv_dir = 1.0 / offsetRay.dir;
 
     Mesh m = meshes[mi.mesh_index];
-    int mp_index = FindMeshPrimitive(offsetRay, m.mesh_primitives_first, m.mesh_primitives_count);
-    if (mp_index == -1) return closestHit;
+    int mp_index = tlas_results.mesh_primitive;
 
     MeshPrimitive mp = mesh_primitives[mp_index];
     uint stack[STACK_SIZE], stack_ptr = 0;
@@ -395,8 +408,7 @@ HitInfo CalculateRayCollision(Ray ray) {
     while (stack_ptr > 0 && max_iterations-- > 0) {
         BVHnode node = bvh_nodes[stack[--stack_ptr]];
 
-        if (RayAABBIntersection(offsetRay, node.boundsMin.xyz, node.boundsMax.xyz) == -INFINITY)
-        {
+        if (RayAABBIntersection(offsetRay, node.boundsMin.xyz, node.boundsMax.xyz) == -INFINITY) {
             continue;
         }
         // if node is a leaf
@@ -408,7 +420,7 @@ HitInfo CalculateRayCollision(Ray ray) {
                 HitInfo hit = RayTriangleIntersection(offsetRay, t);
                 if (hit.didHit && hit.dst < closestHit.dst) {
                     closestHit = hit;
-                    closestHit.mat = mats[mp.mat_index];
+                    closestHit.mat_index = mp.mat_index;
                 }
             }
         } else {
@@ -435,7 +447,9 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
 
     for (int i = 0; i <= params.max_bounce_count; ++i) {
         HitInfo hitInfo = CalculateRayCollision(ray);
-        return hitInfo.didHit ? hitInfo.mat.base_color_factor.rgb : vec3(0.0, 0.0, 0.0);
+        Material mat = mats[hitInfo.mat_index - 0];
+        // return hitInfo.didHit ? vec3(mat.base_color_factor.rgb) : vec3(0.0, 0.0, 0.0);
+        // return hitInfo.didHit ? vec3(hitInfo.normal) : vec3(0.0, 0.0, 0.0);
         if (hitInfo.didHit) {
             // bounce
             ray.origin = hitInfo.hitPoint;
@@ -448,12 +462,12 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
             ray.inv_dir = 1.0 / ray.dir;
 
             // calculate the potential light that the object is emitting
-            vec3 emittedLight = hitInfo.mat.emissive_factor;
+            vec3 emittedLight = mat.emissive_factor;
 
             incomingLight += emittedLight * c;
 
             // tint the final color by hit point's material color
-            c *= hitInfo.mat.base_color_factor.rgb;
+            c *= mat.base_color_factor.rgb;
         } else {
             // get color from environment
             // incomingLight += vec3(58, 58, 58) / 255 * c;
