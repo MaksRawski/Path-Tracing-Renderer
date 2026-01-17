@@ -420,7 +420,6 @@ HitInfo CalculateRayCollision(Ray ray) {
                 HitInfo hit = RayTriangleIntersection(offsetRay, t);
                 if (hit.didHit && hit.dst < closestHit.dst) {
                     closestHit = hit;
-                    closestHit.mat_index = mp.mat_index;
                 }
             }
         } else {
@@ -429,6 +428,11 @@ HitInfo CalculateRayCollision(Ray ray) {
             stack[stack_ptr++] = node.first + 0;
         }
     }
+    // convert from mesh-local coordinates to global coordinates
+    closestHit.hitPoint = vec3(mi.transform * vec4(closestHit.hitPoint, 1));
+    closestHit.normal = vec3(mi.transform * vec4(closestHit.normal, 0));
+
+    closestHit.mat_index = mp.mat_index;
 
     return closestHit;
 }
