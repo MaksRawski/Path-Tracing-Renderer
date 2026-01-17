@@ -362,13 +362,13 @@ TLASIntersectResult TLASIntersect(Ray ray) {
                 offsetRay.dir = vec3(mi.inv_transform * vec4(ray.dir, 0.0));
                 offsetRay.inv_dir = 1.0 / offsetRay.dir;
 
-				Mesh m = meshes[mi.mesh_index];
-				// TODO: check the mesh bounds
+                Mesh m = meshes[mi.mesh_index];
+                // TODO: check the mesh bounds
                 int mp_index = FindMeshPrimitive(offsetRay, m.mesh_primitives_first, m.mesh_primitives_count);
 
-				if (mp_index == -1) continue;
+                if (mp_index == -1) continue;
                 result.mesh_instance = int(node.mesh_instance);
-				result.mesh_primitive = mp_index;
+                result.mesh_primitive = mp_index;
                 closestMeshInstanceDistance = t;
             } else {
                 uint node_left = node.leftRight >> 16;
@@ -424,6 +424,7 @@ HitInfo CalculateRayCollision(Ray ray) {
             }
         } else {
             // left will be checked first, so must push the right one first
+            // TODO: ordered traversal
             stack[stack_ptr++] = node.first + 1;
             stack[stack_ptr++] = node.first + 0;
         }
@@ -451,15 +452,13 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
 
     for (int i = 0; i < params.max_bounce_count; ++i) {
         HitInfo hitInfo = CalculateRayCollision(ray);
-        Material mat = mats[hitInfo.mat_index - 0];
-        // return hitInfo.didHit ? vec3(mat.base_color_factor.rgb) : vec3(0.0, 0.0, 0.0);
-        // return hitInfo.didHit ? vec3(hitInfo.normal) : vec3(0.0, 0.0, 0.0);
+        Material mat = mats[hitInfo.mat_index];
         if (hitInfo.didHit) {
             // bounce
             ray.origin = hitInfo.hitPoint;
 
             vec3 diffuseDir = DiffuseDirection(hitInfo.normal, rngState);
-            vec3 reflectDir = ReflectDirection(ray.dir, hitInfo.normal);
+            // vec3 reflectDir = ReflectDirection(ray.dir, hitInfo.normal);
 
             ray.dir = diffuseDir;
             // ray.dir = mix(diffuseDir, reflectDir, hitInfo.mat.specularComponent);
@@ -470,7 +469,7 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
 
             incomingLight += emittedLight * c;
 
-            // tint the final color by hit point's material color
+            // tint the final color by the base color of the hit object
             c *= mat.base_color_factor.rgb;
         } else {
             // get color from environment
