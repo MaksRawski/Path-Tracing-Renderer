@@ -1,8 +1,8 @@
 #include "gui/settings.h"
-#include "small_string.h"
 #include "gui/file_browser.h"
 #include "opengl/scaling.h"
 #include "rad_deg.h"
+#include "small_string.h"
 #include "utils.h"
 #include "yawpitch.h"
 
@@ -24,9 +24,9 @@ bool _Scene_settings(AppState *state) {
   bool changed = false;
   ImVec2 button_size = {.x = 0, .y = 0};
   if (igButton("Load scene", button_size)) {
-    char *chosen_path = GuiFileBrowser_open_linux();
-    if (chosen_path != NULL) {
-      state->scene_paths.new_scene_path = SmallString_new(chosen_path);
+    SmallString chosen_path = SmallString_new("");
+    if (GuiFileBrowser_open(chosen_path.str, sizeof(SmallString))) {
+      state->scene_paths.new_scene_path = chosen_path;
       changed = true;
     }
   }
