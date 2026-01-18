@@ -17,7 +17,7 @@
 #define PATH_SEPARATOR '\\'
 #endif
 
-char *read_file(const char *filename) {
+char *File_read(const char *filename) {
   FILE *file = fopen(filename, "r");
   if (!file) {
     fprintf(stderr, "Error: Could not open file %s\n", filename);

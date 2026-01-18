@@ -115,8 +115,8 @@ GLuint create_shader_program_from_source(const char *vertex_shader_src,
 GLuint create_shader_program(const char *vertex_shader_filename,
                              const char *fragment_shader_filename) {
 
-  char *vertex_shader_src = read_file(vertex_shader_filename);
-  char *fragment_shader_src = read_file(fragment_shader_filename);
+  char *vertex_shader_src = File_read(vertex_shader_filename);
+  char *fragment_shader_src = File_read(fragment_shader_filename);
 
   GLuint shader_program =
       create_shader_program_from_source(vertex_shader_src, fragment_shader_src);

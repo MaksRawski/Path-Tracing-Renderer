@@ -4,7 +4,7 @@
 /* void print_triangles(Triangle *tri, vec3 *centroids, int count); */
 
 // FILES
-char *read_file(const char *filename);
+char *File_read(const char *filename);
 #include <stdbool.h>
 
 bool FilePath_exists(const char *path);
