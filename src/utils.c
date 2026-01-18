@@ -4,10 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(__linux__)
 #include <sys/stat.h>
-#elif defined(_WIN32)
-#include <windows.h>
+#ifdef _WIN32
 #define stat _stat
 #endif
 
@@ -42,7 +40,7 @@ char *File_read(const char *filename) {
 }
 
 bool FilePath_exists(const char *path) {
-  struct stat stats = {0};
+  struct stat stats;
   return stat(path, &stats) == 0;
 }
 

@@ -22,7 +22,10 @@ file(GLOB_RECURSE PROJECT_SOURCES "src/*.c")
 add_executable(${CMAKE_PROJECT_NAME} ${PROJECT_SOURCES})
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
-set(LIBRARIES glfw glad cgltf cimgui gtk stb_image_write)
+set(LIBRARIES glfw glad cgltf cimgui stb_image_write)
+if (UNIX)
+    append(LIBRARIES gtk)
+endif()
 target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC ${LIBRARIES})
 
 install(TARGETS ${CMAKE_PROJECT_NAME} DESTINATION .)
