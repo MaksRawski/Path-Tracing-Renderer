@@ -313,7 +313,7 @@ float RayAABBIntersection(Ray ray, vec3 aabbMin, vec3 aabbMax) {
     float tz1 = (aabbMin.z - ray.origin.z) * ray.inv_dir.z, tz2 = (aabbMax.z - ray.origin.z) * ray.inv_dir.z;
     tmin = max(tmin, min(tz1, tz2)), tmax = min(tmax, max(tz1, tz2));
 
-    return tmax >= tmin ? tmin : -INFINITY;
+    return tmax >= tmin ? tmin : INFINITY;
 }
 
 // TODO: this is just for debugging
@@ -335,7 +335,7 @@ HitInfo FindClosestTriangleIntersection(Ray offsetRay, uint bvh_node) {
     while (stack_ptr > 0 && max_iterations-- > 0) {
         BVHnode node = bvh_nodes[stack[--stack_ptr]];
         float bvh_dist = RayAABBIntersection(offsetRay, node.boundsMin.xyz, node.boundsMax.xyz);
-        if (bvh_dist == -INFINITY || bvh_dist > closestHit.dst) continue;
+        if (bvh_dist > closestHit.dst) continue;
 
         // if node is a leaf
         if (node.count > 0) {
@@ -390,7 +390,7 @@ HitInfo CalculateRayCollision(Ray ray) {
         uint node_left = node.leftRight >> 16;
         uint node_right = node.leftRight & uint(0xFFFF);
         float tlas_dst = RayAABBIntersection(ray, node.aabbMin.xyz, node.aabbMax.xyz);
-        if (tlas_dst == -INFINITY || tlas_dst > closestHit.dst) continue;
+        if (tlas_dst > closestHit.dst) continue;
 
         // if node is a leaf
         if (node.leftRight == 0) {
@@ -403,7 +403,7 @@ HitInfo CalculateRayCollision(Ray ray) {
             offsetRay.inv_dir = 1.0 / offsetRay.dir;
 
             float mesh_dst = RayAABBIntersection(offsetRay, m.aabbMin.xyz, m.aabbMax.xyz);
-            if (mesh_dst == -INFINITY || mesh_dst > closestHit.dst) continue;
+            if (mesh_dst > closestHit.dst) continue;
 
             HitInfo hit = FindClosestHitInMesh(offsetRay, m.mesh_primitives_first, m.mesh_primitives_count);
             if (hit.didHit && hit.dst < closestHit.dst) {
