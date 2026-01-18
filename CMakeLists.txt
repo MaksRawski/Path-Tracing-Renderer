@@ -24,7 +24,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/inc
 
 set(LIBRARIES glfw glad cgltf cimgui stb_image_write)
 if (UNIX)
-    append(LIBRARIES gtk)
+    list(APPEND LIBRARIES gtk)
 endif()
 target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC ${LIBRARIES})
 

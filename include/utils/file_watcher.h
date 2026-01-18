@@ -3,7 +3,7 @@
 #include <stdbool.h>
 
 typedef struct {
-  char *path;
+  char path[1024];
 #ifdef __linux__
   unsigned long _mtimensec;
 #else
