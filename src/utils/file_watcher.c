@@ -48,7 +48,6 @@ FileWatcher FileWatcher_new(const char *path) {
   };
   set_stats(&self, stats);
 
-  self.path = (char *)malloc(strlen(path) + 1);
   strcpy(self.path, path);
 
   return self;
@@ -69,7 +68,4 @@ bool FileWatcher_did_change(FileWatcher *self) {
   return false;
 }
 
-void FileWatcher_delete(FileWatcher *self) {
-  free(self->path);
-  self = NULL;
-}
+void FileWatcher_delete(FileWatcher *self) { (void)(self); }
