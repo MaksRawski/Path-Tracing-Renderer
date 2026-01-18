@@ -2,6 +2,7 @@
 #define BVH_H_
 
 #include <assert.h>
+#include <stdint.h>
 
 #include "scene/triangle.h"
 #include "vec3.h"
@@ -15,7 +16,7 @@ typedef unsigned int BVHNodeCount;
 typedef struct {
   vec3 bound_min, bound_max;
   BVHTriCount first, count;
-  long _;
+  uint64_t _;
 } BVHnode;
 static_assert(sizeof(BVHnode) % 16 == 0,
               "BVHNode's size should be a multiple of 16");
@@ -42,15 +43,16 @@ void BVH_delete(BVH *self);
     b = tmp;                                                                   \
   } while (0);
 
-#define BVH_apply_swaps_lut(lut, objects, object_type, count)                  \
+#define BVH_apply_swaps_lut(_lut, _objects, _object_type, _count)              \
   do {                                                                         \
-    object_type object_type##_copy[count];                                     \
-    for (unsigned long i = 0; i < count; ++i)                                  \
-      object_type##_copy[i] = objects[i];                                      \
-    for (unsigned long i = 0; i < count; ++i) {                                \
-      unsigned long swap_idx = lut[i];                                         \
-      objects[i] = object_type##_copy[swap_idx];                               \
+    _object_type *_object_type##_copy = malloc(_count * sizeof(_object_type)); \
+    for (unsigned long i = 0; i < _count; ++i)                                 \
+      _object_type##_copy[i] = _objects[i];                                    \
+    for (unsigned long i = 0; i < _count; ++i) {                               \
+      unsigned long swap_idx = _lut[i];                                        \
+      _objects[i] = _object_type##_copy[swap_idx];                             \
     }                                                                          \
+    free(_object_type##_copy);                                                 \
   } while (0);
 
 #endif // BVH_H_

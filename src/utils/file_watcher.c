@@ -5,10 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(__linux__)
 #include <sys/stat.h>
-#elif defined(_WIN32) || defined(_WIN64)
-#include <windows.h>
+#ifdef _WIN32
 #define stat _stat
 #endif
 

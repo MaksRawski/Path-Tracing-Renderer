@@ -9,8 +9,14 @@
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 
-#define VERTEX_SHADER_PATH "shaders/vertex.glsl"
-#define FRAGMENT_SHADER_PATH "shaders/renderer.glsl"
+#if defined(__linux__)
+#define PATH_SEPARATOR "/"
+#elif defined(_WIN32)
+#define PATH_SEPARATOR "\\"
+#endif
+
+#define VERTEX_SHADER_PATH "shaders" PATH_SEPARATOR "vertex.glsl"
+#define FRAGMENT_SHADER_PATH "shaders" PATH_SEPARATOR "renderer.glsl"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846

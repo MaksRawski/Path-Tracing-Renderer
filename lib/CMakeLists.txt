@@ -55,14 +55,13 @@ target_compile_definitions(cimgui PUBLIC
     IMGUI_DISABLE_OBSOLETE_FUNCTIONS=1
 )
 
-target_compile_options(cimgui PRIVATE
-    -O2
-    -fno-exceptions
-    -fno-rtti
-    -Wall
-)
-
 if(UNIX)
+    target_compile_options(cimgui PRIVATE
+        -O2
+        -fno-exceptions
+        -fno-rtti
+        -Wall
+    )
     set_target_properties(cimgui PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 
