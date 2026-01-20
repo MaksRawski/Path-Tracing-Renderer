@@ -2,12 +2,16 @@
 #include "app_state.h"
 #include "asserts.h"
 #include "opengl/resolution.h"
+#include "scene/bvh/strategies.h"
+#include "utils.h"
+#include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 enum Options {
+  Options_BVH_TYPE,
   Options_SAMPLES_PER_PIXEL,
   Options_MAX_BOUNCE_COUNT,
   Options_FRAMES_TO_RENDER,
@@ -56,7 +60,7 @@ Option Option_new(enum Options option, const AppState *default_app_state) {
     RETURN_OPTION_DV_FMT("-spp", "--samples-per-pixel", "", "%d",
                          default_app_state->rendering_params.samples_per_pixel);
   case Options_MAX_BOUNCE_COUNT:
-    RETURN_OPTION_DV_FMT("-B", "--max-bounce-count", "", "%d",
+    RETURN_OPTION_DV_FMT("", "--max-bounce-count", "", "%d",
                          default_app_state->rendering_params.max_bounce_count);
   case Options_FRAMES_TO_RENDER:
     RETURN_OPTION_DV_FMT("-F", "--frames-to-render", "", "%d",
@@ -70,6 +74,17 @@ Option Option_new(enum Options option, const AppState *default_app_state) {
   case Options_OUTPUT_PATH:
     RETURN_OPTION_DV_FMT("-o", "--out", "", "%s",
                          default_app_state->save_image_info.path);
+  case Options_BVH_TYPE: {
+    Option res = {.short_name = "", .long_name = "--bvh"};
+    strcpy(res.description, "BVH strategy to use, choose from: ");
+    StringArray_join(res.description, sizeof(res.description), BVHStrategy_str,
+                     BVHStrategy__COUNT, ", ");
+    strncpy(res.default_value,
+            BVHStrategy_str[default_app_state->BVH_build_strat],
+            sizeof(res.default_value));
+    return res;
+  }
+
   case Options_FLAG_EXIT_AFTER_RENDERING:
     RETURN_OPTION("-X", "--exit-after-rendering", "");
   case Options_FLAG_SAVE_AFTER_RENDERING:
@@ -81,21 +96,21 @@ Option Option_new(enum Options option, const AppState *default_app_state) {
     RETURN_OPTION("-NH", "--no-hot-reload",
                   "Disable hot-reloading of shaders.");
   case Options_FLAG_NO_MOVEMENT:
-    RETURN_OPTION("-NM", "--no-movement",
-                  "Disable camera movement.");
+    RETURN_OPTION("-NM", "--no-movement", "Disable camera movement.");
   case Options_FLAG_HELP:
     RETURN_OPTION("-h", "--help", "Display this help");
   case Options_FLAG_JUST_RENDER:
     RETURN_OPTION("-J", "--just-render",
-                  "Alias for --no-gui --no-hot-reload --no-movement --save-after-rendering "
+                  "Alias for --no-gui --no-hot-reload --no-movement "
+                  "--save-after-rendering "
                   "--exit-after-rendering.");
   case Options__COUNT:
     UNREACHABLE();
   }
 }
 
-void display_help(const char *program_name,
-                  const Option all_options[Options__COUNT]) {
+static void display_help(const char *program_name,
+                         const Option all_options[Options__COUNT]) {
   printf("Usage: %s [GLTF_SCENE] [OPTIONS]\n", program_name);
   printf("Example:\n");
   printf("%s dragon.glb -J --frames-to-render 100 --out dragon.png\n",
@@ -105,7 +120,7 @@ void display_help(const char *program_name,
   printf("Rendering Options:\n");
   for (int i = 0; i < FIRST_OTHER_OPTION; ++i) {
     Option op = all_options[i];
-    printf("  %s %s [%s] %s\n", op.short_name, op.long_name, op.default_value,
+    printf("  %s %s [%s]  %s\n", op.short_name, op.long_name, op.default_value,
            op.description);
   }
 
@@ -127,7 +142,8 @@ void display_help(const char *program_name,
 enum Options find_option(const char *arg,
                          const Option all_options[Options__COUNT]) {
   for (int i = 0; i < Options__COUNT; ++i) {
-    if (strcmp(arg, all_options[i].short_name) == 0 ||
+    if (((all_options[i].short_name[0] != 0) &&
+         strcmp(arg, all_options[i].short_name) == 0) ||
         strcmp(arg, all_options[i].long_name) == 0) {
       return i;
     }
@@ -170,7 +186,8 @@ bool parse_resolution(const char *str, unsigned int *width,
   return true;
 }
 
-char *get_value_for_option(int *i, int argc, char *argv[], const char *flag) {
+static char *get_value_for_option(int *i, int argc, char *argv[],
+                                  const char *flag) {
   if (*i + 1 >= argc) {
     fprintf(stderr, "Error: Option %s requires a value.\n", flag);
     exit(1);
@@ -178,8 +195,26 @@ char *get_value_for_option(int *i, int argc, char *argv[], const char *flag) {
   return argv[++(*i)];
 }
 
-void parse_arg(int argc, char **argv, int *i,
-               const Option all_options[Options__COUNT], AppState *app_state) {
+static int find_closest_match(const char *s, unsigned int s_len,
+                              const char *list[], unsigned int list_length) {
+  int match = -1;
+  for (unsigned int i = 0; i < list_length; ++i) {
+    bool equal = true;
+    for (unsigned int c = 0; c < s_len; ++c)
+      equal &= (tolower(s[c]) == tolower(list[i][c]));
+
+    if (equal) {
+      if (match != -1)
+        TODO("Ambiguous argument");
+      match = i;
+    }
+  }
+  return match;
+}
+
+static void parse_arg(int argc, char **argv, int *i,
+                      const Option all_options[Options__COUNT],
+                      AppState *app_state) {
   char *arg = argv[*i];
   enum Options option = find_option(arg, all_options);
   if (option == Options__COUNT) {
@@ -229,6 +264,17 @@ void parse_arg(int argc, char **argv, int *i,
     char *path = get_value_for_option(i, argc, argv, arg);
     snprintf(app_state->save_image_info.path,
              sizeof(app_state->save_image_info.path), "%s", path);
+    break;
+  }
+  case Options_BVH_TYPE: {
+    char *arg_val_str = get_value_for_option(i, argc, argv, arg);
+    int arg_val_len = strlen(arg_val_str);
+
+    int match = find_closest_match(arg_val_str, arg_val_len, BVHStrategy_str,
+                                   BVHStrategy__COUNT);
+    if (match == -1)
+      ERROR_FMT("BVH strategy '%s' is not available", arg_val_str);
+    app_state->BVH_build_strat = match;
     break;
   }
 

@@ -7,17 +7,14 @@ FindBestSplitFn FindBestSplitFn_longest_mid;
 FindBestSplitFn FindBestSplitFn_SAH;
 
 typedef enum {
-  FindBestSplitFn_Variants_Naive,
-  FindBestSplitFn_Variants_SAH,
-  FindBestSplitFn_Variants__COUNT,
-} FindBestSplitFn_Variants;
+  BVHStrategy_Naive,
+  BVHStrategy_SAH,
+  BVHStrategy__COUNT,
+} BVHStrategy;
 
-static FindBestSplitFn
-    *FindBestSplitFn_Variants_get[FindBestSplitFn_Variants__COUNT] = {
-        FindBestSplitFn_longest_mid, FindBestSplitFn_SAH};
+static FindBestSplitFn *BVHStrategy_get[BVHStrategy__COUNT] = {
+    FindBestSplitFn_longest_mid, FindBestSplitFn_SAH};
 
-static const char
-    *FindBestSplitFn_Variants_names[FindBestSplitFn_Variants__COUNT] = {"Naive",
-                                                                        "SAH"};
+static const char *BVHStrategy_str[BVHStrategy__COUNT] = {"Naive", "SAH"};
 
 #endif // STRATEGIES_H_

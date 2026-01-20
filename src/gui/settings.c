@@ -35,8 +35,8 @@ bool _Scene_settings(AppState *state) {
   }
 
   if (igCombo_Str_arr("BVH type", (int *)&state->BVH_build_strat,
-                      FindBestSplitFn_Variants_names,
-                      FindBestSplitFn_Variants__COUNT, 5)) {
+                      BVHStrategy_str,
+                      BVHStrategy__COUNT, 5)) {
     state->BVH_build_strat_changed = true;
   }
 

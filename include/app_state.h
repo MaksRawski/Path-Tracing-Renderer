@@ -23,7 +23,7 @@ typedef struct {
   OpenGLScalingMode scaling_mode;
   AppStateSaveImageInfo save_image_info;
   Scene scene;
-  FindBestSplitFn_Variants BVH_build_strat;
+  BVHStrategy BVH_build_strat;
   bool cam_changed, rendering_params_changed, scene_paths_changed,
       BVH_build_strat_changed;
   bool gui_enabled, hot_reload_enabled, save_after_rendering,

@@ -20,10 +20,10 @@ Scene Scene_load_gltf(const char *path) {
 }
 
 void Scene_build_bvh(Scene *self,
-                     FindBestSplitFn_Variants find_best_split_fn_strat) {
+                     BVHStrategy find_best_split_fn_strat) {
   BVHresult b_res =
       BVH_build(self->triangles, self->triangles_count,
-                FindBestSplitFn_Variants_get[find_best_split_fn_strat]);
+                BVHStrategy_get[find_best_split_fn_strat]);
   BVH_apply_swaps_lut(b_res.swaps_lut, self->primitives, Primitive,
                       self->triangles_count);
   self->bvh = b_res.bvh;

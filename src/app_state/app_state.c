@@ -17,7 +17,7 @@ AppState AppState_default(void) {
       .save_after_rendering = false,
       .exit_after_rendering = false,
       .movement_enabled = true,
-      .BVH_build_strat = FindBestSplitFn_Variants_Naive,
+      .BVH_build_strat = BVHStrategy_Naive,
       //
       .cam_changed = true,
       .rendering_params_changed = true,

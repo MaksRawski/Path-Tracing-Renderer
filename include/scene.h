@@ -45,7 +45,7 @@ static_assert(
 Scene Scene_load_gltf(const char *path);
 
 void Scene_build_bvh(Scene *scene,
-                     FindBestSplitFn_Variants find_best_split_fn_strat);
+                     BVHStrategy find_best_split_fn_strat);
 
 Scene Scene_empty(void);
 bool Scene_is_empty(const Scene *scene);
