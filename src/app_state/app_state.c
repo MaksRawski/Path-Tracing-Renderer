@@ -1,5 +1,6 @@
 #include "app_state.h"
 #include "renderer/inputs.h"
+#include "stats.h"
 #include "utils.h"
 
 AppState AppState_default(void) {
@@ -28,7 +29,7 @@ AppState AppState_default(void) {
 void AppState__restart_progressive_rendering(AppState *app_state,
                                              Renderer *renderer) {
   Renderer_clear_backbuffer(renderer);
-  Stats_reset(&app_state->stats);
+  Stats_reset_rendering(&app_state->stats);
 }
 
 void AppState__set_camera(AppState *app_state, Renderer *renderer) {
@@ -44,7 +45,9 @@ void AppState_update_scene(AppState *app_state, Renderer *renderer) {
 
   if (app_state->scene_paths_changed && FilePath_exists(new_scene_path->str)) {
     app_state->scene_paths_changed = false;
+    StatsTimer_start(&app_state->stats.scene_load);
     app_state->scene = Scene_load_gltf(new_scene_path->str);
+    StatsTimer_stop(&app_state->stats.scene_load);
     app_state->cam = app_state->scene.camera;
     *loaded_scene_path = SmallString_new(new_scene_path->str);
     scene_changed = true;
@@ -52,7 +55,9 @@ void AppState_update_scene(AppState *app_state, Renderer *renderer) {
 
   if (app_state->BVH_build_strat_changed) {
     app_state->BVH_build_strat_changed = false;
+    StatsTimer_start(&app_state->stats.bvh_build);
     Scene_build_bvh(&app_state->scene, app_state->BVH_build_strat);
+    StatsTimer_stop(&app_state->stats.bvh_build);
     scene_changed = true;
   }
 

@@ -12,7 +12,9 @@ void AppState_display(AppState *app_state, Renderer *renderer, GUIOverlay *gui,
   GLuint renderer_fbo = Renderer_get_fbo(renderer);
 
   bool infinite_progressive_rendering = frames_to_render < 0;
-  bool should_render_new_frame = frame_number < (unsigned int)frames_to_render;
+  bool should_render_new_frame =
+      infinite_progressive_rendering ||
+      (frame_number < (unsigned int)frames_to_render);
 
   GL_CALL(glClear(GL_COLOR_BUFFER_BIT));
 
@@ -20,16 +22,9 @@ void AppState_display(AppState *app_state, Renderer *renderer, GUIOverlay *gui,
     Renderer_clear_backbuffer(renderer);
   }
 
-  if (infinite_progressive_rendering || should_render_new_frame) {
+  if (should_render_new_frame) {
+    StatsTimer_start(&app_state->stats.last_frame_rendering);
     Renderer_render_frame(renderer, app_state->stats.frame_number++);
-    // NOTE: getting to this point doesn't mean that the frame (or even the one
-    // before this one) has finished rendering, as we're simply queuing commands
-    // for rendering. Those times seem to only have meaning when rendering at
-    // least 3 frames (on my machine).
-    double render_end_time = glfwGetTime();
-    double render_start_time = app_state->stats.last_frame_end_time;
-    app_state->stats.last_frame_end_time = render_end_time;
-    app_state->stats.last_frame_time = render_end_time - render_start_time;
   }
 
   OpenGLContext_display_framebuffer(
@@ -41,4 +36,19 @@ void AppState_display(AppState *app_state, Renderer *renderer, GUIOverlay *gui,
     GUIOverlay_render_frame(gui);
 
   OpenGLContext_swap_buffers(ctx);
+
+  if (should_render_new_frame) {
+    // NOTE: getting to this point doesn't necessarily mean that the frame (or
+    // even the one before this one) has finished rendering, as we're simply
+    // queuing commands for rendering. Those times only seem somewhat reasonable
+    // when at least 3 frames have been queued (on my machine). According to
+    // OpenGL documentation: "Swapping the back and front buffers on the Default
+    // Framebuffer may cause some form of synchronization (though the actual
+    // moment of synchronization event may be delayed until later GL commands),
+    // if there are still commands affecting the default framebuffer that have
+    // not yet completed. Swapping buffers only technically needs to sync to the
+    // last command that affects the default framebuffer, but it may perform a
+    // full glFinish."
+    StatsTimer_stop(&app_state->stats.last_frame_rendering);
+  }
 }

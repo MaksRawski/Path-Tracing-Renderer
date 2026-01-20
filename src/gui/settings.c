@@ -4,6 +4,7 @@
 #include "rad_deg.h"
 #include "scene/bvh/strategies.h"
 #include "small_string.h"
+#include "stats.h"
 #include "utils.h"
 #include "yawpitch.h"
 
@@ -116,11 +117,24 @@ bool _Rendering_settings(AppState *state) {
   state->rendering_params.rendering_resolution.width = res[0];
   state->rendering_params.rendering_resolution.height = res[1];
 
-  double frame_time_in_ms = state->stats.last_frame_time * 1000.0;
-  if (frame_time_in_ms < 1.0)
-    igText("Rendering last frame took: %.3f us", frame_time_in_ms * 1000);
-  else
-    igText("Rendering last frame took: %.3f ms", frame_time_in_ms);
+  char last_frame_time_str[16];
+  double last_frame_time = state->stats.last_frame_rendering.total_time;
+  Stats_string_time(last_frame_time, last_frame_time_str,
+                    sizeof(last_frame_time_str));
+
+  igText("Rendering last frame took: %s", last_frame_time_str);
+  char rendering_time_str[16];
+  if (state->stats.rendering.total_time == 0) {
+    double rendering_time = StatsTimer_elapsed(&state->stats.rendering);
+    Stats_string_time(rendering_time, rendering_time_str,
+                      sizeof(rendering_time_str));
+    igText("Elapsed rendering time: %s", rendering_time_str);
+  } else {
+    double rendering_time = state->stats.rendering.total_time;
+    Stats_string_time(rendering_time, rendering_time_str,
+                      sizeof(rendering_time_str));
+    igText("Total rendering time: %s", rendering_time_str);
+  }
   igText("Rendered frames: %d", state->stats.frame_number);
 
   return changed;
