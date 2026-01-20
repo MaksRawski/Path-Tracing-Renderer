@@ -6,7 +6,7 @@
 /* #include "yawpitch.h" */
 
 bool Inputs_update_camera(Camera *cam, const WindowEventsData *events,
-                          bool allow_rotate);
+                          double dt, bool allow_rotate);
 
 CameraTranslation Inputs_move(const WindowEventsData *events);
 YawPitch Inputs_rotate(const WindowEventsData *events);

@@ -77,9 +77,11 @@ void AppState_update_camera(AppState *app_state, Renderer *renderer,
   if (app_state->cam_changed) {
     app_state->cam_changed = false;
     AppState__set_camera(app_state, renderer);
-  } else if (Inputs_update_camera(&app_state->cam, events,
-                                  /* allow camera rotation if */
-                                  Renderer_is_focused(renderer))) {
+  } else if (Inputs_update_camera(
+                 &app_state->cam, events,
+                 app_state->stats.last_frame_rendering.total_time,
+                 /* allow camera rotation if */
+                 Renderer_is_focused(renderer))) {
     AppState__set_camera(app_state, renderer);
   }
 }

@@ -3,6 +3,7 @@
 #include "opengl/scaling.h"
 #include "rad_deg.h"
 #include "scene/bvh/strategies.h"
+#include "scene/camera.h"
 #include "small_string.h"
 #include "stats.h"
 #include "utils.h"
@@ -79,6 +80,13 @@ bool _Camera_settings(AppState *params) {
   changed |= igSliderFloat("Focal length", &params->cam.focal_length,
                            CAMERA_FOCAL_LENGTH_MIN, CAMERA_FOCAL_LENGTH_MAX,
                            "%3.1f", 0);
+  changed |= igSliderFloat("Movement speed (per second)",
+                           &params->cam.step_size_per_second,
+                           CAMERA_MOVE_SPEED_PER_SECOND_MIN,
+                           CAMERA_MOVE_SPEED_PER_SECOND_MAX, "%.2f", 0);
+  changed |= igSliderFloat(
+      "Sensitivity", &params->cam.sensitivity, CAMERA_ROTATE_SENSITIVITY_MIN,
+      CAMERA_ROTATE_SENSITIVITY_MAX, "%.4f", ImGuiSliderFlags_Logarithmic);
   return changed;
 }
 

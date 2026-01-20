@@ -230,7 +230,7 @@ void handle_camera(const char *path, cgltf_node *node, Scene *scene) {
   vec3 lookat =
       Mat4_mul_vec3(view_matrix, vec3_add(DEFAULT_CAM_POS, DEFAULT_CAM_DIR));
   vec3 dir = vec3_sub(lookat, pos);
-
-  scene->camera =
-      Camera_new(pos, dir, DEFAULT_CAM_UP, cam.yfov, DEFAULT_CAM_FOCAL_LENGTH);
+  scene->camera.pos = pos;
+  scene->camera.dir = dir;
+  scene->camera.fov_rad = cam.yfov;
 }
