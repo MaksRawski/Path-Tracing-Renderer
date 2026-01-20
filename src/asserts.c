@@ -7,7 +7,7 @@
 bool ASSERT_CUSTOM_impl(bool cond, const char *fail_reason,
                         const char *file_name, int line_num) {
   if (!cond) {
-    fprintf(stderr, "%s:%d: \033[31mASSERTION FAILED\033[0m: %s\n", file_name,
+    fprintf(stderr, "%s:%d: " RED("ASSERTION FAILED") ": %s\n", file_name,
             line_num, fail_reason);
     return false;
   }
@@ -25,8 +25,7 @@ bool ASSERT_CUSTOM_FMT_impl(bool cond, const char *file_name, int line_num,
 }
 
 noreturn void UNREACHABLE_impl(const char *file_name, int line_num) {
-  fprintf(stderr, "%s:%d: \033[31mUNREACHABLE REACHED!\033[0m", file_name,
-          line_num);
+  fprintf(stderr, "%s:%d: " RED("UNREACHABLE REACHED!"), file_name, line_num);
   exit(1);
 }
 
@@ -34,7 +33,7 @@ noreturn void ERROR_impl(const char *prefix, const char *msg) {
   if (prefix == NULL)
     fprintf(stderr, "%s\n", msg);
   else
-    fprintf(stderr, RED("%s") "%s\n", prefix, msg);
+    fprintf(stderr, RED("%s") ": %s\n", prefix, msg);
   exit(1);
 }
 
