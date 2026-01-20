@@ -32,15 +32,17 @@ bool _Scene_settings(AppState *state) {
     }
   }
 
-  if (!SmallString_is_empty(&state->scene_paths.loaded_scene_path)) {
-    igText("Loaded scene: %s",
-           FilePath_get_file_name(state->scene_paths.loaded_scene_path.str));
-  }
-
   if (igCombo_Str_arr("BVH type", (int *)&state->BVH_build_strat,
                       FindBestSplitFn_Variants_names,
                       FindBestSplitFn_Variants__COUNT, 5)) {
     state->BVH_build_strat_changed = true;
+  }
+
+  if (!SmallString_is_empty(&state->scene_paths.loaded_scene_path)) {
+    igText("Loaded scene: %s",
+           FilePath_get_file_name(state->scene_paths.loaded_scene_path.str));
+    igText("Loaded Triangles: %d", state->scene.triangles_count);
+    igText("Created BVH nodes: %d", state->scene.bvh.nodes_count);
   }
   return changed;
 }
