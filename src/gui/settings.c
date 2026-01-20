@@ -45,6 +45,15 @@ bool _Scene_settings(AppState *state) {
            FilePath_get_file_name(state->scene_paths.loaded_scene_path.str));
     igText("Loaded Triangles: %d", state->scene.triangles_count);
     igText("Created BVH nodes: %d", state->scene.bvh.nodes_count);
+
+    char load_scene_time[16] = {0};
+    char bvh_build_time[16] = {0};
+    Stats_string_time(state->stats.scene_load.total_time, load_scene_time,
+                      sizeof(load_scene_time));
+    Stats_string_time(state->stats.bvh_build.total_time, bvh_build_time,
+                      sizeof(bvh_build_time));
+    igText("Loading scene time: %s", load_scene_time);
+    igText("BVH build time: %s", bvh_build_time);
   }
   return changed;
 }
@@ -80,7 +89,7 @@ bool _Camera_settings(AppState *params) {
   changed |= igSliderFloat("Focal length", &params->cam.focal_length,
                            CAMERA_FOCAL_LENGTH_MIN, CAMERA_FOCAL_LENGTH_MAX,
                            "%3.1f", 0);
-  changed |= igSliderFloat("Movement speed (per second)",
+  changed |= igSliderFloat("Movement speed (in units per second)",
                            &params->cam.step_size_per_second,
                            CAMERA_MOVE_SPEED_PER_SECOND_MIN,
                            CAMERA_MOVE_SPEED_PER_SECOND_MAX, "%.2f", 0);
@@ -125,13 +134,13 @@ bool _Rendering_settings(AppState *state) {
   state->rendering_params.rendering_resolution.width = res[0];
   state->rendering_params.rendering_resolution.height = res[1];
 
-  char last_frame_time_str[16];
+  char last_frame_time_str[16] = {0};
   double last_frame_time = state->stats.last_frame_rendering.total_time;
   Stats_string_time(last_frame_time, last_frame_time_str,
                     sizeof(last_frame_time_str));
 
   igText("Rendering last frame took: %s", last_frame_time_str);
-  char rendering_time_str[16];
+  char rendering_time_str[16] = {0};
   if (state->stats.rendering.total_time == 0) {
     double rendering_time = StatsTimer_elapsed(&state->stats.rendering);
     Stats_string_time(rendering_time, rendering_time_str,
