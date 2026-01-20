@@ -53,7 +53,7 @@ void AppState_update_scene(AppState *app_state, Renderer *renderer) {
     scene_changed = true;
   }
 
-  if (app_state->BVH_build_strat_changed) {
+  if (scene_changed || app_state->BVH_build_strat_changed) {
     app_state->BVH_build_strat_changed = false;
     StatsTimer_start(&app_state->stats.bvh_build);
     Scene_build_bvh(&app_state->scene, app_state->BVH_build_strat);
