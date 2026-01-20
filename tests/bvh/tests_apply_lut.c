@@ -2,8 +2,6 @@
 #include "asserts.h"
 #include "scene/bvh.h"
 #include "tests_macros.h"
-// HACK: as for now BVH_apply_swaps_lut calls malloc
-#include "stdlib.h"
 
 bool test_apply_swaps_lut__id(void) {
   BVHTriCount numbers[] = {0, 1, 2, 3, 4, 5};

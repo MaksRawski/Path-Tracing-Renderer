@@ -1,4 +1,5 @@
 #include "scene/bvh.h"
+#include "vec3.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,14 +7,16 @@
 void calculate_centroids(Triangle *tri, int tri_count, vec3 centroids[]);
 void set_node_bounds(BVHnode *node, const Triangle tris[]);
 void subdivide(BVHnode nodes[], int node_idx, Triangle tri[], vec3 centroids[],
-               BVHNodeCount *created_nodes, BVHTriCount swaps_lut[]);
+               BVHNodeCount *created_nodes, BVHTriCount swaps_lut[],
+               FindBestSplitFn find_best_split_fn);
 
 void tri_swap(Triangle *a, Triangle *b);
 BVHTriCount split_group(Triangle *tris, vec3 *centroids, BVHTriCount first,
                         BVHTriCount count, unsigned int axis, float split_pos,
                         BVHTriCount swaps_lut[]);
 
-BVHresult BVH_build(Triangle triangles[], BVHTriCount count) {
+BVHresult BVH_build(Triangle triangles[], BVHTriCount count,
+                    FindBestSplitFn find_best_split_fn) {
   BVHresult res = {0};
   res.bvh.nodes = calloc(count * 2 - 1, sizeof(BVHnode));
   res.swaps_lut = malloc(count * sizeof(BVHTriCount));
@@ -26,7 +29,7 @@ BVHresult BVH_build(Triangle triangles[], BVHTriCount count) {
   res.bvh.nodes_count = 1;
   res.bvh.nodes[0].count = count;
   subdivide(res.bvh.nodes, 0, triangles, centroids, &res.bvh.nodes_count,
-            res.swaps_lut);
+            res.swaps_lut, find_best_split_fn);
 
   free(centroids);
   return res;
@@ -37,23 +40,10 @@ void BVH_delete(BVH *self) {
   self = NULL;
 }
 
-static void find_best_split_longest_mid(const BVHnode *node, int *axis,
-                                        float *split_pos) {
-  vec3 extent = vec3_sub(node->bound_max, node->bound_min);
-  // find out longest axis
-  *axis = 0;
-  if (extent.y > extent.x)
-    *axis = 1;
-  if (extent.z > extent.y && extent.z > extent.x)
-    *axis = 2;
-
-  *split_pos = vec3_get_by_axis(&extent, *axis) * 0.5f +
-               vec3_get_by_axis(&node->bound_min, *axis);
-}
-
 // recursively subdivide a node until there are 2 primitives left
 void subdivide(BVHnode nodes[], int node_idx, Triangle tris[], vec3 centroids[],
-               BVHNodeCount *created_nodes, BVHTriCount swaps_lut[]) {
+               BVHNodeCount *created_nodes, BVHTriCount swaps_lut[],
+               FindBestSplitFn find_best_split_fn) {
   BVHnode *node = nodes + node_idx;
   // 0. first set the bounds, only a leaf node can be subdivided!
   set_node_bounds(node, tris);
@@ -64,17 +54,16 @@ void subdivide(BVHnode nodes[], int node_idx, Triangle tris[], vec3 centroids[],
   // 1. determine axis and position of a split
   int axis;
   float split_pos;
-  find_best_split_longest_mid(node, &axis, &split_pos);
+  find_best_split_fn(node, tris, centroids, &axis, &split_pos);
 
   // 2.
-  BVHTriCount split_index = split_group(tris, centroids, node->first, node->count, axis,
-                                split_pos, swaps_lut);
+  BVHTriCount split_index = split_group(
+      tris, centroids, node->first, node->count, axis, split_pos, swaps_lut);
 
   // 3. create child nodes for the splits
   // if the split turned out to leave all elements on one side
   // then we leave that node as it was
-  if (split_index == node->first ||
-      split_index == (node->first + node->count))
+  if (split_index == node->first || split_index == (node->first + node->count))
     return;
 
   int left_node_idx = (*created_nodes)++;
@@ -90,8 +79,10 @@ void subdivide(BVHnode nodes[], int node_idx, Triangle tris[], vec3 centroids[],
   node->count = 0;
   node->first = left_node_idx;
 
-  subdivide(nodes, left_node_idx, tris, centroids, created_nodes, swaps_lut);
-  subdivide(nodes, right_node_idx, tris, centroids, created_nodes, swaps_lut);
+  subdivide(nodes, left_node_idx, tris, centroids, created_nodes, swaps_lut,
+            find_best_split_fn);
+  subdivide(nodes, right_node_idx, tris, centroids, created_nodes, swaps_lut,
+            find_best_split_fn);
 }
 
 // centroids should already have an allocated memory for tri_count of vec3

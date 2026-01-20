@@ -2,6 +2,7 @@
 #include "gui/file_browser.h"
 #include "opengl/scaling.h"
 #include "rad_deg.h"
+#include "scene/bvh/strategies.h"
 #include "small_string.h"
 #include "utils.h"
 #include "yawpitch.h"
@@ -36,7 +37,11 @@ bool _Scene_settings(AppState *state) {
            FilePath_get_file_name(state->scene_paths.loaded_scene_path.str));
   }
 
-  // TODO: build bvh checkbox (default on)
+  if (igCombo_Str_arr("BVH type", (int *)&state->BVH_build_strat,
+                      FindBestSplitFn_Variants_names,
+                      FindBestSplitFn_Variants__COUNT, 5)) {
+    state->BVH_build_strat_changed = true;
+  }
   return changed;
 }
 

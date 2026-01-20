@@ -8,6 +8,7 @@
 #include "renderer.h"
 #include "renderer/parameters.h"
 #include "scene.h"
+#include "scene/bvh/strategies.h"
 #include "scene/camera.h"
 #include "stats.h"
 
@@ -22,17 +23,12 @@ typedef struct {
   OpenGLScalingMode scaling_mode;
   AppStateSaveImageInfo save_image_info;
   Scene scene;
-  bool cam_changed, rendering_params_changed, scene_paths_changed;
+  FindBestSplitFn_Variants BVH_build_strat;
+  bool cam_changed, rendering_params_changed, scene_paths_changed,
+      BVH_build_strat_changed;
   bool gui_enabled, hot_reload_enabled, save_after_rendering,
       exit_after_rendering, movement_enabled;
 } AppState;
-
-AppState AppState_new(Camera camera, RendererParameters rendering,
-                      ScenePaths scene_pahts, OpenGLResolution res,
-                      OpenGLScalingMode scale_mode, Scene scene,
-                      AppStateSaveImageInfo save_image_info, bool gui_enabled,
-                      bool hot_reload_enabled, bool save_after_rendering,
-                      bool exit_after_rendering, bool movement_enabled);
 
 AppState AppState_default(void);
 

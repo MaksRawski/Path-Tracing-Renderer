@@ -4,6 +4,7 @@
 #include <assert.h>
 
 #include "scene/bvh.h"
+#include "scene/bvh/strategies.h"
 #include "scene/camera.h"
 #include "scene/material.h"
 #include "scene/mesh.h"
@@ -40,7 +41,11 @@ static_assert(
     (sizeof(Primitive) == 4) || (sizeof(Primitive) % 16 == 0),
     "Primitve should contain just a single element or be a multiple of 16");
 
+// NOTE: doesn't build BVH
 Scene Scene_load_gltf(const char *path);
+
+void Scene_build_bvh(Scene *scene,
+                     FindBestSplitFn_Variants find_best_split_fn_strat);
 
 Scene Scene_empty(void);
 bool Scene_is_empty(const Scene *scene);

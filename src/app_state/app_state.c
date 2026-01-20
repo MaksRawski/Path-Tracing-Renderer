@@ -1,41 +1,28 @@
 #include "app_state.h"
-#include "app_state/app_state_save_image.h"
-#include "opengl/scaling.h"
-#include "renderer.h"
 #include "renderer/inputs.h"
-#include "renderer/shaders.h"
 #include "utils.h"
 
-// this new is supposed to be an exhaustive constructor, i.e. should initalize
-// every field
-AppState AppState_new(Camera camera, RendererParameters rendering,
-                      ScenePaths scene_pahts, OpenGLResolution res,
-                      OpenGLScalingMode scale_mode, Scene scene,
-                      AppStateSaveImageInfo save_image_info, bool gui_enabled,
-                      bool hot_reload_enabled, bool save_after_rendering,
-                      bool exit_after_rendering, bool movement_enabled) {
-  return (AppState){.cam = camera,
-                    .rendering_params = rendering,
-                    .scene_paths = scene_pahts,
-                    .viewport_size = res,
-                    .scene = scene,
-                    .scaling_mode = scale_mode,
-                    .save_image_info = save_image_info,
-                    .gui_enabled = gui_enabled,
-                    .hot_reload_enabled = hot_reload_enabled,
-                    .save_after_rendering = save_after_rendering,
-                    .exit_after_rendering = exit_after_rendering,
-                    .movement_enabled = movement_enabled,
-                    .cam_changed = true,
-                    .rendering_params_changed = true,
-                    .scene_paths_changed = true};
-}
-
 AppState AppState_default(void) {
-  return AppState_new(
-      Camera_default(), RendererParameters_default(), ScenePath_default(),
-      OpenGLResolution_new(0, 0), OpenGLScalingMode_FIT_CENTER, Scene_empty(),
-      AppStateSaveImageInfo_default(), true, true, false, false, true);
+  return (AppState){
+      .cam = Camera_default(),
+      .rendering_params = RendererParameters_default(),
+      .scene_paths = ScenePath_default(),
+      .viewport_size = OpenGLResolution_new(0, 0),
+      .scene = Scene_empty(),
+      .scaling_mode = OpenGLScalingMode_FIT_CENTER,
+      .save_image_info = AppStateSaveImageInfo_default(),
+      .gui_enabled = true,
+      .hot_reload_enabled = true,
+      .save_after_rendering = false,
+      .exit_after_rendering = false,
+      .movement_enabled = true,
+      .BVH_build_strat = FindBestSplitFn_Variants_Naive,
+      //
+      .cam_changed = true,
+      .rendering_params_changed = true,
+      .scene_paths_changed = true,
+      .BVH_build_strat_changed = true,
+  };
 }
 
 void AppState__restart_progressive_rendering(AppState *app_state,
@@ -49,18 +36,29 @@ void AppState__set_camera(AppState *app_state, Renderer *renderer) {
   AppState__restart_progressive_rendering(app_state, renderer);
 }
 
-// NOTE: handles scene_paths_changed signal and loads the scene if appropriate
+// NOTE: handles scene_paths_changed and BVH_strat_changed signals
 void AppState_update_scene(AppState *app_state, Renderer *renderer) {
   SmallString *new_scene_path = &app_state->scene_paths.new_scene_path;
   SmallString *loaded_scene_path = &app_state->scene_paths.loaded_scene_path;
+  bool scene_changed = false;
 
   if (app_state->scene_paths_changed && FilePath_exists(new_scene_path->str)) {
     app_state->scene_paths_changed = false;
     app_state->scene = Scene_load_gltf(new_scene_path->str);
     app_state->cam = app_state->scene.camera;
+    *loaded_scene_path = SmallString_new(new_scene_path->str);
+    scene_changed = true;
+  }
+
+  if (app_state->BVH_build_strat_changed) {
+    app_state->BVH_build_strat_changed = false;
+    Scene_build_bvh(&app_state->scene, app_state->BVH_build_strat);
+    scene_changed = true;
+  }
+
+  if (scene_changed) {
     Renderer_load_scene(renderer, &app_state->scene);
     AppState__restart_progressive_rendering(app_state, renderer);
-    *loaded_scene_path = SmallString_new(new_scene_path->str);
   }
 }
 
