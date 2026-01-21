@@ -1,5 +1,4 @@
 #include "asserts.h"
-#include "epsilon.h"
 #include "stdio.h"
 #include <stdarg.h>
 #include <stdlib.h>
@@ -16,12 +15,13 @@ bool ASSERT_CUSTOM_impl(bool cond, const char *fail_reason,
 
 bool ASSERT_CUSTOM_FMT_impl(bool cond, const char *file_name, int line_num,
                             const char *fmt, ...) {
-  char out[1024];
+  char fail_reason[1024];
   va_list args;
   va_start(args, fmt);
-  vsnprintf(out, sizeof(out), fmt, args);
+  vsnprintf(fail_reason, sizeof(fail_reason), fmt, args);
   va_end(args);
-  return ASSERT_CUSTOM_impl(cond, out, file_name, line_num);
+
+  return ASSERT_CUSTOM_impl(cond, fail_reason, file_name, line_num);
 }
 
 noreturn void UNREACHABLE_impl(const char *file_name, int line_num) {
@@ -51,39 +51,18 @@ void exit_if_not_impl(bool cond) {
     exit(1);
 }
 
-bool ASSERT_CONDF_impl(const char *cond_str, bool cond, const char *val_str,
-                       double val, const char *file_name, int line_num) {
-  char out[256];
-  sprintf(out, "(%s) %s = %f", cond_str, val_str, val);
-  return ASSERT_CUSTOM_impl(cond, out, file_name, line_num);
-}
+bool ASSERT_EQ_impl(bool equal, const char *a_name, const char *b_name,
+                    const char *file_name, int line_num,
+                    const char *single_val_fmt, ...) {
+  char fmt_str[512];
+  snprintf(fmt_str, sizeof(fmt_str), "%s (%s) != %s (%s)", a_name,
+           single_val_fmt, b_name, single_val_fmt);
 
-bool ASSERT_EQF_impl(const char *a_str, double a, const char *b_str, double b,
-                     const char *file_name, int line_num) {
-  char out[256];
-  sprintf(out, "%s (%f) != %s (%f)", a_str, a, b_str, b);
-  return ASSERT_CUSTOM_impl(is_zero(a - b), out, file_name, line_num);
-}
+  char out[1024];
+  va_list args;
+  va_start(args, single_val_fmt);
+  vsnprintf(out, sizeof(out), fmt_str, args);
+  va_end(args);
 
-bool ASSERT_EQI_impl(const char *a_str, long a, const char *b_str, long b,
-                     const char *file_name, int line_num) {
-  char out[256];
-  sprintf(out, "%s (%ld) != %s (%ld)", a_str, a, b_str, b);
-  return ASSERT_CUSTOM_impl(a == b, out, file_name, line_num);
-}
-
-bool ASSERT_VEC3_EQ_impl(const char *a_str, vec3 a, const char *b_str, vec3 b,
-                         const char *file_name, int line_num) {
-  char out[256];
-  sprintf(out, "%s (%s) != %s (%s)", a_str, vec3_str(a).s, b_str,
-          vec3_str(b).s);
-  return ASSERT_CUSTOM_impl(vec3_eq(a, b), out, file_name, line_num);
-}
-
-bool ASSERT_VEC3D_EQ_impl(const char *a_str, Vec3d a, const char *b_str,
-                          Vec3d b, const char *file_name, int line_num) {
-  char out[256];
-  sprintf(out, "%s (%s) != %s (%s)", a_str, Vec3d_str(a).s, b_str,
-          Vec3d_str(b).s);
-  return ASSERT_CUSTOM_impl(Vec3d_eq(a, b), out, file_name, line_num);
+  return ASSERT_CUSTOM_impl(equal, out, file_name, line_num);
 }

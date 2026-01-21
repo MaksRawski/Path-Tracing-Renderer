@@ -9,7 +9,9 @@ Vec3d Vec3d_from_double3(const double *const v) {
   return Vec3d_new(v[0], v[1], v[2]);
 }
 
-vec3 Vec3d_to_vec3(Vec3d v) { return vec3_new((float)v.x, (float)v.y, (float)v.z); }
+vec3 Vec3d_to_vec3(Vec3d v) {
+  return vec3_new((float)v.x, (float)v.y, (float)v.z);
+}
 Vec3d Vec3d_from_vec3(vec3 v) { return Vec3d_new(v.x, v.y, v.z); }
 
 // element-wise min
@@ -63,10 +65,11 @@ void Vec3d_copy_from_double3(Vec3d *const dst, const double *const src) {
   dst->z = src[2];
 }
 
-bool Vec3d_is_zero(Vec3d v) {
-  return is_zero(v.x) && is_zero(v.y) && is_zero(v.z);
+bool Vec3d_eq(Vec3d v, Vec3d expected, double epsilon) {
+  return double_equal_expected(v.x, expected.x, epsilon) &&
+         double_equal_expected(v.y, expected.y, epsilon) &&
+         double_equal_expected(v.z, expected.z, epsilon);
 }
-bool Vec3d_eq(Vec3d a, Vec3d b) { return Vec3d_is_zero(Vec3d_sub(a, b)); }
 
 double Vec3d_mag(Vec3d v) { return sqrt(v.x * v.x + v.y * v.y + v.z * v.z); }
 Vec3d Vec3d_norm(Vec3d v) { return Vec3d_mult(v, 1.0 / Vec3d_mag(v)); }
@@ -81,6 +84,6 @@ Vec3d Vec3d_cross(Vec3d a, Vec3d b) {
 
 Vec3dStr Vec3d_str(Vec3d v) {
   Vec3dStr res = {0};
-  sprintf(res.s, "%+.3f %+.3f %+.3f", v.x, v.y, v.z);
+  sprintf(res.str, "%+.20f %+.20f %+.20f", v.x, v.y, v.z);
   return res;
 }

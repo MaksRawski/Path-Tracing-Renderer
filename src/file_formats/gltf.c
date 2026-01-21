@@ -106,8 +106,8 @@ void load_gltf_scene(Scene *scene, const char *path) {
     if (node->camera != NULL)
       handle_camera(path, node, scene);
   }
-  ASSERTQ_EQI(t_counter, scene->triangles_count);
-  ASSERTQ_EQI(meshes_counter, scene->meshes_count);
+  ASSERTQ_EQ(t_counter, scene->triangles_count);
+  ASSERTQ_EQ(meshes_counter, scene->meshes_count);
 
   // materials
   scene->mats[0] = DEFAULT_MATERIAL;

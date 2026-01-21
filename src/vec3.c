@@ -60,11 +60,10 @@ void vec3_copy_from_float3(vec3 *const dst, const float *const src) {
   dst->z = src[2];
 }
 
-bool vec3_is_zero(vec3 v) {
-  return is_zero(v.x) && is_zero(v.y) && is_zero(v.z);
-}
-bool vec3_eq(vec3 a, vec3 b) {
-  return vec3_is_zero(vec3_sub(a, b));
+bool vec3_eq(vec3 v, vec3 expected, float epsilon) {
+  return float_equal_expected(v.x, expected.x, epsilon) &&
+         float_equal_expected(v.y, expected.y, epsilon) &&
+         float_equal_expected(v.z, expected.z, epsilon);
 }
 
 float vec3_mag(vec3 v) { return sqrtf(v.x * v.x + v.y * v.y + v.z * v.z); }
@@ -80,6 +79,6 @@ vec3 vec3_cross(vec3 a, vec3 b) {
 
 Vec3Str vec3_str(vec3 v) {
   Vec3Str res = {0};
-  sprintf(res.s, "%+.3f %+.3f %+.3f", v.x, v.y, v.z);
+  snprintf(res.str, sizeof(res.str), "%+.10f %+.10f %+.10f", v.x, v.y, v.z);
   return res;
 }

@@ -33,14 +33,8 @@ float Camera_get_fov_deg(const Camera *self) {
 }
 
 void Camera_set_fov_deg(Camera *self, float deg) {
-  ASSERTQ_CONDF(deg > CAMERA_FOV_MIN_DEG && deg < CAMERA_FOV_MAX_DEG, deg);
+  ASSERTQ_COND(deg > CAMERA_FOV_MIN_DEG && deg < CAMERA_FOV_MAX_DEG, deg);
   self->fov_rad = deg_to_rad(deg);
-}
-
-bool Camera_eq(Camera a, Camera b) {
-  return vec3_eq(a.pos, b.pos) && vec3_eq(a.dir, b.dir) &&
-         vec3_eq(a.up, b.up) && a.fov_rad == b.fov_rad &&
-         a.focal_length == b.focal_length;
 }
 
 void Camera_move_up(Camera *cam, float dir, float step_size) {

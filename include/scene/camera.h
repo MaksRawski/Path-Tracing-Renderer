@@ -72,8 +72,6 @@ void Camera_move_left(Camera *cam, float dir, float step_size);
 void Camera_move(Camera *cam, CameraTranslation translation, double step_size);
 void Camera_rotate(Camera *cam, YawPitch rotation);
 
-bool Camera_eq(Camera a, Camera b);
-
 Camera Camera_default(void);
 
 #endif // CAMERA_H_
