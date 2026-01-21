@@ -35,8 +35,7 @@ bool _Scene_settings(AppState *state) {
   }
 
   if (igCombo_Str_arr("BVH type", (int *)&state->BVH_build_strat,
-                      BVHStrategy_str,
-                      BVHStrategy__COUNT, 5)) {
+                      BVHStrategy_str, BVHStrategy__COUNT, 5)) {
     state->BVH_build_strat_changed = true;
   }
 
@@ -101,6 +100,12 @@ bool _Camera_settings(AppState *params) {
 
 bool _Rendering_settings(AppState *state) {
   bool changed = false;
+
+  igSetNextItemWidth(0.5 * igGetWindowWidth());
+  changed |= igColorPicker3(
+      "Environment color", state->rendering_params.env_color,
+      ImGuiColorEditFlags_NoAlpha | ImGuiColorEditFlags_NoInputs);
+
   changed |= igInputInt("Max Bounce Count",
                         &state->rendering_params.max_bounce_count, 1, 1, 0);
   tooltip("Maximum number of bounces a ray can do before terminating.");

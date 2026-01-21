@@ -16,6 +16,7 @@ out vec4 FragColor;
 #define MAX_ITERATIONS 200
 
 struct Parameters {
+    vec3 env_color;
     int max_bounce_count;
     int samples_per_pixel;
     float diverge_strength;
@@ -435,7 +436,7 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
             c *= hitInfo.mat.albedo;
         } else {
             // get color from environment
-            // incomingLight += vec3(58, 58, 58) / 255 * c;
+            incomingLight += params.env_color.rgb * c;
             break;
         }
     }
