@@ -7,7 +7,7 @@
 
 bool test_load_gltf_scene__cube_camera(void) {
   Scene scene = {0};
-  load_gltf_scene(&scene, "tests/gltf/cube-camera.glb");
+  load_gltf_scene(&scene, "tests/gltf/scenes/cube-camera.glb");
 
   ASSERT_EQ(scene.triangles_count, 12);
   ASSERT_EQ(scene.mats_count, 1); // just the default material
