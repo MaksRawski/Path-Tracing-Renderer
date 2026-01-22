@@ -2,6 +2,7 @@
 #include "renderer/inputs.h"
 #include "stats.h"
 #include "utils.h"
+#include <stdio.h>
 
 AppState AppState_default(void) {
   return (AppState){
@@ -59,6 +60,11 @@ void AppState_update_scene(AppState *app_state, Renderer *renderer) {
     StatsTimer_start(&app_state->stats.bvh_build);
     Scene_build_bvh(&app_state->scene, app_state->BVH_build_strat);
     StatsTimer_stop(&app_state->stats.bvh_build);
+    char bvh_build_time[16] = {0};
+    Stats_string_time(app_state->stats.bvh_build.total_time, bvh_build_time,
+                      sizeof(bvh_build_time));
+    printf("Building BVH using the strategy '%s' took: %s\n",
+           BVHStrategy_str[app_state->BVH_build_strat], bvh_build_time);
     scene_changed = true;
   }
 
