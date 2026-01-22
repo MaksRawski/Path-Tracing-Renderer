@@ -24,7 +24,6 @@ double StatsTimer_elapsed(const StatsTimer *self) {
 
 Stats Stats_default(void) {
   Stats stats = {0};
-  StatsTimer_start(&stats.rendering);
   return stats;
 }
 
