@@ -4,16 +4,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-void calculate_centroids(Triangle *tri, int tri_count, vec3 centroids[]);
-void set_node_bounds(BVHnode *node, const Triangle tris[]);
-void subdivide(BVHnode nodes[], int node_idx, Triangle tri[], vec3 centroids[],
-               BVHNodeCount *created_nodes, BVHTriCount swaps_lut[],
-               FindBestSplitFn find_best_split_fn);
-
-void tri_swap(Triangle *a, Triangle *b);
-BVHTriCount split_group(Triangle *tris, vec3 *centroids, BVHTriCount first,
-                        BVHTriCount count, unsigned int axis, float split_pos,
-                        BVHTriCount swaps_lut[]);
+static void calculate_centroids(Triangle *tri, int tri_count, vec3 centroids[]);
+static void set_node_bounds(BVHnode *node, const Triangle tris[]);
+static void subdivide(BVHnode nodes[], int node_idx, Triangle tri[],
+                      vec3 centroids[], BVHNodeCount *created_nodes,
+                      BVHTriCount swaps_lut[],
+                      FindBestSplitFn find_best_split_fn);
+static BVHTriCount split_group(Triangle *tris, vec3 *centroids,
+                               BVHTriCount first, BVHTriCount count,
+                               unsigned int axis, float split_pos,
+                               BVHTriCount swaps_lut[]);
 
 BVHresult BVH_build(Triangle triangles[], BVHTriCount count,
                     FindBestSplitFn find_best_split_fn) {
@@ -52,9 +52,11 @@ void subdivide(BVHnode nodes[], int node_idx, Triangle tris[], vec3 centroids[],
     return;
 
   // 1. determine axis and position of a split
-  int axis;
-  float split_pos;
+  int axis = -1;
+  float split_pos = -INFINITY;
   find_best_split_fn(node, tris, centroids, &axis, &split_pos);
+  if (axis == -1 || split_pos == -INFINITY)
+    return;
 
   // 2.
   BVHTriCount split_index = split_group(
@@ -115,18 +117,13 @@ void set_node_bounds(BVHnode *node, const Triangle *tris) {
   }
 }
 
-void tri_swap(Triangle *a, Triangle *b) {
-  Triangle t = *a;
-  *a = *b;
-  *b = t;
-}
-
 // Swaps positions of triangles (and centroids) so that all to the "left" of
 // split_pos are before or at split index and all to the "right" of the
 // split_pos are after index. Returns the split index.
-BVHTriCount split_group(Triangle tris[], vec3 centroids[], BVHTriCount first,
-                        BVHTriCount count, unsigned int axis, float split_pos,
-                        BVHTriCount swaps_lut[]) {
+static BVHTriCount split_group(Triangle tris[], vec3 centroids[],
+                               BVHTriCount first, BVHTriCount count,
+                               unsigned int axis, float split_pos,
+                               BVHTriCount swaps_lut[]) {
   int i = first;
   int j = i + count - 1;
   while (i <= j) {

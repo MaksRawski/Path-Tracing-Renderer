@@ -42,7 +42,9 @@ static float SAH_cost(const BVHnode *node, const Triangle *triangles,
 void FindBestSplitFn_SAH(const BVHnode *node, const Triangle *triangles,
                          const vec3 *centroids, int *best_axis,
                          float *best_split_pos) {
-  float best_cost = INFINITY;
+  AABB parent_aabb = AABB_from(node->bound_min, node->bound_max);
+  float parent_cost = node->count * AABB_area(&parent_aabb);
+  float best_cost = parent_cost;
   for (unsigned int axis = 0; axis < 3; ++axis) {
     for (unsigned int i = 0; i < node->count; ++i) {
       const vec3 *centroid = &centroids[node->first + i];
