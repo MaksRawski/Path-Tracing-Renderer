@@ -48,11 +48,12 @@ typedef struct {
     return res;                                                                \
   } while (0);
 
-#define RETURN_OPTION(_short_name, _long_name, _desc)                          \
-  return (Option){.short_name = _short_name,                                   \
-                  .long_name = _long_name,                                     \
-                  .description = _desc,                                        \
-                  .default_value = ""};
+// NOTE: defined as a macro so that no explicit copying has to be done
+#define OPTION_NEW(_short_name, _long_name, _desc)                             \
+  (Option){.short_name = _short_name,                                          \
+           .long_name = _long_name,                                            \
+           .description = _desc,                                               \
+           .default_value = ""}
 
 Option Option_new(enum Options option, const AppState *default_app_state) {
   switch (option) {
@@ -86,24 +87,24 @@ Option Option_new(enum Options option, const AppState *default_app_state) {
   }
 
   case Options_FLAG_EXIT_AFTER_RENDERING:
-    RETURN_OPTION("-X", "--exit-after-rendering", "");
+    return OPTION_NEW("-X", "--exit-after-rendering", "");
   case Options_FLAG_SAVE_AFTER_RENDERING:
-    RETURN_OPTION("-S", "--save-after-rendering",
-                  "Automatically save rendered image to PNG.");
+    return OPTION_NEW("-S", "--save-after-rendering",
+                      "Automatically save rendered image to PNG.");
   case Options_FLAG_NO_GUI:
-    RETURN_OPTION("-NG", "--no-gui", "Run without GUI overlay.");
+    return OPTION_NEW("-NG", "--no-gui", "Run without GUI overlay.");
   case Options_FLAG_NO_HOT_RELOAD:
-    RETURN_OPTION("-NH", "--no-hot-reload",
-                  "Disable hot-reloading of shaders.");
+    return OPTION_NEW("-NH", "--no-hot-reload",
+                      "Disable hot-reloading of shaders.");
   case Options_FLAG_NO_MOVEMENT:
-    RETURN_OPTION("-NM", "--no-movement", "Disable camera movement.");
+    return OPTION_NEW("-NM", "--no-movement", "Disable camera movement.");
   case Options_FLAG_HELP:
-    RETURN_OPTION("-h", "--help", "Display this help");
+    return OPTION_NEW("-h", "--help", "Display this help");
   case Options_FLAG_JUST_RENDER:
-    RETURN_OPTION("-J", "--just-render",
-                  "Alias for --no-gui --no-hot-reload --no-movement "
-                  "--save-after-rendering "
-                  "--exit-after-rendering.");
+    return OPTION_NEW("-J", "--just-render",
+                      "Alias for --no-gui --no-hot-reload --no-movement "
+                      "--save-after-rendering "
+                      "--exit-after-rendering.");
   case Options__COUNT:
     UNREACHABLE();
   }
