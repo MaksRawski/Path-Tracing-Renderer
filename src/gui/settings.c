@@ -88,8 +88,7 @@ bool _Camera_settings(AppState *params) {
   changed |= igSliderFloat("Focal length", &params->cam.focal_length,
                            CAMERA_FOCAL_LENGTH_MIN, CAMERA_FOCAL_LENGTH_MAX,
                            "%3.1f", 0);
-  changed |= igSliderFloat("Movement speed (in units per second)",
-                           &params->cam.step_size_per_second,
+  changed |= igSliderFloat("Movement speed", &params->cam.step_size_per_second,
                            CAMERA_MOVE_SPEED_PER_SECOND_MIN,
                            CAMERA_MOVE_SPEED_PER_SECOND_MAX, "%.2f", 0);
   changed |= igSliderFloat(
