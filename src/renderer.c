@@ -78,8 +78,6 @@ GLuint Renderer_get_fbo(const Renderer *self) {
   return self->_buffers.back.fbo;
 }
 
-// TODO: frame_number should obviously be refactored out, maybe even handled by
-// a different shader
 void Renderer_render_frame(const Renderer *self, unsigned int frame_number) {
   // setup the program and bind the vao associated with the quad
   // and the vbo holding the vertices of the quad

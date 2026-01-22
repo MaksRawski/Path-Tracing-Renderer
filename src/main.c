@@ -30,8 +30,6 @@ int main(int argc, char *argv[]) {
 
   Renderer renderer = Renderer_new();
 
-  // TODO: what if shader fails? could we skip all the other stuff then?
-  // It's not a fatal error but an error nonetheless
   while (!glfwWindowShouldClose(ctx.window)) {
     if (app_state.hot_reload_enabled)
       AppState_hot_reload_shaders(&app_state, &renderer);
@@ -39,8 +37,6 @@ int main(int argc, char *argv[]) {
     WindowEventsData events = OpenGLContext_poll_events(&ctx);
     app_state.viewport_size = OpenGLContext_get_framebuffer_size(&ctx);
     Renderer_update_focus(&renderer, &events, &ctx, !GUIOverlay_is_focused());
-
-    // TODO: if window is not focused skip iteration
 
     if (app_state.gui_enabled)
       GUIOverlay_update_state(&gui, &app_state);
