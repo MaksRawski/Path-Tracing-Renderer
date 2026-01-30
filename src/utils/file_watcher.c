@@ -5,15 +5,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(__linux__)
+#if _POSIX_C_SOURCE >= 200809L
+#define st_mtimensec st_mtim.tv_nsec
+#endif
+
 #include <sys/stat.h>
-#elif defined(_WIN32) || defined(_WIN64)
-#include <windows.h>
+#ifdef _WIN32
 #define stat _stat
 #endif
 
 // NOTE: using nanosecond precision on linux and second precision elsewhere
-// (which could very well be problematic but I don't care about that for now)
 // TODO: instead use OS specific APIs that offer more reliable mechanisms for
 // this; inotify on Linux and ReadDirectoryChangesW on Windows
 
@@ -40,11 +41,12 @@ bool stats_changed(FileWatcher *self, struct stat stats) {
 FileWatcher FileWatcher_new(const char *path) {
   FileWatcher self = {0};
 
-  struct stat stats = {0};
-  stat(path, &stats);
+  struct stat stats;
+  if (stat(path, &stats) == -1) {
+    perror("stat");
+  };
   set_stats(&self, stats);
 
-  self.path = (char *)malloc(strlen(path) + 1);
   strcpy(self.path, path);
 
   return self;
@@ -52,7 +54,7 @@ FileWatcher FileWatcher_new(const char *path) {
 
 // NOTE: exits if the file becomes unreadable
 bool FileWatcher_did_change(FileWatcher *self) {
-  struct stat stats = {0};
+  struct stat stats;
   if (stat(self->path, &stats) == -1) {
     fprintf(stderr, "Failed to stat %s: %s\n", self->path, strerror(errno));
     exit(EXIT_FAILURE);
@@ -65,7 +67,4 @@ bool FileWatcher_did_change(FileWatcher *self) {
   return false;
 }
 
-void FileWatcher_delete(FileWatcher *self) {
-  free(self->path);
-  self = NULL;
-}
+void FileWatcher_delete(FileWatcher *self) { (void)(self); }

@@ -15,12 +15,12 @@ bool test_load_gltf_scene__cube_camera(void) {
   ASSERT_EQ(scene.last_mesh_index, 0);
   ASSERT_EQ(scene.mesh_instances_count, 1);
 
-  ASSERT_VEC3_EQ(scene.camera.pos, vec3_new(-3.8, 0, 0), FLT_EPSILON);
-  ASSERT_VEC3_EQ(scene.camera.dir, vec3_new(1.0f, 0.0f, 0.0f), FLT_EPSILON);
-  ASSERT_EQF(scene.camera.fov_rad, deg_to_rad(39.6), FLT_EPSILON);
+  ASSERT_VEC3_EQ(scene.camera.pos, vec3_new(-7, 0, 0), FLT_EPSILON);
+  ASSERT_VEC3_EQ(scene.camera.dir, vec3_new(1, 0, 0), FLT_EPSILON);
+  ASSERT_EQF(scene.camera.fov_rad, deg_to_rad(20), FLT_EPSILON);
 
-  ASSERT_RANGE_EX(0, scene.bvh_nodes_count, 2 * scene.triangles_count);
-  ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_min, vec3_new(-1, -1, -1),
+  ASSERT_RANGE_EX(scene.bvh.nodes_count, 0, 2 * scene.triangles_count);
+  ASSERT_VEC3_EQ(scene.bvh.nodes[0].bound_min, vec3_new(-1, -1, -1),
                  FLT_EPSILON);
   ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_max, vec3_new(1, 1, 1), FLT_EPSILON);
 

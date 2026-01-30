@@ -1,47 +1,38 @@
 #include "app_state.h"
-#include "app_state/app_state_save_image.h"
-#include "opengl/scaling.h"
-#include "renderer.h"
 #include "renderer/inputs.h"
-#include "renderer/shaders.h"
+#include "scene/build_tlas.h"
+#include "stats.h"
 #include "utils.h"
-
-// this new is supposed to be an exhaustive constructor, i.e. should initalize
-// every field
-AppState AppState_new(Camera camera, RendererParameters rendering,
-                      ScenePaths scene_pahts, OpenGLResolution res,
-                      OpenGLScalingMode scale_mode, Scene scene,
-                      AppStateSaveImageInfo save_image_info, bool gui_enabled,
-                      bool hot_reload_enabled, bool save_after_rendering,
-                      bool exit_after_rendering, bool movement_enabled) {
-  return (AppState){.cam = camera,
-                    .rendering_params = rendering,
-                    .scene_paths = scene_pahts,
-                    .viewport_size = res,
-                    .scene = scene,
-                    .scaling_mode = scale_mode,
-                    .save_image_info = save_image_info,
-                    .gui_enabled = gui_enabled,
-                    .hot_reload_enabled = hot_reload_enabled,
-                    .save_after_rendering = save_after_rendering,
-                    .exit_after_rendering = exit_after_rendering,
-                    .movement_enabled = movement_enabled,
-                    .cam_changed = true,
-                    .rendering_params_changed = true,
-                    .scene_paths_changed = true};
-}
+#include <stdio.h>
 
 AppState AppState_default(void) {
-  return AppState_new(
-      Camera_default(), RendererParameters_default(), ScenePath_default(),
-      OpenGLResolution_new(0, 0), OpenGLScalingMode_FIT_CENTER, Scene_empty(),
-      AppStateSaveImageInfo_default(), true, true, false, false, true);
+  return (AppState){
+      .cam = Camera_default(),
+      .rendering_params = RendererParameters_default(),
+      .scene_paths = ScenePath_default(),
+      .viewport_size = OpenGLResolution_new(0, 0),
+      .scene = Scene_empty(),
+      .scaling_mode = OpenGLScalingMode_FIT_CENTER,
+      .save_image_info = AppStateSaveImageInfo_default(),
+      .gui_enabled = true,
+      .hot_reload_enabled = true,
+      .save_after_rendering = false,
+      .exit_after_rendering = false,
+      .movement_enabled = true,
+      .BVH_build_strat = BVHStrategy_Naive,
+      .stats = Stats_default(),
+      //
+      .cam_changed = true,
+      .rendering_params_changed = true,
+      .scene_paths_changed = true,
+      .BVH_build_strat_changed = true,
+  };
 }
 
 void AppState__restart_progressive_rendering(AppState *app_state,
                                              Renderer *renderer) {
   Renderer_clear_backbuffer(renderer);
-  Stats_reset(&app_state->stats);
+  Stats_reset_rendering(&app_state->stats);
 }
 
 void AppState__set_camera(AppState *app_state, Renderer *renderer) {
@@ -49,15 +40,47 @@ void AppState__set_camera(AppState *app_state, Renderer *renderer) {
   AppState__restart_progressive_rendering(app_state, renderer);
 }
 
-// NOTE: handles scene_paths_changed signal and loads the scene if appropriate
+// NOTE: handles scene_paths_changed and BVH_strat_changed signals
 void AppState_update_scene(AppState *app_state, Renderer *renderer) {
   SmallString *new_scene_path = &app_state->scene_paths.new_scene_path;
   SmallString *loaded_scene_path = &app_state->scene_paths.loaded_scene_path;
+  bool scene_changed = false;
+  bool bvh_built = false;
 
   if (app_state->scene_paths_changed && FilePath_exists(new_scene_path->str)) {
     app_state->scene_paths_changed = false;
+    StatsTimer_start(&app_state->stats.scene_load);
     app_state->scene = Scene_load_gltf(new_scene_path->str);
+    StatsTimer_stop(&app_state->stats.scene_load);
     app_state->cam = app_state->scene.camera;
+    *loaded_scene_path = SmallString_new(new_scene_path->str);
+    scene_changed = true;
+  }
+
+  if (scene_changed || app_state->BVH_build_strat_changed) {
+    app_state->BVH_build_strat_changed = false;
+    StatsTimer_start(&app_state->stats.bvh_build);
+    Scene_build_bvh(&app_state->scene, app_state->BVH_build_strat);
+    StatsTimer_stop(&app_state->stats.bvh_build);
+    char bvh_build_time[16] = {0};
+    Stats_string_time(app_state->stats.bvh_build.total_time, bvh_build_time,
+                      sizeof(bvh_build_time));
+    printf("Building BVH using the strategy '%s' took: %s\n",
+           BVHStrategy_str[app_state->BVH_build_strat], bvh_build_time);
+    bvh_built = true;
+  }
+
+  if (scene_changed) {
+    StatsTimer_start(&app_state->stats.tlas_build);
+    Scene_build_tlas(&app_state->scene);
+    StatsTimer_stop(&app_state->stats.tlas_build);
+    char tlas_build_time[16] = {0};
+    Stats_string_time(app_state->stats.tlas_build.total_time, tlas_build_time,
+                      sizeof(tlas_build_time));
+    printf("Building TLAS took: %s\n", tlas_build_time);
+  }
+
+  if (scene_changed || bvh_built) {
     Renderer_load_scene(renderer, &app_state->scene);
     AppState__restart_progressive_rendering(app_state, renderer);
     *loaded_scene_path = SmallString_new(new_scene_path->str);
@@ -74,9 +97,11 @@ void AppState_update_camera(AppState *app_state, Renderer *renderer,
   if (app_state->cam_changed) {
     app_state->cam_changed = false;
     AppState__set_camera(app_state, renderer);
-  } else if (Inputs_update_camera(&app_state->cam, events,
-                                  /* allow camera rotation if */
-                                  Renderer_is_focused(renderer))) {
+  } else if (Inputs_update_camera(
+                 &app_state->cam, events,
+                 app_state->stats.last_frame_rendering.total_time,
+                 /* allow camera rotation if */
+                 Renderer_is_focused(renderer))) {
     AppState__set_camera(app_state, renderer);
   }
 }

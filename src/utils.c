@@ -4,10 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(__linux__)
 #include <sys/stat.h>
-#elif defined(_WIN32)
-#include <windows.h>
+#ifdef _WIN32
 #define stat _stat
 #endif
 
@@ -42,11 +40,36 @@ char *File_read(const char *filename) {
 }
 
 bool FilePath_exists(const char *path) {
-  struct stat stats = {0};
+  struct stat stats;
   return stat(path, &stats) == 0;
 }
 
 const char *FilePath_get_file_name(const char *path) {
   const char *last_path_sep = strrchr(path, PATH_SEPARATOR);
   return last_path_sep ? last_path_sep + 1 : path;
+}
+
+// returns false when the result's length exceeds out_str_capacity
+bool StringArray_join(char *out_str, size_t out_str_capacity, const char *arr[],
+                      size_t arr_len, const char *sep) {
+  // TODO: use regular memcpy
+  size_t total_written = 0;
+  size_t sep_len = strlen(sep);
+  for (size_t i = 0; i < arr_len - 1; ++i) {
+    size_t len = strlen(arr[i]);
+    total_written += len + sep_len;
+    if (total_written > out_str_capacity) {
+      return false;
+    }
+    strncat(out_str, arr[i], len);
+    strncat(out_str, sep, sep_len);
+  }
+
+  size_t len = strlen(arr[arr_len - 1]);
+  total_written += len + 1;
+  if (total_written > out_str_capacity)
+    return false;
+
+  strncat(out_str, arr[arr_len - 1], len);
+  return true;
 }

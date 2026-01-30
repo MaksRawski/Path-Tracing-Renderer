@@ -6,6 +6,7 @@
 #include <stdbool.h>
 
 typedef struct {
+  float env_color[3];
   int max_bounce_count;
   int samples_per_pixel;
   float diverge_strength;

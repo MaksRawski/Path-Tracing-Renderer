@@ -1,8 +1,11 @@
 #include "gui/settings.h"
-#include "small_string.h"
 #include "gui/file_browser.h"
 #include "opengl/scaling.h"
 #include "rad_deg.h"
+#include "scene/bvh/strategies.h"
+#include "scene/camera.h"
+#include "small_string.h"
+#include "stats.h"
 #include "utils.h"
 #include "yawpitch.h"
 
@@ -24,19 +27,37 @@ bool _Scene_settings(AppState *state) {
   bool changed = false;
   ImVec2 button_size = {.x = 0, .y = 0};
   if (igButton("Load scene", button_size)) {
-    char *chosen_path = GuiFileBrowser_open_linux();
-    if (chosen_path != NULL) {
-      state->scene_paths.new_scene_path = SmallString_new(chosen_path);
+    SmallString chosen_path = SmallString_new("");
+    if (GuiFileBrowser_open(chosen_path.str, sizeof(SmallString))) {
+      state->scene_paths.new_scene_path = chosen_path;
       changed = true;
     }
+  }
+
+  if (igCombo_Str_arr("BVH type", (int *)&state->BVH_build_strat,
+                      BVHStrategy_str, BVHStrategy__COUNT, 5)) {
+    state->BVH_build_strat_changed = true;
   }
 
   if (!SmallString_is_empty(&state->scene_paths.loaded_scene_path)) {
     igText("Loaded scene: %s",
            FilePath_get_file_name(state->scene_paths.loaded_scene_path.str));
-  }
+    igText("Loaded Triangles: %d", state->scene.triangles_count);
+    igText("Created BVH nodes: %d", state->scene.bvh_nodes_count);
 
-  // TODO: build bvh checkbox (default on)
+    char load_scene_time[16] = {0};
+    char bvh_build_time[16] = {0};
+    char tlas_build_time[16] = {0};
+    Stats_string_time(state->stats.scene_load.total_time, load_scene_time,
+                      sizeof(load_scene_time));
+    Stats_string_time(state->stats.bvh_build.total_time, bvh_build_time,
+                      sizeof(bvh_build_time));
+    Stats_string_time(state->stats.tlas_build.total_time, tlas_build_time,
+                      sizeof(tlas_build_time));
+    igText("Loading scene time: %s", load_scene_time);
+    igText("BVH build time: %s", bvh_build_time);
+    igText("TLAS build time: %s", tlas_build_time);
+  }
   return changed;
 }
 
@@ -71,11 +92,23 @@ bool _Camera_settings(AppState *params) {
   changed |= igSliderFloat("Focal length", &params->cam.focal_length,
                            CAMERA_FOCAL_LENGTH_MIN, CAMERA_FOCAL_LENGTH_MAX,
                            "%3.1f", 0);
+  changed |= igSliderFloat("Movement speed", &params->cam.step_size_per_second,
+                           CAMERA_MOVE_SPEED_PER_SECOND_MIN,
+                           CAMERA_MOVE_SPEED_PER_SECOND_MAX, "%.2f", 0);
+  changed |= igSliderFloat(
+      "Sensitivity", &params->cam.sensitivity, CAMERA_ROTATE_SENSITIVITY_MIN,
+      CAMERA_ROTATE_SENSITIVITY_MAX, "%.4f", ImGuiSliderFlags_Logarithmic);
   return changed;
 }
 
 bool _Rendering_settings(AppState *state) {
   bool changed = false;
+
+  igSetNextItemWidth(0.5 * igGetWindowWidth());
+  changed |= igColorPicker3(
+      "Environment color", state->rendering_params.env_color,
+      ImGuiColorEditFlags_NoAlpha | ImGuiColorEditFlags_NoInputs);
+
   changed |= igInputInt("Max Bounce Count",
                         &state->rendering_params.max_bounce_count, 1, 1, 0);
   tooltip("Maximum number of bounces a ray can do before terminating.");
@@ -109,11 +142,24 @@ bool _Rendering_settings(AppState *state) {
   state->rendering_params.rendering_resolution.width = res[0];
   state->rendering_params.rendering_resolution.height = res[1];
 
-  double frame_time_in_ms = state->stats.last_frame_time * 1000.0;
-  if (frame_time_in_ms < 1.0)
-    igText("Rendering last frame took: %.3f us", frame_time_in_ms * 1000);
-  else
-    igText("Rendering last frame took: %.3f ms", frame_time_in_ms);
+  char last_frame_time_str[16] = {0};
+  double last_frame_time = state->stats.last_frame_rendering.total_time;
+  Stats_string_time(last_frame_time, last_frame_time_str,
+                    sizeof(last_frame_time_str));
+
+  igText("Rendering last frame took: %s", last_frame_time_str);
+  char rendering_time_str[16] = {0};
+  if (state->stats.rendering.total_time == 0) {
+    double rendering_time = StatsTimer_elapsed(&state->stats.rendering);
+    Stats_string_time(rendering_time, rendering_time_str,
+                      sizeof(rendering_time_str));
+    igText("Elapsed rendering time: %s", rendering_time_str);
+  } else {
+    double rendering_time = state->stats.rendering.total_time;
+    Stats_string_time(rendering_time, rendering_time_str,
+                      sizeof(rendering_time_str));
+    igText("Total rendering time: %s", rendering_time_str);
+  }
   igText("Rendered frames: %d", state->stats.frame_number);
 
   return changed;

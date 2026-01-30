@@ -4,22 +4,22 @@
 #include "scene/camera.h"
 #include <float.h>
 
-#define STEP_SIZE_PER_FRAME 0.05
-#define CURSOR_SENSITIVITY 0.001
-
 bool Inputs_update_camera(Camera *cam, const WindowEventsData *events,
-                          bool allow_rotate) {
+                          double dt, bool allow_rotate) {
   bool changed = false;
 
   if (!GUIOverlay_is_focused()) {
     vec3 old_cam_pos = cam->pos;
-    Camera_move(cam, Inputs_move(events), STEP_SIZE_PER_FRAME);
+    Camera_move(cam, Inputs_move(events), cam->step_size_per_second * dt);
     changed |= !vec3_eq(old_cam_pos, cam->pos, FLT_EPSILON);
   }
 
   if (allow_rotate) {
     vec3 old_cam_dir = cam->dir;
-    Camera_rotate(cam, Inputs_rotate(events));
+    YawPitch yp = Inputs_rotate(events);
+    yp.yaw_rad *= cam->sensitivity;
+    yp.pitch_rad *= cam->sensitivity;
+    Camera_rotate(cam, yp);
     changed |= !vec3_eq(old_cam_dir, cam->dir, FLT_EPSILON);
   }
 
@@ -56,9 +56,9 @@ CameraTranslation Inputs_move(const WindowEventsData *events) {
 }
 
 YawPitch Inputs_rotate(const WindowEventsData *events) {
-  float dx = events->mouse_delta.x;
-  float dy = events->mouse_delta.y;
+  float dx = events->mouse_delta.x / events->window_size.width;
+  float dy = events->mouse_delta.y / events->window_size.height;
 
-  // NOTE: assuming y grows downwards, yet pitch grows upwards
-  return YawPitch_new(dx * CURSOR_SENSITIVITY, -dy * CURSOR_SENSITIVITY);
+  // NOTE: assuming mouse_delta.y grows downwards, yet pitch grows upwards
+  return YawPitch_new(dx, -dy);
 }

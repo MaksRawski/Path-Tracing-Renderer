@@ -33,7 +33,7 @@ noreturn void ERROR_impl(const char *prefix, const char *msg) {
   if (prefix == NULL)
     fprintf(stderr, "%s\n", msg);
   else
-    fprintf(stderr, RED("%s") "%s\n", prefix, msg);
+    fprintf(stderr, RED("%s") ": %s\n", prefix, msg);
   exit(1);
 }
 

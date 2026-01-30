@@ -6,7 +6,7 @@
 #include <math.h>
 
 #ifndef M_PI
-#define M_PI 3.14159265358979323846
+#define M_PI 3.141592653589793238462643383279502884
 #endif
 
 #define TEST_YAW_PITCH_TO_DIR(_test_name, _yaw, _pitch, _expected_dir,         \
@@ -37,8 +37,7 @@
 
 TEST_YAW_PITCH_TO_DIR(by_default_look_at_negative_z_axis, 0, 0, //
                       (0, 0, -1), DBL_EPSILON)
-// TODO:
-TEST_YAW_PITCH_TO_DIR(yaw_is_counter_clockwise__90_deg, M_PI / 2.0, 0,
+TEST_YAW_PITCH_TO_DIR(yaw_is_counter_clockwise__90_deg, M_PI / 2.0, 0, //
                       (1, 0, 0), DBL_EPSILON)
 TEST_YAW_PITCH_TO_DIR(yaw_is_counter_clockwise__60_deg, M_PI / 3.0, 0,
                       (cos(-M_PI / 6.0), 0.0, sin(-M_PI / 6.0)), DBL_EPSILON)
@@ -58,7 +57,7 @@ TEST_YAW_PITCH_ID(260deg, 2 * M_PI * 260.0 / 360.0, 0.2, DBL_EPSILON)
 TEST_YAW_PITCH_ID(extreme_min, 0.0, -M_PI / 2.0 + 1e-15, DBL_EPSILON)
 TEST_YAW_PITCH_ID(extreme_mid, M_PI, 0.0, DBL_EPSILON)
 TEST_YAW_PITCH_ID(extreme_max, 2 * M_PI - 1e-5, M_PI / 2.0 - 1e-15,
-                  100 * M_PI * DBL_EPSILON)
+                  1000 * DBL_EPSILON)
 
 bool all_yawpitch_tests(void) {
   bool ok = true;

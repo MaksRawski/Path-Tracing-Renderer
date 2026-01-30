@@ -1,24 +1,27 @@
 #include "scene/bvh.h"
+#include "vec3.h"
 #include <math.h>
 #include <stdlib.h>
-#include <string.h>
 
-void calculate_centroids(Triangle *tri, int tri_count, vec3 centroids[]);
-void set_node_bounds(BVHNode *node, const Triangle tris[]);
-void subdivide(BVHNode nodes[], int node_idx, Triangle tri[], vec3 centroids[],
-               BVHNodeCount *created_nodes, BVHTriCount swaps_lut[]);
+static void calculate_centroids(Triangle *tri, int tri_count, vec3 centroids[]);
+static void set_node_bounds(BVHNode *node, const Triangle tris[]);
+static void subdivide(BVHNode nodes[], int node_idx, Triangle tris[],
+                      vec3 centroids[], BVHNodeCount *nodes_offset,
+                      BVHTriCount swaps_lut[],
+                      FindBestSplitFn find_best_split_fn);
 
-void tri_swap(Triangle *a, Triangle *b);
-BVHTriCount split_group(Triangle *tris, vec3 *centroids, BVHTriCount first,
-                        BVHTriCount count, unsigned int axis, float split_pos,
-                        BVHTriCount swaps_lut[]);
+static BVHTriCount split_group(Triangle *tris, vec3 *centroids,
+                               BVHTriCount first, BVHTriCount count,
+                               unsigned int axis, float split_pos,
+                               BVHTriCount swaps_lut[]);
 
 // NOTE: nodes should be zero allocated for 2 * t_count * sizeof(BVHNode) bytes
 // NOTE: swaps_lut should be allocated for t_count * sizeof(BVHTriCount) bytes
 // NOTE: nodes_offset afterwards will contain the index after the last node
 void BVH_build(BVHNode *nodes, BVHNodeCount *nodes_offset,
                BVHTriCount *swaps_lut, Triangle triangles[],
-               BVHTriCount tri_offset, BVHTriCount t_count) {
+               BVHTriCount tri_offset, BVHTriCount t_count,
+               FindBestSplitFn find_best_split_fn) {
   for (BVHTriCount i = 0; i < t_count; ++i)
     swaps_lut[i] = tri_offset + i;
 
@@ -27,35 +30,17 @@ void BVH_build(BVHNode *nodes, BVHNodeCount *nodes_offset,
 
   nodes[*nodes_offset].first = tri_offset;
   nodes[*nodes_offset].count = t_count;
-  subdivide(nodes, *nodes_offset, triangles, centroids, nodes_offset,
-            swaps_lut);
+  subdivide(nodes, *nodes_offset, triangles, centroids, nodes_offset, swaps_lut,
+            find_best_split_fn);
   ++(*nodes_offset);
 
   free(centroids);
 }
 
-void BVH_delete(BVH *self) {
-  free(self->nodes);
-  self = NULL;
-}
-
-static void find_best_split_longest_mid(const BVHNode *node, int *axis,
-                                        float *split_pos) {
-  vec3 extent = vec3_sub(node->bound_max, node->bound_min);
-  // find out longest axis
-  *axis = 0;
-  if (extent.y > extent.x)
-    *axis = 1;
-  if (extent.z > extent.y && extent.z > extent.x)
-    *axis = 2;
-
-  *split_pos = vec3_get_by_axis(&extent, *axis) * 0.5f +
-               vec3_get_by_axis(&node->bound_min, *axis);
-}
-
 // recursively subdivide a node until there are 2 primitives left
 void subdivide(BVHNode nodes[], int node_idx, Triangle tris[], vec3 centroids[],
-               BVHNodeCount *nodes_offset, BVHTriCount swaps_lut[]) {
+               BVHNodeCount *nodes_offset, BVHTriCount swaps_lut[],
+               FindBestSplitFn find_best_split_fn) {
   BVHNode *node = nodes + node_idx;
   // 0. first set the bounds, only a leaf node can be subdivided!
   set_node_bounds(node, tris);
@@ -64,9 +49,11 @@ void subdivide(BVHNode nodes[], int node_idx, Triangle tris[], vec3 centroids[],
     return;
 
   // 1. determine axis and position of a split
-  int axis;
-  float split_pos;
-  find_best_split_longest_mid(node, &axis, &split_pos);
+  int axis = -1;
+  float split_pos = -INFINITY;
+  find_best_split_fn(node, tris, centroids, &axis, &split_pos);
+  if (axis == -1 || split_pos == -INFINITY)
+    return;
 
   // 2.
   BVHTriCount split_index = split_group(
@@ -91,8 +78,10 @@ void subdivide(BVHNode nodes[], int node_idx, Triangle tris[], vec3 centroids[],
   node->count = 0;
   node->first = left_node_idx;
 
-  subdivide(nodes, left_node_idx, tris, centroids, nodes_offset, swaps_lut);
-  subdivide(nodes, right_node_idx, tris, centroids, nodes_offset, swaps_lut);
+  subdivide(nodes, left_node_idx, tris, centroids, nodes_offset, swaps_lut,
+            find_best_split_fn);
+  subdivide(nodes, right_node_idx, tris, centroids, nodes_offset, swaps_lut,
+            find_best_split_fn);
 }
 
 // centroids should already have an allocated memory for tri_count of vec3
@@ -124,18 +113,13 @@ void set_node_bounds(BVHNode *node, const Triangle *tris) {
   }
 }
 
-void tri_swap(Triangle *a, Triangle *b) {
-  Triangle t = *a;
-  *a = *b;
-  *b = t;
-}
-
 // Swaps positions of triangles (and centroids) so that all to the "left" of
 // split_pos are before or at split index and all to the "right" of the
 // split_pos are after index. Returns the split index.
-BVHTriCount split_group(Triangle tris[], vec3 centroids[], BVHTriCount first,
-                        BVHTriCount count, unsigned int axis, float split_pos,
-                        BVHTriCount swaps_lut[]) {
+static BVHTriCount split_group(Triangle tris[], vec3 centroids[],
+                               BVHTriCount first, BVHTriCount count,
+                               unsigned int axis, float split_pos,
+                               BVHTriCount swaps_lut[]) {
   int i = first;
   int j = i + count - 1;
   while (i <= j) {

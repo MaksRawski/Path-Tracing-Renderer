@@ -5,6 +5,7 @@
 #include <stddef.h>
 
 #include "scene/bvh.h"
+#include "scene/bvh/strategies.h"
 #include "scene/camera.h"
 #include "scene/material.h"
 #include "scene/mesh.h"
@@ -43,8 +44,9 @@ OPENGL_CHECK_ARRAY_ELEMENT_SIZE(Mesh);
 OPENGL_CHECK_ARRAY_ELEMENT_SIZE(MeshInstance);
 OPENGL_CHECK_ARRAY_ELEMENT_SIZE(TLASNode);
 
-// NOTE: any Scene loading
 Scene Scene_load_gltf(const char *path);
+
+void Scene_build_bvh(Scene *scene, BVHStrategy find_best_split_fn_strat);
 
 Scene Scene_empty(void);
 bool Scene_is_empty(const Scene *scene);

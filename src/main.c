@@ -30,8 +30,6 @@ int main(int argc, char *argv[]) {
 
   Renderer renderer = Renderer_new();
 
-  // TODO: what if shader fails? could we skip all the other stuff then?
-  // It's not a fatal error but an error nonetheless
   while (!glfwWindowShouldClose(ctx.window)) {
     if (app_state.hot_reload_enabled)
       AppState_hot_reload_shaders(&app_state, &renderer);
@@ -39,8 +37,6 @@ int main(int argc, char *argv[]) {
     WindowEventsData events = OpenGLContext_poll_events(&ctx);
     app_state.viewport_size = OpenGLContext_get_framebuffer_size(&ctx);
     Renderer_update_focus(&renderer, &events, &ctx, !GUIOverlay_is_focused());
-
-    // TODO: if window is not focused skip iteration
 
     if (app_state.gui_enabled)
       GUIOverlay_update_state(&gui, &app_state);
@@ -51,7 +47,7 @@ int main(int argc, char *argv[]) {
     // NOTE: should be done after scene updating, so that camera isn't somehow
     // maintained from previous scene
     if (app_state.movement_enabled)
-        AppState_update_camera(&app_state, &renderer, &events);
+      AppState_update_camera(&app_state, &renderer, &events);
 
     // NOTE: this includes the renderer resolution
     AppState_update_renderer_parameters(&app_state, &renderer);
@@ -66,9 +62,10 @@ int main(int argc, char *argv[]) {
 
     bool display_rendering_time = false;
     if (app_state.save_image_info.to_save) {
-      // NOTE: this also stops the rendering timer as it allows for an accurate
-      // result by requesting pixels from the GPU. According to the OpenGL
-      // documentation
+      // NOTE: this will also stop the rendering timer as requesting pixels
+      // from the GPU forces synchronization, which allows for _accurate_
+      // reading of rendering time (albeit with the additional time of
+      // transferring pixels included). According to the OpenGL documentation
       // (https://wikis.khronos.org/opengl/Synchronization#Implicit_synchronization):
       // "attempt to read from a framebuffer to CPU memory (not to a buffer
       // object) will halt until all rendering commands affecting that
@@ -76,18 +73,19 @@ int main(int argc, char *argv[]) {
       AppState_save_image(&app_state, Renderer_get_fbo(&renderer),
                           app_state.rendering_params.rendering_resolution);
       display_rendering_time = true;
-    } else if (rendering_finished && app_state.stats.rendering_time == 0) {
-      // NOTE: this reading is slightly inaccurate as it's stopped right after
-      // *queueing* all operations to the GPU and there is no guarantee
-      // whatsoever whether all the frames have been rendered
-      Stats_stop_rendering_timer(&app_state.stats);
+    } else if (rendering_finished &&
+               app_state.stats.rendering.total_time == 0) {
+      // NOTE: this reading will be slightly inaccurate as it's stopped right
+      // after *queueing* all operations to the GPU and there is no guarantee
+      // whatsoever whether all the frames have been rendered.
+      StatsTimer_stop(&app_state.stats.rendering);
       display_rendering_time = true;
     }
 
     if (display_rendering_time) {
       char rendering_time_str[16];
-      Stats_string_time(app_state.stats.rendering_time, rendering_time_str,
-                        sizeof(rendering_time_str));
+      Stats_string_time(app_state.stats.rendering.total_time,
+                        rendering_time_str, sizeof(rendering_time_str));
       printf("Rendered %d frames in %s.\n",
              app_state.rendering_params.frames_to_render, rendering_time_str);
     }

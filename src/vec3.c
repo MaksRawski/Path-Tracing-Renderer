@@ -62,6 +62,12 @@ void vec3_copy_from_float3(vec3 *const dst, const float *const src) {
   dst->z = src[2];
 }
 
+bool vec3_eq(vec3 v, vec3 expected, float epsilon) {
+  return float_equal_expected(v.x, expected.x, epsilon) &&
+         float_equal_expected(v.y, expected.y, epsilon) &&
+         float_equal_expected(v.z, expected.z, epsilon);
+}
+
 float vec3_get_by_axis(const vec3 *const v, int axis) {
   switch (axis) {
   case 0:
@@ -73,11 +79,6 @@ float vec3_get_by_axis(const vec3 *const v, int axis) {
   default:
     UNREACHABLE();
   }
-}
-
-bool vec3_eq(vec3 a, vec3 b, float epsilon) {
-  return float_equal(a.x, b.x, epsilon) && float_equal(a.y, b.y, epsilon) &&
-         float_equal(a.z, b.z, epsilon);
 }
 
 float vec3_mag(vec3 v) { return sqrtf(v.x * v.x + v.y * v.y + v.z * v.z); }

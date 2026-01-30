@@ -4,7 +4,6 @@
 #include "scene/bvh.h"
 #include "scene/material.h"
 #include "scene/mesh.h"
-#include "scene/tlas.h"
 #include "vec3.h"
 
 #include <math.h>
@@ -61,23 +60,6 @@ void gltf_assert(bool cond, const char *path, const char *err_msg_fmt, ...) {
   }
 }
 
-static unsigned int *swaps_lut;
-static size_t swaps_lut_capacity = 0;
-
-static void build_bvh(Scene *scene, unsigned int tri_first,
-                      unsigned int tri_count) {
-  if (swaps_lut_capacity < tri_count) {
-    swaps_lut_capacity = next_power_of_2(tri_count);
-    if (swaps_lut != NULL)
-      free(swaps_lut);
-    swaps_lut = malloc(tri_count * sizeof(BVHTriCount));
-  }
-
-  BVH_build(scene->bvh_nodes, &scene->bvh_nodes_count, swaps_lut,
-            scene->triangles, tri_first, tri_count);
-  // NOTE: ignoring swaps_lut for now since we're not using e.g. vertex normals
-}
-
 // returns mat_index in Scene->mats for the provided mat
 static unsigned int set_material(const char *path, const cgltf_data *data,
                                  const cgltf_material *mat, Scene *scene) {
@@ -96,10 +78,14 @@ static unsigned int set_material(const char *path, const cgltf_data *data,
 
   Material material = Material_default();
 
-  material.base_color_factor[0] = mat->pbr_metallic_roughness.base_color_factor[0];
-  material.base_color_factor[1] = mat->pbr_metallic_roughness.base_color_factor[1];
-  material.base_color_factor[2] = mat->pbr_metallic_roughness.base_color_factor[2];
-  material.base_color_factor[3] = mat->pbr_metallic_roughness.base_color_factor[3];
+  material.base_color_factor[0] =
+      mat->pbr_metallic_roughness.base_color_factor[0];
+  material.base_color_factor[1] =
+      mat->pbr_metallic_roughness.base_color_factor[1];
+  material.base_color_factor[2] =
+      mat->pbr_metallic_roughness.base_color_factor[2];
+  material.base_color_factor[3] =
+      mat->pbr_metallic_roughness.base_color_factor[3];
 
   material.metallic_factor = mat->pbr_metallic_roughness.metallic_factor;
   material.roughness_factor = mat->pbr_metallic_roughness.roughness_factor;
@@ -162,8 +148,15 @@ static bool append_mesh_primitive(const char *path, const cgltf_data *data,
   }
   unsigned int triangles_count = scene->triangles_count - triangles_first;
 
+  // create a dummy root node
   unsigned int bvh_index = scene->bvh_nodes_count;
-  build_bvh(scene, triangles_first, triangles_count);
+  scene->bvh_nodes[bvh_index].first = triangles_first;
+  scene->bvh_nodes[bvh_index].count = triangles_count;
+  scene->bvh_nodes[bvh_index].bound_min =
+      vec3_new(INFINITY, INFINITY, INFINITY);
+  scene->bvh_nodes[bvh_index].bound_max =
+      vec3_new(-INFINITY, -INFINITY, -INFINITY);
+  ++scene->bvh_nodes_count;
 
   unsigned int mat_index;
   if (gltf_prim->material != NULL)
@@ -175,18 +168,6 @@ static bool append_mesh_primitive(const char *path, const cgltf_data *data,
       (MeshPrimitive){.BVH_index = bvh_index, .mat_index = mat_index};
 
   return true;
-}
-
-static void set_mesh_bounds(Mesh *mesh, const Scene *scene) {
-  mesh->aabbMin = vec3_new(INFINITY, INFINITY, INFINITY);
-  mesh->aabbMax = vec3_new(-INFINITY, -INFINITY, -INFINITY);
-
-  for (cgltf_size p = mesh->mesh_primitive_first;
-       p < (mesh->mesh_primitive_first + mesh->mesh_primitive_count); ++p) {
-    BVHNode *bvh = &scene->bvh_nodes[scene->mesh_primitives[p].BVH_index];
-    mesh->aabbMin = vec3_min(mesh->aabbMin, bvh->bound_min);
-    mesh->aabbMax = vec3_max(mesh->aabbMax, bvh->bound_max);
-  }
 }
 
 // returns false in case a mesh doesn't have any valid primitives
@@ -204,8 +185,10 @@ static bool set_mesh(const char *path, const cgltf_data *data,
     return false;
 
   ASSERTQ_COND(index < scene->meshes_capacity, index);
-  Mesh mesh = {.mesh_primitive_first = first, .mesh_primitive_count = count};
-  set_mesh_bounds(&mesh, scene);
+  Mesh mesh = {.mesh_primitive_first = first,
+               .mesh_primitive_count = count,
+               .aabbMin = vec3_new(INFINITY, INFINITY, INFINITY),
+               .aabbMax = vec3_new(-INFINITY, -INFINITY, -INFINITY)};
   scene->meshes[index] = mesh;
   scene->last_mesh_index = MAX(scene->last_mesh_index, index);
 
@@ -301,8 +284,9 @@ static void handle_camera(const char *path, const cgltf_node *node,
       Mat4_mul_vec3(view_matrix, vec3_add(DEFAULT_CAM_POS, DEFAULT_CAM_DIR));
   vec3 dir = vec3_sub(lookat, pos);
 
-  scene->camera =
-      Camera_new(pos, dir, DEFAULT_CAM_UP, cam.yfov, DEFAULT_CAM_FOCAL_LENGTH);
+  scene->camera.pos = pos;
+  scene->camera.dir = dir;
+  scene->camera.fov_rad = cam.yfov;
 }
 
 void handle_node(const char *path, const cgltf_data *data,

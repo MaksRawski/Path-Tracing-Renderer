@@ -2,6 +2,7 @@
 #define BVH_H_
 
 #include <assert.h>
+#include <stdint.h>
 
 #include "scene/triangle.h"
 #include "vec3.h"
@@ -15,45 +16,38 @@ typedef unsigned int BVHNodeCount;
 typedef struct {
   vec3 bound_min, bound_max;
   BVHTriCount first, count;
-  long _;
+  uint64_t _;
 } BVHNode;
 static_assert(sizeof(BVHNode) % 16 == 0,
               "BVHNode's size should be a multiple of 16");
 
-// node index 0 must be root
-typedef struct {
-  BVHNode *nodes;
-  BVHNodeCount nodes_count;
-} BVH;
-
-typedef struct {
-  BVH bvh;
-  // LUT which describes how triangles have been swapped around
-  BVHTriCount *swaps_lut;
-} BVHresult;
+typedef void FindBestSplitFn(const BVHNode *node, const Triangle *triangles,
+                             const vec3 *centroids, int *best_axis,
+                             float *best_split_pos);
 
 void BVH_build(BVHNode *nodes, BVHNodeCount *nodes_offset,
                BVHTriCount *swaps_lut, Triangle triangles[],
-               BVHTriCount tri_offset, BVHTriCount tri_count);
+               BVHTriCount tri_offset, BVHTriCount tri_count,
+               FindBestSplitFn find_best_split_fn);
 
-void BVH_delete(BVH *self);
-
-#define SWAP(a, b, type)                                                       \
+#define SWAP(_a, _b, _type)                                                    \
   do {                                                                         \
-    type tmp = a;                                                              \
-    a = b;                                                                     \
-    b = tmp;                                                                   \
+    _type tmp = _a;                                                            \
+    _a = _b;                                                                   \
+    _b = tmp;                                                                  \
   } while (0);
 
+#include "stdlib.h"
 #define BVH_apply_swaps_lut(_lut, _objects, _object_type, _count)              \
   do {                                                                         \
-    _object_type _object_type##_copy[_count];                                  \
-    for (unsigned long i = 0; i < _count; ++i)                                 \
-      _object_type##_copy[i] = _objects[i];                                    \
-    for (unsigned long i = 0; i < _count; ++i) {                               \
-      unsigned long swap_idx = _lut[i];                                        \
-      _objects[i] = _object_type##_copy[swap_idx];                             \
+    _object_type *_object_type##_copy = malloc(_count * sizeof(_object_type)); \
+    for (unsigned long _i = 0; _i < _count; ++_i)                              \
+      _object_type##_copy[_i] = _objects[_i];                                  \
+    for (unsigned long _i = 0; _i < _count; ++_i) {                            \
+      unsigned long swap_idx = _lut[_i];                                       \
+      _objects[_i] = _object_type##_copy[swap_idx];                            \
     }                                                                          \
+    free(_object_type##_copy);                                                 \
   } while (0);
 
 #endif // BVH_H_

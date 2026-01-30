@@ -9,8 +9,14 @@
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 
-#define VERTEX_SHADER_PATH "shaders/vertex.glsl"
-#define FRAGMENT_SHADER_PATH "shaders/renderer.glsl"
+#if defined(__linux__)
+#define PATH_SEPARATOR "/"
+#elif defined(_WIN32)
+#define PATH_SEPARATOR "\\"
+#endif
+
+#define VERTEX_SHADER_PATH "shaders" PATH_SEPARATOR "vertex.glsl"
+#define FRAGMENT_SHADER_PATH "shaders" PATH_SEPARATOR "renderer.glsl"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -73,8 +79,6 @@ GLuint Renderer_get_fbo(const Renderer *self) {
   return self->_buffers.back.fbo;
 }
 
-// TODO: frame_number should obviously be refactored out, maybe even handled by
-// a different shader
 void Renderer_render_frame(const Renderer *self, unsigned int frame_number) {
   // setup the program and bind the vao associated with the quad
   // and the vbo holding the vertices of the quad

@@ -1,6 +1,7 @@
 #include "renderer/buffers.h"
 #include "renderer/buffers/parameters_buffer.h"
 #include "renderer/buffers_scene.h"
+#include "scene.h"
 #include <stddef.h>
 
 RendererBuffers RendererBuffers_new(void) {
@@ -14,7 +15,7 @@ RendererBuffers RendererBuffers_new(void) {
 void RendererBuffers_set_scene(RendererBuffers *self, const Scene *scene) {
   // delete the old scene buffer
   // IDEA: could instead do buffer data changes instead of recreating them
-  if (scene->triangles_count != 0)
+  if (Scene_is_empty(scene))
     RendererBuffersScene_delete(&self->scene);
 
   self->scene = RendererBuffersScene_new(scene);

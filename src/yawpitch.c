@@ -2,10 +2,11 @@
 
 #include "asserts.h"
 #include "vec3d.h"
+#include <float.h>
 #include <math.h>
 
 #ifndef M_PI
-#define M_PI 3.14159265358979323846
+#define M_PI 3.141592653589793238462643383279502884
 #endif
 
 Vec3d YawPitch_to_dir(YawPitch yp) {

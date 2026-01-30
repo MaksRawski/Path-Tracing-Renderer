@@ -1,5 +1,6 @@
 #include "scene/build_tlas.h"
 #include "asserts.h"
+#include "scene.h"
 #include "scene/mesh.h"
 #include <alloca.h>
 #include <math.h>
@@ -79,12 +80,17 @@ static int find_best_match(const TLASNode *nodes,
 // nodeIdx - unmatched_nodes
 // nodeIndices - unmatched_nodes_count
 // nodesUsed - scene->tlas_nodes_count
-void Scene__build_tlas(Scene *scene) {
-  // work array for indices of unmatched nodes
-  unsigned int unmatched_nodes[8 * 1024];
-  ASSERTQ_COND(scene->mesh_instances_count <
-                   (sizeof(unmatched_nodes) / sizeof(unsigned int)),
-               scene->mesh_instances_count);
+void Scene_build_tlas(Scene *scene) {
+  if (Scene_is_empty(scene))
+    return;
+
+  static Arena arena = {0};
+  if (arena.capacity == 0) {
+    arena = Arena_new(8 * 1024);
+  }
+
+  unsigned int *unmatched_nodes =
+      Arena_alloc(&arena, scene->mesh_instances_count);
 
   create_leaf_nodes(scene, unmatched_nodes);
   unsigned int unmatched_nodes_count = scene->mesh_instances_count;

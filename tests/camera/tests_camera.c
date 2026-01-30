@@ -2,6 +2,7 @@
 #include "asserts.h"
 #include "scene/camera.h"
 #include "tests_macros.h"
+#include <float.h>
 
 #include <float.h>
 

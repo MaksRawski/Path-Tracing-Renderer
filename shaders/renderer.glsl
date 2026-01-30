@@ -16,6 +16,7 @@ out vec4 FragColor;
 #define MAX_ITERATIONS 200
 
 struct Parameters {
+    vec3 env_color;
     int max_bounce_count;
     int samples_per_pixel;
     float diverge_strength;
@@ -36,7 +37,7 @@ struct Triangle {
 };
 
 // NOTE: same as above
-struct BVHnode {
+struct BVHNode {
     vec4 boundsMin, boundsMax;
     uint first, count;
     int _, _1; // padding so that this struct's size is a multiple of 16 bytes
@@ -79,7 +80,6 @@ struct TLASNode {
     int _, _1;
 };
 
-// https://raytracing.github.io/books/RayTracingInOneWeekend.html#positionablecamera (12.2)
 struct Camera {
     vec4 pos;
     vec4 dir;
@@ -93,7 +93,7 @@ layout(std430, binding = 1) readonly buffer trianglesBuffer {
     Triangle triangles[];
 };
 layout(std430, binding = 2) readonly buffer bvhNodesBuffer {
-    BVHnode bvh_nodes[];
+    BVHNode bvh_nodes[];
 };
 layout(std430, binding = 3) readonly buffer materialsBuffer {
     Material mats[];
@@ -316,9 +316,7 @@ float RayAABBIntersection(Ray ray, vec3 aabbMin, vec3 aabbMax) {
     return tmax >= tmin ? tmin : INFINITY;
 }
 
-// TODO: this is just for debugging
-vec3 hsv2rgb(vec3 c)
-{
+vec3 hsv2rgb(vec3 c) {
     vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
     vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
     return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
@@ -333,7 +331,7 @@ HitInfo FindClosestTriangleIntersection(Ray offsetRay, uint bvh_node) {
     stack[stack_ptr++] = bvh_node;
     int max_iterations = MAX_ITERATIONS;
     while (stack_ptr > 0 && max_iterations-- > 0) {
-        BVHnode node = bvh_nodes[stack[--stack_ptr]];
+        BVHNode node = bvh_nodes[stack[--stack_ptr]];
         float bvh_dist = RayAABBIntersection(offsetRay, node.boundsMin.xyz, node.boundsMax.xyz);
         if (bvh_dist > closestHit.dst) continue;
 
@@ -458,7 +456,7 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
             c *= mat.base_color_factor.rgb;
         } else {
             // get color from environment
-            // incomingLight += vec3(58, 58, 58) / 255 * c;
+            incomingLight += params.env_color.rgb * c;
             break;
         }
     }
@@ -547,10 +545,3 @@ void main() {
 
     FragColor = vec4(totalIncomingLight, 1.0);
 }
-
-// void main() {
-//     // FragColor = vec4(meshes[0].mesh_primitives_first, 0, 0, 1.0);
-//     // FragColor = vec4(meshes[0].mesh_primitives_count -1 , 0, 0, 1.0);
-//     // FragColor = vec4(meshes[0].aabbMax.xyz - vec3(1,1,1), 1.0);
-//     // FragColor = vec4(meshes[0]._1 - 1, 0, 0, 1.0);
-// }

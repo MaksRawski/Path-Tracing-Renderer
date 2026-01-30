@@ -31,7 +31,7 @@ void AppState_save_image(AppState *app_state, GLuint fbo,
   GL_CALL(glReadPixels(0, 0, resolution.width, resolution.height, GL_RGB,
                        GL_UNSIGNED_BYTE, pixels));
 
-  Stats_stop_rendering_timer(&app_state->stats);
+  StatsTimer_stop(&app_state->stats.rendering);
 
   const int stride = resolution.width * 3;
   stbi_flip_vertically_on_write(true);
