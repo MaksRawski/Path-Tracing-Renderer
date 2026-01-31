@@ -1,6 +1,7 @@
 #include "tests_bvh_build.h"
 #include "asserts.h"
 #include "scene/bvh.h"
+#include "scene/bvh/strategies.h"
 #include "scene/triangle.h"
 #include "tests_macros.h"
 
@@ -17,7 +18,8 @@ bool test_bvh_build__basic(void) {
   BVHTriCount swaps_lut[1] = {0};
   unsigned int nodes_count = 0;
 
-  BVH_build(nodes, &nodes_count, swaps_lut, tris, 0, 1);
+  BVH_build(nodes, &nodes_count, swaps_lut, tris, 0, 1,
+            BVHStrategy_get[BVHStrategy_Naive]);
   // only root node should have been created
   ASSERT_EQ(nodes_count, 1);
   ASSERT_EQ(nodes[0].first, 0);
@@ -43,7 +45,8 @@ bool test_bvh_build__offsets(void) {
   const unsigned int tris_offset = 1;
   const unsigned int tris_count = 1;
 
-  BVH_build(nodes, &nodes_offset, swaps_lut, tris, tris_offset, tris_count);
+  BVH_build(nodes, &nodes_offset, swaps_lut, tris, tris_offset, tris_count,
+            BVHStrategy_get[BVHStrategy_Naive]);
   unsigned int nodes_count = nodes_offset - initial_nodes_offset;
   ASSERT_EQ(nodes_count, 1);
 
@@ -79,7 +82,8 @@ bool test_bvh_build__swaps_lut(void) {
   unsigned int tris_offset = 1;
   unsigned int tris_count = 1;
 
-  BVH_build(nodes, &nodes_count, swaps_lut, tris, tris_offset, tris_count);
+  BVH_build(nodes, &nodes_count, swaps_lut, tris, tris_offset, tris_count,
+            BVHStrategy_get[BVHStrategy_Naive]);
   ASSERT_EQ(swaps_lut[0], tris_offset);
 
   return true;

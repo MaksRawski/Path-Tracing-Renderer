@@ -2,6 +2,8 @@
 #include "asserts.h"
 #include "file_formats/gltf.h"
 #include "rad_deg.h"
+#include "scene.h"
+#include "scene/bvh/strategies.h"
 #include "tests_macros.h"
 #include <float.h>
 
@@ -10,20 +12,22 @@ bool test_load_gltf_scene__cube_camera(void) {
   load_gltf_scene(&scene, "tests/gltf/scenes/cube-camera.glb");
 
   ASSERT_EQ(scene.triangles_count, 12);
-  ASSERT_EQ(scene.last_mat_index, 0); 
+  ASSERT_EQ(scene.last_mat_index, 0);
   ASSERT_EQ(scene.mesh_primitives_count, 1);
   ASSERT_EQ(scene.last_mesh_index, 0);
   ASSERT_EQ(scene.mesh_instances_count, 1);
 
-  ASSERT_VEC3_EQ(scene.camera.pos, vec3_new(-7, 0, 0), FLT_EPSILON);
-  ASSERT_VEC3_EQ(scene.camera.dir, vec3_new(1, 0, 0), FLT_EPSILON);
-  ASSERT_EQF(scene.camera.fov_rad, deg_to_rad(20), FLT_EPSILON);
+  ASSERT_VEC3_EQ(scene.camera.pos, vec3_new(-3.8, 0, 0), FLT_EPSILON);
+  ASSERT_VEC3_EQ(scene.camera.dir, vec3_new(1, 0, 0), 2 * FLT_EPSILON);
+  ASSERT_EQF(scene.camera.fov_rad, deg_to_rad(39.6), FLT_EPSILON);
 
-  ASSERT_RANGE_EX(scene.bvh.nodes_count, 0, 2 * scene.triangles_count);
-  ASSERT_VEC3_EQ(scene.bvh.nodes[0].bound_min, vec3_new(-1, -1, -1),
+  Scene_build_blas(&scene, BVHStrategy_Naive);
+  ASSERT_RANGE_EX(scene.bvh_nodes_count, 0, 2 * scene.triangles_count);
+  ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_min, vec3_new(-1, -1, -1),
                  FLT_EPSILON);
   ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_max, vec3_new(1, 1, 1), FLT_EPSILON);
 
+  Scene_build_tlas(&scene);
   ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_min, scene.tlas_nodes[0].aabbMin,
                  FLT_EPSILON);
   ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_max, scene.tlas_nodes[0].aabbMax,
@@ -53,7 +57,7 @@ bool test_load_gltf_scene__suzanne(void) {
   ASSERT_EQ(scene.meshes[0].mesh_primitive_first, 0);
   ASSERT_EQ(scene.mesh_primitives[0].BVH_index, 0);
 
-  ASSERT_COND(scene.bvh_nodes_count > 0, scene.bvh_nodes_count);
+  Scene_build_blas(&scene, BVHStrategy_Naive);
 
   for (unsigned int n = 0; n < scene.bvh_nodes_count; ++n) {
     // non-leaf nodes should point to other (defined later) nodes
@@ -64,6 +68,7 @@ bool test_load_gltf_scene__suzanne(void) {
         vec3_sub(scene.bvh_nodes[n].bound_max, scene.bvh_nodes[n].bound_min));
     ASSERT_COND(node_bound_volume > 0.0, node_bound_volume);
   }
+  Scene_build_tlas(&scene);
   ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_min, scene.tlas_nodes[0].aabbMin,
                  FLT_EPSILON);
   ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_max, scene.tlas_nodes[0].aabbMax,
@@ -77,17 +82,19 @@ bool test_load_gltf_scene__rotated_cube(void) {
   load_gltf_scene(&scene, "tests/gltf/scenes/rotated-cube.glb");
 
   ASSERT_EQ(scene.triangles_count, 12);
-  ASSERT_EQ(scene.last_mat_index, 0); 
+  ASSERT_EQ(scene.last_mat_index, 0);
   ASSERT_EQ(scene.mesh_primitives_count, 1);
   ASSERT_EQ(scene.last_mesh_index, 0);
   ASSERT_EQ(scene.mesh_instances_count, 1);
 
+  Scene_build_blas(&scene, BVHStrategy_Naive);
   ASSERT_RANGE_EX(scene.bvh_nodes_count, 0, 2 * scene.triangles_count);
 
   ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_min, vec3_new(-1, -1, -1),
                  FLT_EPSILON);
   ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_max, vec3_new(1, 1, 1), FLT_EPSILON);
 
+  Scene_build_tlas(&scene);
   ASSERT_VEC3_EQ(scene.tlas_nodes[0].aabbMin,
                  vec3_new(0, -sqrt(2.0), -sqrt(2.0)), FLT_EPSILON);
   ASSERT_VEC3_EQ(scene.tlas_nodes[0].aabbMax, vec3_new(2, sqrt(2.0), sqrt(2.0)),
@@ -106,12 +113,14 @@ bool test_load_gltf_scene__transformed_cube(void) {
   ASSERT_EQ(scene.last_mesh_index, 0);
   ASSERT_EQ(scene.mesh_instances_count, 1);
 
+  Scene_build_blas(&scene, BVHStrategy_Naive);
   ASSERT_RANGE_EX(scene.bvh_nodes_count, 0, 2 * scene.triangles_count);
 
   ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_min, vec3_new(-1, -1, -1),
                  FLT_EPSILON);
   ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_max, vec3_new(1, 1, 1), FLT_EPSILON);
 
+  Scene_build_tlas(&scene);
   ASSERT_VEC3_EQ(scene.tlas_nodes[0].aabbMin, vec3_new(2.9, 1.4, -11.6), 0.1);
   ASSERT_VEC3_EQ(scene.tlas_nodes[0].aabbMax, vec3_new(7.1, 6.6, -6.4), 0.1);
 
@@ -123,17 +132,19 @@ bool test_load_gltf_scene__two_cubes__copies(void) {
   load_gltf_scene(&scene, "tests/gltf/scenes/two-cubes.glb");
 
   ASSERT_EQ(scene.triangles_count, 24);
-  ASSERT_EQ(scene.last_mat_index, 0); 
+  ASSERT_EQ(scene.last_mat_index, 0);
   ASSERT_EQ(scene.mesh_primitives_count, 2);
   ASSERT_EQ(scene.last_mesh_index, 1);
   ASSERT_EQ(scene.mesh_instances_count, 2);
 
+  Scene_build_blas(&scene, BVHStrategy_Naive);
   ASSERT_RANGE_EX(scene.bvh_nodes_count, 0, 2 * scene.triangles_count);
 
   ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_min, vec3_new(-1, -1, -1),
                  FLT_EPSILON);
   ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_max, vec3_new(1, 1, 1), FLT_EPSILON);
 
+  Scene_build_tlas(&scene);
   ASSERT_VEC3_EQ(scene.tlas_nodes[0].aabbMin, vec3_new(-2, 0, -2), FLT_EPSILON);
   ASSERT_VEC3_EQ(scene.tlas_nodes[0].aabbMax, vec3_new(2, 4, 2), FLT_EPSILON);
 
@@ -145,17 +156,19 @@ bool test_load_gltf_scene__two_cubes__instancing(void) {
   load_gltf_scene(&scene, "tests/gltf/scenes/two-cubes-instancing.glb");
 
   ASSERT_EQ(scene.triangles_count, 12);
-  ASSERT_EQ(scene.last_mat_index, 0); 
+  ASSERT_EQ(scene.last_mat_index, 0);
   ASSERT_EQ(scene.mesh_primitives_count, 1);
   ASSERT_EQ(scene.last_mesh_index, 0);
   ASSERT_EQ(scene.mesh_instances_count, 2);
 
+  Scene_build_blas(&scene, BVHStrategy_Naive);
   ASSERT_RANGE_EX(scene.bvh_nodes_count, 0, 2 * scene.triangles_count);
 
   ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_min, vec3_new(-1, -1, -1),
                  FLT_EPSILON);
   ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_max, vec3_new(1, 1, 1), FLT_EPSILON);
 
+  Scene_build_tlas(&scene);
   ASSERT_VEC3_EQ(scene.tlas_nodes[0].aabbMin, vec3_new(-2, 0, -2), FLT_EPSILON);
   ASSERT_VEC3_EQ(scene.tlas_nodes[0].aabbMax, vec3_new(2, 4, 2), FLT_EPSILON);
 
@@ -167,17 +180,19 @@ bool test_load_gltf_scene__cube_from_planes(void) {
   load_gltf_scene(&scene, "tests/gltf/scenes/cube-from-planes.glb");
 
   ASSERT_EQ(scene.triangles_count, 2);
-  ASSERT_EQ(scene.last_mat_index, 0); 
+  ASSERT_EQ(scene.last_mat_index, 0);
   ASSERT_EQ(scene.mesh_primitives_count, 1);
   ASSERT_EQ(scene.last_mesh_index, 0);
   ASSERT_EQ(scene.mesh_instances_count, 6);
 
+  Scene_build_blas(&scene, BVHStrategy_Naive);
   ASSERT_RANGE_EX(scene.bvh_nodes_count, 0, 2 * scene.triangles_count);
 
   ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_min, vec3_new(-1, 0, -1),
                  FLT_EPSILON);
   ASSERT_VEC3_EQ(scene.bvh_nodes[0].bound_max, vec3_new(1, 0, 1), FLT_EPSILON);
 
+  Scene_build_tlas(&scene);
   ASSERT_VEC3_EQ(scene.tlas_nodes[0].aabbMin, vec3_new(-1, 0, -1), 0.1);
   ASSERT_VEC3_EQ(scene.tlas_nodes[0].aabbMax, vec3_new(1, 2, 1), FLT_EPSILON);
 

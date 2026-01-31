@@ -1,4 +1,3 @@
-#include "scene/build_tlas.h"
 #include "asserts.h"
 #include "scene.h"
 #include "scene/mesh.h"
@@ -125,4 +124,5 @@ void Scene_build_tlas(Scene *scene) {
     }
   }
   scene->tlas_nodes[0] = scene->tlas_nodes[unmatched_nodes[un_A_idx]];
+  arena.offset = 0;
 }

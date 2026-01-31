@@ -44,11 +44,11 @@ OPENGL_CHECK_ARRAY_ELEMENT_SIZE(Mesh);
 OPENGL_CHECK_ARRAY_ELEMENT_SIZE(MeshInstance);
 OPENGL_CHECK_ARRAY_ELEMENT_SIZE(TLASNode);
 
-Scene Scene_load_gltf(const char *path);
+Scene Scene_default(void);
 
-void Scene_build_bvh(Scene *scene, BVHStrategy find_best_split_fn_strat);
+void Scene_build_blas(Scene *scene, BVHStrategy find_best_split_fn_strat);
+void Scene_build_tlas(Scene *scene);
 
-Scene Scene_empty(void);
 bool Scene_is_empty(const Scene *scene);
 
 void Scene_delete(Scene *self);
