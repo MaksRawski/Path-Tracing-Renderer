@@ -26,8 +26,7 @@ Renderer Renderer_new(void) {
   Renderer self = {
       ._shaders = RendererShaders_new(VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH),
       ._buffers = RendererBuffers_new(),
-      ._res = OpenGLResolution_new(1280, 720),
-      ._focused = false};
+      ._res = OpenGLResolution_new(0, 0)};
 
   return self;
 }
@@ -51,27 +50,6 @@ void Renderer_set_params(Renderer *self, RendererParameters params) {
 
 void Renderer_clear_backbuffer(Renderer *self) {
   RendererBuffersBack_resize(&self->_buffers.back, self->_res);
-}
-
-void Renderer_set_focused(Renderer *self, bool focused) {
-  self->_focused = focused;
-}
-
-bool Renderer_is_focused(const Renderer *self) { return self->_focused; }
-
-// NOTE: steals or gives back mouse based on the WindowEventsData
-void Renderer_update_focus(Renderer *renderer, const WindowEventsData *events,
-                           Window *ctx, bool mouse_over_renderer) {
-  bool lmb_pressed =
-      WindowEventsData_is_mouse_button_pressed(events, GLFW_MOUSE_BUTTON_1);
-
-  if (mouse_over_renderer && lmb_pressed && !Renderer_is_focused(renderer)) {
-    Renderer_set_focused(renderer, true);
-    Window_steal_mouse(ctx->glfw_window);
-  } else if (!lmb_pressed && Renderer_is_focused(renderer)) {
-    Renderer_set_focused(renderer, false);
-    Window_give_back_mouse(ctx->glfw_window);
-  }
 }
 
 GLuint Renderer_get_fbo(const Renderer *self) {
@@ -98,5 +76,4 @@ void Renderer_render_frame(const Renderer *self, unsigned int frame_number) {
 void Renderer_delete(Renderer *self) {
   RendererShaders_delete(&self->_shaders);
   RendererBuffers_delete(&self->_buffers);
-  self = NULL;
 }

@@ -70,6 +70,5 @@ YawPitch YawPitch_from_dir(Vec3d dir) {
 PosDir PosDir_new(Vec3d pos, Vec3d dir) { return (PosDir){pos, dir}; }
 
 YawPitch YawPitch_new(double yaw, double pitch) {
-  // TODO: normalize
   return (YawPitch){yaw, pitch};
 }

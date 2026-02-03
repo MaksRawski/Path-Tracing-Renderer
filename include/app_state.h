@@ -3,8 +3,10 @@
 
 #include "app_state/app_state_save_image.h"
 #include "gui/scene_paths.h"
+#include "opengl/context.h"
 #include "opengl/resolution.h"
 #include "opengl/scaling.h"
+#include "opengl/window_events.h"
 #include "renderer.h"
 #include "renderer/parameters.h"
 #include "scene.h"
@@ -28,6 +30,7 @@ typedef struct {
       BVH_build_strat_changed;
   bool gui_enabled, hot_reload_enabled, save_after_rendering,
       exit_after_rendering, movement_enabled;
+  bool _renderer_focused;
 } AppState;
 
 AppState AppState_default(void);
@@ -35,11 +38,14 @@ AppState AppState_default(void);
 void AppState_update_scene(AppState *app_state, Renderer *renderer);
 void AppState_update_camera(AppState *app_state, Renderer *renderer,
                             const WindowEventsData *events);
+void AppState_update_focus(AppState *app_state, const WindowEventsData *events,
+                           Window *ctx);
 
 void AppState_hot_reload_shaders(AppState *app_state, Renderer *renderer);
 void AppState_update_renderer_parameters(AppState *app_state,
                                          Renderer *renderer);
 
+void AppState_post_rendering(AppState *app_state, Renderer *renderer);
 void AppState_save_image(AppState *save_image_info, GLuint fbo,
                          OpenGLResolution resolution);
 

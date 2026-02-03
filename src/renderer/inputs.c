@@ -1,27 +1,21 @@
-#include "gui.h"
-
 #include "renderer/inputs.h"
 #include "scene/camera.h"
 #include <float.h>
 
 bool Inputs_update_camera(Camera *cam, const WindowEventsData *events,
-                          double dt, bool allow_rotate) {
+                          double dt) {
   bool changed = false;
 
-  if (!GUIOverlay_is_focused()) {
-    vec3 old_cam_pos = cam->pos;
-    Camera_move(cam, Inputs_move(events), cam->step_size_per_second * dt);
-    changed |= !vec3_eq(old_cam_pos, cam->pos, FLT_EPSILON);
-  }
+  vec3 old_cam_pos = cam->pos;
+  Camera_move(cam, Inputs_move(events), cam->step_size_per_second * dt);
+  changed |= !vec3_eq(old_cam_pos, cam->pos, FLT_EPSILON);
 
-  if (allow_rotate) {
-    vec3 old_cam_dir = cam->dir;
-    YawPitch yp = Inputs_rotate(events);
-    yp.yaw_rad *= cam->sensitivity;
-    yp.pitch_rad *= cam->sensitivity;
-    Camera_rotate(cam, yp);
-    changed |= !vec3_eq(old_cam_dir, cam->dir, FLT_EPSILON);
-  }
+  vec3 old_cam_dir = cam->dir;
+  YawPitch yp = Inputs_rotate(events);
+  yp.yaw_rad *= cam->sensitivity;
+  yp.pitch_rad *= cam->sensitivity;
+  Camera_rotate(cam, yp);
+  changed |= !vec3_eq(old_cam_dir, cam->dir, FLT_EPSILON);
 
   return changed;
 }
