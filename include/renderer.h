@@ -23,7 +23,6 @@ void Renderer_set_camera(Renderer *self, Camera cam);
 /* void Renderer_set_resolution(Renderer *self, OpenGLResolution res); */
 void Renderer_set_params(Renderer *self, RendererParameters params);
 
-// renders frame
 void Renderer_render_frame(const Renderer *self, unsigned int frame_number);
 GLuint Renderer_get_fbo(const Renderer *self);
 
@@ -32,7 +31,7 @@ void Renderer_clear_backbuffer(Renderer *self);
 void Renderer_set_focused(Renderer *self, bool focused);
 bool Renderer_is_focused(const Renderer *self);
 void Renderer_update_focus(Renderer *renderer, const WindowEventsData *events,
-                           OpenGLContext *ctx, bool mouse_over_renderer);
+                           Window *ctx, bool mouse_over_renderer);
 
 void Renderer_delete(Renderer *self);
 

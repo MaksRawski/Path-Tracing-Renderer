@@ -61,16 +61,16 @@ bool Renderer_is_focused(const Renderer *self) { return self->_focused; }
 
 // NOTE: steals or gives back mouse based on the WindowEventsData
 void Renderer_update_focus(Renderer *renderer, const WindowEventsData *events,
-                           OpenGLContext *ctx, bool mouse_over_renderer) {
+                           Window *ctx, bool mouse_over_renderer) {
   bool lmb_pressed =
       WindowEventsData_is_mouse_button_pressed(events, GLFW_MOUSE_BUTTON_1);
 
   if (mouse_over_renderer && lmb_pressed && !Renderer_is_focused(renderer)) {
     Renderer_set_focused(renderer, true);
-    OpenGLContext_steal_mouse(ctx->window);
+    Window_steal_mouse(ctx->glfw_window);
   } else if (!lmb_pressed && Renderer_is_focused(renderer)) {
     Renderer_set_focused(renderer, false);
-    OpenGLContext_give_back_mouse(ctx->window);
+    Window_give_back_mouse(ctx->glfw_window);
   }
 }
 

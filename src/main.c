@@ -22,21 +22,21 @@ int main(int argc, char *argv[]) {
   gtk_init(&argc, &argv);
 #endif
 
-  OpenGLContext ctx =
-      OpenGLContext_new(WINDOW_TITLE, DESIRED_WIDTH, DESIRED_HEIGHT);
-  app_state.viewport_size = OpenGLContext_get_framebuffer_size(&ctx);
+  Window window =
+      Window_new(WINDOW_TITLE, DESIRED_WIDTH, DESIRED_HEIGHT);
+  app_state.viewport_size = Window_get_framebuffer_size(&window);
 
-  GUIOverlay gui = GUIOverlay_new(&ctx);
+  GUIOverlay gui = GUIOverlay_new(&window);
 
   Renderer renderer = Renderer_new();
 
-  while (!glfwWindowShouldClose(ctx.window)) {
+  while (!glfwWindowShouldClose(window.glfw_window)) {
     if (app_state.hot_reload_enabled)
       AppState_hot_reload_shaders(&app_state, &renderer);
 
-    WindowEventsData events = OpenGLContext_poll_events(&ctx);
-    app_state.viewport_size = OpenGLContext_get_framebuffer_size(&ctx);
-    Renderer_update_focus(&renderer, &events, &ctx, !GUIOverlay_is_focused());
+    WindowEventsData events = Window_poll_events(&window);
+    app_state.viewport_size = Window_get_framebuffer_size(&window);
+    Renderer_update_focus(&renderer, &events, &window, !GUIOverlay_is_focused());
 
     if (app_state.gui_enabled)
       GUIOverlay_update_state(&gui, &app_state);
@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
     // NOTE: this includes the renderer resolution
     AppState_update_renderer_parameters(&app_state, &renderer);
 
-    AppState_display(&app_state, &renderer, &gui, &ctx);
+    AppState_display(&app_state, &renderer, &gui, &window);
 
     bool rendering_finished = (int)app_state.stats.frame_number ==
                               app_state.rendering_params.frames_to_render;
@@ -96,7 +96,7 @@ int main(int argc, char *argv[]) {
 
   Renderer_delete(&renderer);
   GUIOverlay_delete(&gui);
-  OpenGLContext_delete(&ctx);
+  Window_delete(&window);
 
   return 0;
 }
