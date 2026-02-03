@@ -75,21 +75,18 @@ static int find_best_match(const TLASNode *nodes,
   return best_B;
 }
 
+// heavily inspired by:
 // https://jacco.ompf2.com/2022/05/13/how-to-build-a-bvh-part-6-all-together-now/
 // nodeIdx - unmatched_nodes
 // nodeIndices - unmatched_nodes_count
 // nodesUsed - scene->tlas_nodes_count
-void Scene_build_tlas(Scene *scene) {
+void Scene_build_tlas(Scene *scene, Arena *arena) {
   if (Scene_is_empty(scene))
     return;
 
-  static Arena arena = {0};
-  if (arena.capacity == 0) {
-    arena = Arena_new(8 * 1024);
-  }
-
-  unsigned int *unmatched_nodes =
-      Arena_alloc(&arena, scene->mesh_instances_count);
+  unsigned int alloced_bytes =
+      scene->mesh_instances_count * sizeof(unsigned int);
+  unsigned int *unmatched_nodes = Arena_alloc(arena, alloced_bytes);
 
   create_leaf_nodes(scene, unmatched_nodes);
   unsigned int unmatched_nodes_count = scene->mesh_instances_count;
@@ -124,5 +121,5 @@ void Scene_build_tlas(Scene *scene) {
     }
   }
   scene->tlas_nodes[0] = scene->tlas_nodes[unmatched_nodes[un_A_idx]];
-  arena.offset = 0;
+  arena->offset -= alloced_bytes;
 }

@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <stddef.h>
 
+#include "arena.h"
 #include "scene/bvh.h"
 #include "scene/bvh/strategies.h"
 #include "scene/camera.h"
@@ -46,8 +47,9 @@ OPENGL_CHECK_ARRAY_ELEMENT_SIZE(TLASNode);
 
 Scene Scene_default(void);
 
-void Scene_build_blas(Scene *scene, BVHStrategy find_best_split_fn_strat);
-void Scene_build_tlas(Scene *scene);
+void Scene_build_blas(Scene *scene, BVHStrategy find_best_split_fn_strat,
+                      Arena *arena);
+void Scene_build_tlas(Scene *scene, Arena *arena);
 
 bool Scene_is_empty(const Scene *scene);
 

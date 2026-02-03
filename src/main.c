@@ -1,3 +1,4 @@
+#include "arena.h"
 #include "cli.h"
 #include "renderer/parameters.h"
 #include "stats.h"
@@ -13,6 +14,7 @@
 #define WINDOW_TITLE "Path Tracing Renderer"
 
 int main(int argc, char *argv[]) {
+  Arena arena = Arena_new(256 * 1024);
   AppState app_state = AppState_default();
   handle_args(argc, argv, &app_state);
 
@@ -38,13 +40,13 @@ int main(int argc, char *argv[]) {
     if (app_state.gui_enabled)
       GUIOverlay_update_state(&gui, &app_state);
 
-    AppState_update_scene(&app_state, &renderer);
+    AppState_update_scene(&app_state, &renderer, &arena);
     AppState_update_camera(&app_state, &renderer, &events);
     AppState_update_renderer_parameters(&app_state, &renderer);
 
     AppState_display(&app_state, &renderer, &gui, &window);
 
-    AppState_post_rendering(&app_state, &renderer);
+    AppState_post_rendering(&app_state, &renderer, &arena);
 
     bool rendering_finished = (int)app_state.stats.frame_number ==
                               app_state.rendering_params.frames_to_render;

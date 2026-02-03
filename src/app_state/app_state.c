@@ -1,8 +1,10 @@
 #include "app_state.h"
 #include "file_formats/gltf.h"
 #include "gui.h"
+#include "opengl/gl_call.h"
 #include "renderer/inputs.h"
 #include "stats.h"
+#include "stb_image_write.h"
 #include "utils.h"
 #include <stdio.h>
 
@@ -43,7 +45,8 @@ void AppState__set_camera(AppState *app_state, Renderer *renderer) {
 }
 
 // NOTE: handles scene_paths_changed and BVH_strat_changed signals
-void AppState_update_scene(AppState *app_state, Renderer *renderer) {
+void AppState_update_scene(AppState *app_state, Renderer *renderer,
+                           Arena *arena) {
   SmallString *new_scene_path = &app_state->scene_paths.new_scene_path;
   SmallString *loaded_scene_path = &app_state->scene_paths.loaded_scene_path;
   bool scene_changed = false;
@@ -62,7 +65,7 @@ void AppState_update_scene(AppState *app_state, Renderer *renderer) {
   if (scene_changed || app_state->BVH_build_strat_changed) {
     app_state->BVH_build_strat_changed = false;
     StatsTimer_start(&app_state->stats.bvh_build);
-    Scene_build_blas(&app_state->scene, app_state->BVH_build_strat);
+    Scene_build_blas(&app_state->scene, app_state->BVH_build_strat, arena);
     StatsTimer_stop(&app_state->stats.bvh_build);
     char bvh_build_time[16] = {0};
     Stats_string_time(app_state->stats.bvh_build.total_time, bvh_build_time,
@@ -74,7 +77,7 @@ void AppState_update_scene(AppState *app_state, Renderer *renderer) {
 
   if (scene_changed) {
     StatsTimer_start(&app_state->stats.tlas_build);
-    Scene_build_tlas(&app_state->scene);
+    Scene_build_tlas(&app_state->scene, arena);
     StatsTimer_stop(&app_state->stats.tlas_build);
     char tlas_build_time[16] = {0};
     Stats_string_time(app_state->stats.tlas_build.total_time, tlas_build_time,
@@ -141,7 +144,8 @@ void AppState_update_renderer_parameters(AppState *app_state,
   }
 }
 
-void AppState_post_rendering(AppState *app_state, Renderer *renderer) {
+void AppState_post_rendering(AppState *app_state, Renderer *renderer,
+                             Arena *arena) {
   bool rendering_finished = (int)app_state->stats.frame_number ==
                             app_state->rendering_params.frames_to_render;
   bool should_save_image =
@@ -160,7 +164,8 @@ void AppState_post_rendering(AppState *app_state, Renderer *renderer) {
     // object) will halt until all rendering commands affecting that
     // framebuffer have completed."
     AppState_save_image(app_state, Renderer_get_fbo(renderer),
-                        app_state->rendering_params.rendering_resolution);
+                        app_state->rendering_params.rendering_resolution,
+                        arena);
     display_rendering_time = true;
   }
 
@@ -179,4 +184,34 @@ void AppState_post_rendering(AppState *app_state, Renderer *renderer) {
     printf("Rendered %d frames in %s.\n",
            app_state->rendering_params.frames_to_render, rendering_time_str);
   }
+}
+
+const int BYTES_PER_PIXEL = 3;
+void AppState_save_image(AppState *app_state, GLuint fbo,
+                         OpenGLResolution resolution, Arena *arena) {
+  app_state->save_image_info.to_save = false;
+  GL_CALL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo));
+  GL_CALL(glReadBuffer(GL_COLOR_ATTACHMENT0));
+  GL_CALL(glPixelStorei(GL_PACK_ALIGNMENT, 1));
+
+  unsigned int alloced_bytes =
+      resolution.width * resolution.height * BYTES_PER_PIXEL;
+  void *pixels = Arena_alloc(arena, alloced_bytes);
+
+  GL_CALL(glReadPixels(0, 0, resolution.width, resolution.height, GL_RGB,
+                       GL_UNSIGNED_BYTE, pixels));
+
+  StatsTimer_stop(&app_state->stats.rendering);
+
+  const int stride = resolution.width * 3;
+  stbi_flip_vertically_on_write(true);
+  if (stbi_write_png(app_state->save_image_info.path, resolution.width,
+                     resolution.height, 3, pixels, stride)) {
+    printf("Sucessfully saved image to %s\n", app_state->save_image_info.path);
+  }
+  GL_CALL(glBindFramebuffer(GL_READ_FRAMEBUFFER, 0));
+
+  Image_add_metadata(app_state->save_image_info.path,
+                     &app_state->rendering_params);
+  arena->offset -= alloced_bytes;
 }

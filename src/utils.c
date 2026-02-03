@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "asserts.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -72,4 +73,29 @@ bool StringArray_join(char *out_str, size_t out_str_capacity, const char *arr[],
 
   strncat(out_str, arr[arr_len - 1], len);
   return true;
+}
+
+// NOTE: works only if exiftool is in PATH
+void Image_add_metadata(const char *image_path,
+                        const RendererParameters *renderer_parameters) {
+  bool exiftool_available = false;
+#ifdef __linux__
+  exiftool_available = (system("exiftool -ver > /dev/null") == 0);
+#elif defined(_WIN32)
+  exiftool_available = (system("exiftool -ver >nul") == 0);
+#endif
+  if (exiftool_available) {
+    char cmd[2048];
+    char params[1024];
+
+    ASSERTQ_CUSTOM(
+        RendererParameters_str(renderer_parameters, params, sizeof(params)),
+        "Buffer 'params' too small!");
+
+    int to_write = snprintf(cmd, sizeof(cmd),
+                            "exiftool -overwrite_original -Description='%s' %s",
+                            params, image_path);
+    ASSERTQ_CUSTOM(to_write < (int)sizeof(cmd), "Buffer 'cmd' too small!");
+    ASSERTQ_CUSTOM(system(cmd) == 0, "Command failed!");
+  }
 }

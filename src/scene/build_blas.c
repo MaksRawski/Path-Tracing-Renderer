@@ -34,18 +34,14 @@ typedef struct {
 // contains `first` and `count` fields set to an appropriate list of triangles
 // for that MeshPrimitive
 // NOTE: changes BVH_index of each MeshPrimitive
-void Scene_build_blas(Scene *scene, BVHStrategy strategy) {
+void Scene_build_blas(Scene *scene, BVHStrategy strategy, Arena *arena) {
   if (Scene_is_empty(scene))
     return;
 
-  static Arena arena = {0};
-  if (arena.capacity == 0) {
-    arena = Arena_new(1024 * 256);
-  }
-
   build_bvh_tmp tmps = {0};
-  tmps.bvh_roots =
-      Arena_alloc(&arena, sizeof(TriangleList) * scene->mesh_primitives_count);
+  unsigned int alloced_bytes =
+      scene->mesh_primitives_count * sizeof(TriangleList);
+  tmps.bvh_roots = Arena_alloc(arena, alloced_bytes);
 
   for (unsigned int mp = 0; mp < scene->mesh_primitives_count; ++mp) {
     tmps.bvh_roots[mp].first =
@@ -59,14 +55,18 @@ void Scene_build_blas(Scene *scene, BVHStrategy strategy) {
   scene->bvh_nodes_count = 0;
   for (unsigned int mp = 0; mp < scene->mesh_primitives_count; ++mp) {
     scene->mesh_primitives[mp].BVH_index = scene->bvh_nodes_count;
-    tmps.swaps_lut =
-        Arena_alloc(&arena, sizeof(unsigned int) * tmps.bvh_roots[mp].count);
+
+    unsigned int swaps_lut_size_in_bytes =
+        sizeof(unsigned int) * tmps.bvh_roots[mp].count;
+    tmps.swaps_lut = Arena_alloc(arena, swaps_lut_size_in_bytes);
+
     BVH_build(scene->bvh_nodes, &scene->bvh_nodes_count, tmps.swaps_lut,
               scene->triangles, tmps.bvh_roots[mp].first,
               tmps.bvh_roots[mp].count, BVHStrategy_get[strategy]);
-    arena.offset -= tmps.bvh_roots[mp].count;
+
+    arena->offset -= swaps_lut_size_in_bytes;
   }
 
-  arena.offset = 0;
+  arena->offset -= alloced_bytes;
   Scene_set_meshes_bounds(scene);
 }

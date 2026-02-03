@@ -1,6 +1,5 @@
 #include "scene.h"
 #include <stddef.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 Scene Scene_default(void) { return (Scene){0}; }
