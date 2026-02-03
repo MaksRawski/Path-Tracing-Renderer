@@ -1,22 +1,23 @@
 #ifndef MATERIAL_H_
 #define MATERIAL_H_
 
+#include <stdint.h>
 #define NO_TEXTURE (unsigned int)-1
 
 // *_texture are set to MAX_INT if no texture is used
 typedef struct {
   float base_color_factor[4];
   float emissive_factor[3];
-  unsigned int base_color_texture;
-  unsigned int metallic_texture;
+  uint32_t base_color_texture;
+  uint32_t metallic_texture;
   float metallic_factor;
-  unsigned int roughness_texture;
+  uint32_t roughness_texture;
   float roughness_factor;
-  unsigned int emissive_texture;
-  // HACK: since padding must be added anyway, this allows to determine whether
+  uint32_t emissive_texture;
+  // HACK: since padding must be added anyway, this allows determining whether
   // a given material has been set, or just allocated.
-  int _set;
-  long _;
+  int32_t _set;
+  uint64_t _;
 } Material;
 
 inline static Material Material_default(void) {

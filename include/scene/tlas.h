@@ -11,8 +11,8 @@ typedef struct {
   uint16_t right;
 
   // valid only if node is a leaf
-  unsigned int mesh_instance;
-  long _;
+  uint32_t mesh_instance;
+  uint64_t _;
 } TLASNode;
 
 #endif // SCENE_TLAS_H_

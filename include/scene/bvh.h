@@ -7,8 +7,8 @@
 #include "scene/triangle.h"
 #include "vec3.h"
 
-typedef unsigned int BVHTriCount;
-typedef unsigned int BVHNodeCount;
+typedef uint32_t BVHTriCount;
+typedef uint32_t BVHNodeCount;
 
 // if indexes_count > 0, then node is a leaf and contains a list of primitives
 // if indexes_count == 0, then node is a branch and contains an index to the
@@ -37,17 +37,17 @@ void BVH_build(BVHNode *nodes, BVHNodeCount *nodes_offset,
     _b = tmp;                                                                  \
   } while (0);
 
-#include "stdlib.h"
-#define BVH_apply_swaps_lut(_lut, _objects, _object_type, _count)              \
-  do {                                                                         \
-    _object_type *_object_type##_copy = malloc(_count * sizeof(_object_type)); \
-    for (unsigned long _i = 0; _i < _count; ++_i)                              \
-      _object_type##_copy[_i] = _objects[_i];                                  \
-    for (unsigned long _i = 0; _i < _count; ++_i) {                            \
-      unsigned long swap_idx = _lut[_i];                                       \
-      _objects[_i] = _object_type##_copy[swap_idx];                            \
-    }                                                                          \
-    free(_object_type##_copy);                                                 \
-  } while (0);
+/* #include "stdlib.h" */
+/* #define BVH_apply_swaps_lut(_lut, _objects, _object_type, _count)              \ */
+/*   do {                                                                         \ */
+/*     _object_type *_object_type##_copy = malloc(_count * sizeof(_object_type)); \ */
+/*     for (unsigned long _i = 0; _i < _count; ++_i)                              \ */
+/*       _object_type##_copy[_i] = _objects[_i];                                  \ */
+/*     for (unsigned long _i = 0; _i < _count; ++_i) {                            \ */
+/*       unsigned long swap_idx = _lut[_i];                                       \ */
+/*       _objects[_i] = _object_type##_copy[swap_idx];                            \ */
+/*     }                                                                          \ */
+/*     free(_object_type##_copy);                                                 \ */
+/*   } while (0); */
 
 #endif // BVH_H_

@@ -2,6 +2,7 @@
 #define SCENE_MESH_H_
 
 #include "mat4.h"
+#include <stdint.h>
 
 // Mesh is just a list of MeshPrimitive's, which contain a triangle list and a
 // Material to use for those triangles.
@@ -10,15 +11,15 @@
 // a provided transformation into the rendered world.
 
 typedef struct {
-  unsigned int BVH_index;
-  unsigned int mat_index;
-  long _;
+  uint32_t BVH_index;
+  uint32_t mat_index;
+  uint64_t _;
 } MeshPrimitive;
 
 typedef struct {
   vec3 aabbMin, aabbMax;
-  unsigned int mesh_primitive_first, mesh_primitive_count;
-  long _;
+  uint32_t mesh_primitive_first, mesh_primitive_count;
+  uint64_t _;
 } Mesh;
 
 typedef struct {
@@ -26,8 +27,8 @@ typedef struct {
   Mat4 transform;
   // world to local transformation
   Mat4 inv_transform;
-  unsigned int mesh_index;
-  long _;
+  uint32_t mesh_index;
+  uint64_t _;
 } MeshInstance;
 
 #endif // SCENE_MESH_H_
