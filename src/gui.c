@@ -4,7 +4,7 @@
 #include "cimgui_impl.h"
 #include "gui/settings.h"
 
-GUIOverlay GUIOverlay_new(OpenGLContext *ctx) {
+GUIOverlay GUIOverlay_new(Window *window) {
   GUIOverlay self = {._imgui_ctx = igCreateContext(NULL),
                      ._DEFAULT_STYLE = *igGetStyle(),
                      .ui_scale = 1.0,
@@ -12,7 +12,7 @@ GUIOverlay GUIOverlay_new(OpenGLContext *ctx) {
 
   // NOTE: assuming uniform scaling
   float scale;
-  glfwGetWindowContentScale(ctx->window, &scale, NULL);
+  glfwGetWindowContentScale(window->glfw_window, &scale, NULL);
   GUIOverlay_scale(&self, scale);
 
   ImGuiIO *io = igGetIO_Nil();
@@ -20,7 +20,7 @@ GUIOverlay GUIOverlay_new(OpenGLContext *ctx) {
                                  12, NULL, NULL);
 
   ImGui_ImplOpenGL3_Init("#version 130");
-  ImGui_ImplGlfw_InitForOpenGL(ctx->window, true);
+  ImGui_ImplGlfw_InitForOpenGL(window->glfw_window, true);
 
   return self;
 }

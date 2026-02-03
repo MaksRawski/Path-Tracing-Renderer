@@ -1,18 +1,9 @@
 #include "scene.h"
-#include "file_formats/gltf.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 Scene Scene_default(void) { return (Scene){0}; }
-
-Scene Scene_load_gltf(const char *path) {
-  Scene self = {0};
-  printf("Loading scene %s...\n", path);
-  load_gltf_scene(&self, path);
-
-  return self;
-}
 
 bool Scene_is_empty(const Scene *scene) { return scene->triangles_count == 0; }
 

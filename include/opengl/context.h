@@ -9,29 +9,29 @@
 #include "opengl/window_events.h"
 
 typedef struct {
-  GLFWwindow *window;
-} OpenGLContext;
+  GLFWwindow *glfw_window;
+} Window;
 
 typedef struct {
-  // set only through poll_events method
+  // NOTE: set only through poll_events method
   WindowCoordinate last_mouse_pos;
 } GLFWUserData;
 
-OpenGLContext OpenGLContext_new(const char *window_title, int width,
+Window Window_new(const char *window_title, int width,
                                 int height);
-GLFWUserData *OpenGLContext_get_user_data(OpenGLContext *self);
+GLFWUserData *Window_get_user_data(Window *self);
 
-OpenGLResolution OpenGLContext_get_framebuffer_size(const OpenGLContext *self);
-WindowEventsData OpenGLContext_poll_events(OpenGLContext *self);
+OpenGLResolution Window_get_framebuffer_size(const Window *self);
+WindowEventsData Window_poll_events(Window *self);
 
-void OpenGLContext_display_framebuffer(GLuint fbo, OpenGLResolution fbo_res,
+void Window_display_framebuffer(GLuint fbo, OpenGLResolution fbo_res,
                                        OpenGLResolution display_res,
                                        OpenGLScalingMode scaling_mode);
 
-void OpenGLContext_steal_mouse(GLFWwindow *window);
-void OpenGLContext_give_back_mouse(GLFWwindow *window);
-void OpenGLContext_swap_buffers(OpenGLContext *self);
-void OpenGLContext_vsync(OpenGLContext *self, bool enable);
-void OpenGLContext_delete(OpenGLContext *self);
+void Window_steal_mouse(GLFWwindow *window);
+void Window_give_back_mouse(GLFWwindow *window);
+void Window_swap_buffers(Window *self);
+void Window_vsync(Window *self, bool enable);
+void Window_delete(Window *self);
 
 #endif // OPENGL_CONTEXT_H_

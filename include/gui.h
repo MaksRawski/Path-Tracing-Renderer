@@ -16,7 +16,7 @@ typedef struct {
   bool show_demo;
 } GUIOverlay;
 
-GUIOverlay GUIOverlay_new(OpenGLContext *ctx);
+GUIOverlay GUIOverlay_new(Window *ctx);
 bool GUIOverlay_is_focused(void);
 void GUIOverlay_update_state(GUIOverlay *self, AppState *params);
 void GUIOverlay_render_frame(GUIOverlay *self);

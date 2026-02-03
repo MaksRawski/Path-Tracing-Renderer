@@ -5,7 +5,7 @@
 // NOTE: sets the rendering_params received from GUI in Renderer
 // NOTE: renders everything that has to be rendered to the screen
 void AppState_display(AppState *app_state, Renderer *renderer, GUIOverlay *gui,
-                      OpenGLContext *ctx) {
+                      Window *window) {
   GL_CALL(glClear(GL_COLOR_BUFFER_BIT));
 
   if (!Scene_is_empty(&app_state->scene)) {
@@ -27,7 +27,7 @@ void AppState_display(AppState *app_state, Renderer *renderer, GUIOverlay *gui,
       Renderer_render_frame(renderer, app_state->stats.frame_number++);
     }
 
-    OpenGLContext_display_framebuffer(
+    Window_display_framebuffer(
         renderer_fbo, app_state->rendering_params.rendering_resolution,
         app_state->viewport_size, app_state->scaling_mode);
   }
@@ -37,7 +37,7 @@ void AppState_display(AppState *app_state, Renderer *renderer, GUIOverlay *gui,
     GUIOverlay_render_frame(gui);
   }
 
-  OpenGLContext_swap_buffers(ctx);
+  Window_swap_buffers(window);
 
   // NOTE: getting to this point doesn't necessarily mean that the frame (or
   // even the one before this one) has finished rendering, as we're simply

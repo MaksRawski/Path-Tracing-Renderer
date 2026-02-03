@@ -17,9 +17,9 @@ void glfw_error_callback(int error, const char *description) {
   fprintf(stderr, "Error (%d): %s\n", error, description);
 }
 
-OpenGLContext OpenGLContext_new(const char *window_title, int desired_width,
+Window Window_new(const char *window_title, int desired_width,
                                 int desired_height) {
-  OpenGLContext self = {0};
+  Window self = {0};
 
   glfwSetErrorCallback(glfw_error_callback);
 
@@ -42,27 +42,27 @@ OpenGLContext OpenGLContext_new(const char *window_title, int desired_width,
   else if (glfwPlatformSupported(GLFW_PLATFORM_X11))
     glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
 
-  self.window =
+  self.glfw_window =
       glfwCreateWindow(desired_width, desired_height, window_title, NULL, NULL);
 
-  if (!self.window) {
+  if (!self.glfw_window) {
     fprintf(stderr, "Failed to create a glfw window!\n");
     glfwTerminate();
     exit(EXIT_FAILURE);
   }
 
-  glfwMakeContextCurrent(self.window);
+  glfwMakeContextCurrent(self.glfw_window);
   int version = gladLoadGL(glfwGetProcAddress);
   if (version == 0) {
     fprintf(stderr, "Failed to initialize OpenGL context!\n");
     exit(EXIT_FAILURE);
   }
   void *userDataPtr = calloc(1, sizeof(GLFWUserData));
-  glfwSetWindowUserPointer(self.window, userDataPtr);
+  glfwSetWindowUserPointer(self.glfw_window, userDataPtr);
   glfwSwapInterval(0); // disable vsync
 
   // HACK: do initial poll to avoid having huge mouse delta
-  OpenGLContext_poll_events(&self);
+  Window_poll_events(&self);
 
   // Successfully loaded OpenGL
   printf("Loaded OpenGL %d.%d\n", GLAD_VERSION_MAJOR(version),
@@ -71,14 +71,14 @@ OpenGLContext OpenGLContext_new(const char *window_title, int desired_width,
   return self;
 }
 
-OpenGLResolution OpenGLContext_get_framebuffer_size(const OpenGLContext *self) {
+OpenGLResolution Window_get_framebuffer_size(const Window *self) {
   OpenGLResolution res = {0};
-  glfwGetFramebufferSize(self->window, (int *)&res.width, (int *)&res.height);
+  glfwGetFramebufferSize(self->glfw_window, (int *)&res.width, (int *)&res.height);
 
   return res;
 }
 
-void OpenGLContext_display_framebuffer(GLuint fbo, OpenGLResolution fbo_res,
+void Window_display_framebuffer(GLuint fbo, OpenGLResolution fbo_res,
                                        OpenGLResolution display_res,
                                        OpenGLScalingMode scaling_mode) {
   // desired x and y offset and width and height
@@ -119,31 +119,31 @@ void OpenGLContext_display_framebuffer(GLuint fbo, OpenGLResolution fbo_res,
                             GL_COLOR_BUFFER_BIT, GL_LINEAR));
 }
 
-void OpenGLContext_steal_mouse(GLFWwindow *window) {
+void Window_steal_mouse(GLFWwindow *window) {
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
   if (glfwRawMouseMotionSupported())
     glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
 }
 
-void OpenGLContext_give_back_mouse(GLFWwindow *window) {
+void Window_give_back_mouse(GLFWwindow *window) {
   if (glfwRawMouseMotionSupported())
     glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_FALSE);
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 }
 
-WindowEventsData OpenGLContext_poll_events(OpenGLContext *self) {
+WindowEventsData Window_poll_events(Window *self) {
   glfwPollEvents();
-  GLFWUserData *user_data = OpenGLContext_get_user_data(self);
+  GLFWUserData *user_data = Window_get_user_data(self);
   WindowEventsData events = {0};
-  events._window = self->window;
+  events._window = self->glfw_window;
   glfwGetWindowSize(events._window, (int *)&events.window_size.width,
                     (int *)&events.window_size.height);
 
   // NOTE: user_data->last_mouse_pos would be zero initalized, in which case
   // the first delta will be huge! we assume that the first frame is for
   // settling that
-  glfwGetCursorPos(self->window, &events.mouse_pos.x, &events.mouse_pos.y);
+  glfwGetCursorPos(self->glfw_window, &events.mouse_pos.x, &events.mouse_pos.y);
   events.mouse_delta =
       WindowCoordinate_sub(events.mouse_pos, user_data->last_mouse_pos);
   user_data->last_mouse_pos = events.mouse_pos;
@@ -151,15 +151,15 @@ WindowEventsData OpenGLContext_poll_events(OpenGLContext *self) {
   return events;
 }
 
-void OpenGLContext_swap_buffers(OpenGLContext *self) {
-  glfwSwapBuffers(self->window);
+void Window_swap_buffers(Window *self) {
+  glfwSwapBuffers(self->glfw_window);
 }
 
-GLFWUserData *OpenGLContext_get_user_data(OpenGLContext *ctx) {
-  return (GLFWUserData *)glfwGetWindowUserPointer(ctx->window);
+GLFWUserData *Window_get_user_data(Window *window) {
+  return (GLFWUserData *)glfwGetWindowUserPointer(window->glfw_window);
 }
 
-void OpenGLContext_delete(OpenGLContext *self) {
+void Window_delete(Window *self) {
   if (self == NULL)
     return;
   glfwTerminate();
