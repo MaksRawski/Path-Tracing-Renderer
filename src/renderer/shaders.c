@@ -18,7 +18,6 @@ GLuint create_shader_program(const char *vertex_shader_filename,
 GLuint create_shader_program_from_source(const char *vertex_shader_src,
                                          const char *fragment_shader_src);
 
-
 RendererShaders RendererShaders_new(const char *vertex_shader_path,
                                     const char *fragment_shader_path) {
   RendererShaders self = {0};
@@ -41,8 +40,8 @@ bool RendererShaders_update(RendererShaders *self) {
 }
 
 void RendererShaders_force_update(RendererShaders *self) {
-  GLuint new_program =
-      create_shader_program(self->vertex_shader.path, self->fragment_shader.path);
+  GLuint new_program = create_shader_program(self->vertex_shader.path,
+                                             self->fragment_shader.path);
 
   if (new_program == (GLuint)-1) {
     fprintf(stderr,
@@ -61,9 +60,7 @@ void RendererShaders_delete(RendererShaders *self) {
   FileWatcher_delete(&self->vertex_shader);
   FileWatcher_delete(&self->fragment_shader);
   GL_CALL(glDeleteProgram(self->program));
-  self = NULL;
 }
-
 
 GLuint compile_shader(const char *shader_source, GLenum shader_type) {
   GLuint shader = glCreateShader(shader_type);

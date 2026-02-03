@@ -3,10 +3,9 @@
 
 #include "opengl/window_events.h"
 #include "scene/camera.h"
-/* #include "yawpitch.h" */
 
 bool Inputs_update_camera(Camera *cam, const WindowEventsData *events,
-                          double dt, bool allow_rotate);
+                          double dt);
 
 CameraTranslation Inputs_move(const WindowEventsData *events);
 YawPitch Inputs_rotate(const WindowEventsData *events);

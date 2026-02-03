@@ -16,8 +16,8 @@ AppStateSaveImageInfo AppStateSaveImageInfo_default(void) {
   return (AppStateSaveImageInfo){.path = "output.png", .to_save = false};
 }
 
-void add_metadata(const RendererParameters *renderer_parameters,
-                  const char *image);
+static void add_metadata(const RendererParameters *renderer_parameters,
+                         const char *image_path);
 
 void AppState_save_image(AppState *app_state, GLuint fbo,
                          OpenGLResolution resolution) {
@@ -46,7 +46,7 @@ void AppState_save_image(AppState *app_state, GLuint fbo,
 
 // NOTE: works only if exiftool is in PATH
 void add_metadata(const RendererParameters *renderer_parameters,
-                  const char *image_filename) {
+                  const char *image_path) {
   bool exiftool_available = false;
 #ifdef __linux__
   exiftool_available = (system("exiftool -ver > /dev/null") == 0);
@@ -63,7 +63,7 @@ void add_metadata(const RendererParameters *renderer_parameters,
 
     int to_write = snprintf(cmd, sizeof(cmd),
                             "exiftool -overwrite_original -Description='%s' %s",
-                            params, image_filename);
+                            params, image_path);
     ASSERTQ_CUSTOM(to_write < (int)sizeof(cmd), "Buffer 'cmd' too small!");
     ASSERTQ_CUSTOM(system(cmd) == 0, "Command failed!");
   }
