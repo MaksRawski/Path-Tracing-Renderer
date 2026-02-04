@@ -1,6 +1,6 @@
 #include "gui/settings.h"
 #include "gui/file_browser.h"
-#include "opengl/scaling.h"
+#include "window/scaling.h"
 #include "rad_deg.h"
 #include "scene/bvh/strategies.h"
 #include "scene/camera.h"
@@ -165,8 +165,8 @@ void _Misc_settings(GUIOverlay *gui, AppState *state) {
   if (igSliderFloat("UI scale", &gui->ui_scale, 0.5, 2.5, "%3.2f", 0))
     GUIOverlay_scale(gui, gui->ui_scale);
 
-  igCombo_Str_arr("Scaling", (int *)&state->scaling_mode, OpenGLScalingMode_str,
-                  OpenGLScalingMode__COUNT, 5);
+  igCombo_Str_arr("Scaling", (int *)&state->scaling_mode, WindowScalingMode_str,
+                  WindowScalingMode__COUNT, 5);
   tooltip("Strategy to use for displaying the rendered image when the window "
           "size is different from the "
           "Rendering Resolution");

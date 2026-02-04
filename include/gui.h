@@ -2,7 +2,7 @@
 #define GUI_H_
 
 #include "app_state.h"
-#include "opengl/context.h"
+#include "window.h"
 
 #define CIMGUI_USE_GLFW
 #define CIMGUI_USE_OPENGL3
@@ -16,7 +16,7 @@ typedef struct {
   bool show_demo;
 } GUIOverlay;
 
-GUIOverlay GUIOverlay_new(Window *ctx);
+GUIOverlay GUIOverlay_new(Window *window);
 bool GUIOverlay_is_focused(void);
 void GUIOverlay_update_state(GUIOverlay *self, AppState *params);
 void GUIOverlay_render_frame(GUIOverlay *self);

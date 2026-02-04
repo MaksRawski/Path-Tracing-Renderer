@@ -1,7 +1,7 @@
 #ifndef RENDERER_PARAMETERS_H_
 #define RENDERER_PARAMETERS_H_
 
-#include "opengl/resolution.h"
+#include "window/resolution.h"
 #include <assert.h>
 #include <stdbool.h>
 
@@ -12,7 +12,7 @@ typedef struct {
   float diverge_strength;
   // -1 means infinite, NOTE: assuming progressive rendering
   int frames_to_render;
-  OpenGLResolution rendering_resolution;
+  WindowResolution rendering_resolution;
 } RendererParameters;
 
 RendererParameters RendererParameters_default(void);

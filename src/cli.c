@@ -1,7 +1,7 @@
 #include "cli.h"
 #include "app_state.h"
 #include "asserts.h"
-#include "opengl/resolution.h"
+#include "window/resolution.h"
 #include "scene/bvh/strategies.h"
 #include "utils.h"
 #include <ctype.h>
@@ -67,7 +67,7 @@ Option Option_new(enum Options option, const AppState *default_app_state) {
     RETURN_OPTION_DV_FMT("-F", "--frames-to-render", "", "%d",
                          default_app_state->rendering_params.frames_to_render);
   case Options_RESOLUTION: {
-    OpenGLResolution resolution =
+    WindowResolution resolution =
         default_app_state->rendering_params.rendering_resolution;
     RETURN_OPTION_DV_FMT("-R", "--resolution", "", "%dx%d", resolution.width,
                          resolution.height);

@@ -8,7 +8,7 @@
 typedef struct {
   RendererShaders _shaders;
   RendererBuffers _buffers;
-  OpenGLResolution _res;
+  WindowResolution _res;
 } Renderer;
 
 Renderer Renderer_new(void);

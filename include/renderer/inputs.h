@@ -1,7 +1,7 @@
 #ifndef RENDERER_INPUTS_H_
 #define RENDERER_INPUTS_H_
 
-#include "opengl/window_events.h"
+#include "window/window_events.h"
 #include "scene/camera.h"
 
 bool Inputs_update_camera(Camera *cam, const WindowEventsData *events,

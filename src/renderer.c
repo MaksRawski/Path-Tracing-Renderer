@@ -1,6 +1,6 @@
 #include "renderer.h"
 #include "opengl/gl_call.h"
-#include "opengl/resolution.h"
+#include "window/resolution.h"
 #include "renderer/buffers/back.h"
 #include "renderer/buffers/parameters_buffer.h"
 #include "renderer/buffers_scene.h"
@@ -26,7 +26,7 @@ Renderer Renderer_new(void) {
   Renderer self = {
       ._shaders = RendererShaders_new(VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH),
       ._buffers = RendererBuffers_new(),
-      ._res = OpenGLResolution_new(0, 0)};
+      ._res = WindowResolution_new(0, 0)};
 
   return self;
 }

@@ -3,10 +3,10 @@
 
 #include "app_state/app_state_save_image.h"
 #include "gui/scene_paths.h"
-#include "opengl/context.h"
-#include "opengl/resolution.h"
-#include "opengl/scaling.h"
-#include "opengl/window_events.h"
+#include "window.h"
+#include "window/resolution.h"
+#include "window/scaling.h"
+#include "window/window_events.h"
 #include "renderer.h"
 #include "renderer/parameters.h"
 #include "scene.h"
@@ -21,8 +21,8 @@ typedef struct {
   RendererParameters rendering_params;
   Stats stats;
   ScenePaths scene_paths;
-  OpenGLResolution viewport_size;
-  OpenGLScalingMode scaling_mode;
+  WindowResolution viewport_size;
+  WindowScalingMode scaling_mode;
   AppStateSaveImageInfo save_image_info;
   Scene scene;
   BVHStrategy BVH_build_strat;
@@ -39,7 +39,7 @@ void AppState_update_scene(AppState *app_state, Renderer *renderer);
 void AppState_update_camera(AppState *app_state, Renderer *renderer,
                             const WindowEventsData *events);
 void AppState_update_focus(AppState *app_state, const WindowEventsData *events,
-                           Window *ctx);
+                           Window *window);
 
 void AppState_hot_reload_shaders(AppState *app_state, Renderer *renderer);
 void AppState_update_renderer_parameters(AppState *app_state,
@@ -47,6 +47,6 @@ void AppState_update_renderer_parameters(AppState *app_state,
 
 void AppState_post_rendering(AppState *app_state, Renderer *renderer);
 void AppState_save_image(AppState *save_image_info, GLuint fbo,
-                         OpenGLResolution resolution);
+                         WindowResolution resolution);
 
 #endif // APP_STATE_H_

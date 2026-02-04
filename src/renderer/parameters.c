@@ -1,5 +1,5 @@
 #include "renderer/parameters.h"
-#include "opengl/resolution.h"
+#include "window/resolution.h"
 #include <stdio.h>
 
 RendererParameters RendererParameters_default(void) {
@@ -8,7 +8,7 @@ RendererParameters RendererParameters_default(void) {
                               .diverge_strength = 0.001,
                               .frames_to_render = -1,
                               .rendering_resolution =
-                                  OpenGLResolution_new(1280, 720)};
+                                  WindowResolution_new(1280, 720)};
 }
 
 // NOTE: the buffer should at the very least allocate 128 bytes

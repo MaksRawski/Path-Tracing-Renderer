@@ -1,12 +1,8 @@
 #include "asserts.h"
 #include "glad/gl.h"
 //
-#include "opengl/context.h"
 #include "opengl/gl_call.h"
-#include "opengl/resolution.h"
-#include "opengl/scaling.h"
-#include "opengl/window_coordinate.h"
-#include "opengl/window_events.h"
+#include "window.h"
 
 #include <GLFW/glfw3.h>
 #include <stdio.h>
@@ -71,28 +67,28 @@ Window Window_new(const char *window_title, int desired_width,
   return self;
 }
 
-OpenGLResolution Window_get_framebuffer_size(const Window *self) {
-  OpenGLResolution res = {0};
+WindowResolution Window_get_framebuffer_size(const Window *self) {
+  WindowResolution res = {0};
   glfwGetFramebufferSize(self->glfw_window, (int *)&res.width,
                          (int *)&res.height);
 
   return res;
 }
 
-void Window_display_framebuffer(GLuint fbo, OpenGLResolution fbo_res,
-                                OpenGLResolution display_res,
-                                OpenGLScalingMode scaling_mode) {
+void Window_display_framebuffer(GLuint fbo, WindowResolution fbo_res,
+                                WindowResolution display_res,
+                                WindowScalingMode scaling_mode) {
   // desired x and y offset and width and height
   int dx, dy, dw, dh;
   switch (scaling_mode) {
-  case OpenGLScalingMode_STRETCH: {
+  case WindowScalingMode_STRETCH: {
     dx = 0;
     dy = 0;
     dw = display_res.width;
     dh = display_res.height;
     break;
   }
-  case OpenGLScalingMode_FIT_CENTER: {
+  case WindowScalingMode_FIT_CENTER: {
     double fbo_aspect_ratio = (double)fbo_res.width / fbo_res.height;
     double display_aspect_ratio =
         (double)display_res.width / display_res.height;
@@ -109,7 +105,7 @@ void Window_display_framebuffer(GLuint fbo, OpenGLResolution fbo_res,
       dy = 0;
     }
   } break;
-  case OpenGLScalingMode__COUNT: {
+  case WindowScalingMode__COUNT: {
     UNREACHABLE();
   }
   }

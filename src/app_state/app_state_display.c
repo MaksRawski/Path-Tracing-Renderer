@@ -5,7 +5,7 @@
 // NOTE: sets the rendering_params received from GUI in Renderer
 // NOTE: renders everything that has to be rendered to the screen
 void AppState_display(AppState *app_state, Renderer *renderer, GUIOverlay *gui,
-                      Window *ctx) {
+                      Window *window) {
   int frames_to_render = app_state->rendering_params.frames_to_render;
   unsigned int frame_number = app_state->stats.frame_number;
 
@@ -35,7 +35,7 @@ void AppState_display(AppState *app_state, Renderer *renderer, GUIOverlay *gui,
   if (app_state->gui_enabled)
     GUIOverlay_render_frame(gui);
 
-  Window_swap_buffers(ctx);
+  Window_swap_buffers(window);
 
   // NOTE: getting to this point doesn't necessarily mean that the frame (or
   // even the one before this one) has finished rendering, as we're simply

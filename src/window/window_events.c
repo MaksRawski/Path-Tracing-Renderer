@@ -1,4 +1,4 @@
-#include "opengl/window_events.h"
+#include "window/window_events.h"
 #include <GLFW/glfw3.h>
 #include <stdbool.h>
 

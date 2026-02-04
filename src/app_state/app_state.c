@@ -3,6 +3,7 @@
 #include "gui.h"
 #include "opengl/gl_call.h"
 #include "renderer/inputs.h"
+#include "scene.h"
 #include "stats.h"
 #include "stb_image_write.h"
 #include "utils.h"
@@ -13,9 +14,9 @@ AppState AppState_default(void) {
       .cam = Camera_default(),
       .rendering_params = RendererParameters_default(),
       .scene_paths = ScenePath_default(),
-      .viewport_size = OpenGLResolution_new(0, 0),
+      .viewport_size = WindowResolution_new(0, 0),
       .scene = Scene_empty(),
-      .scaling_mode = OpenGLScalingMode_FIT_CENTER,
+      .scaling_mode = WindowScalingMode_FIT_CENTER,
       .save_image_info = AppStateSaveImageInfo_default(),
       .gui_enabled = true,
       .hot_reload_enabled = true,
@@ -101,17 +102,17 @@ void AppState_update_camera(AppState *app_state, Renderer *renderer,
 // steals or gives back mouse based on WindowEventsData
 // NOTE: updates value of _renderer_focused
 void AppState_update_focus(AppState *app_state, const WindowEventsData *events,
-                           Window *ctx) {
+                           Window *window) {
   bool lmb_pressed =
       WindowEventsData_is_mouse_button_pressed(events, GLFW_MOUSE_BUTTON_1);
   bool mouse_over_renderer = !GUIOverlay_is_focused();
 
   if (mouse_over_renderer && lmb_pressed && !app_state->_renderer_focused) {
     app_state->_renderer_focused = true;
-    Window_steal_mouse(ctx->glfw_window);
+    Window_steal_mouse(window->glfw_window);
   } else if (!lmb_pressed && app_state->_renderer_focused) {
     app_state->_renderer_focused = false;
-    Window_give_back_mouse(ctx->glfw_window);
+    Window_give_back_mouse(window->glfw_window);
   }
 }
 
@@ -173,7 +174,7 @@ void AppState_post_rendering(AppState *app_state, Renderer *renderer) {
 
 const int BYTES_PER_PIXEL = 3;
 void AppState_save_image(AppState *app_state, GLuint fbo,
-                         OpenGLResolution resolution) {
+                         WindowResolution resolution) {
   app_state->save_image_info.to_save = false;
   GL_CALL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo));
   GL_CALL(glReadBuffer(GL_COLOR_ATTACHMENT0));

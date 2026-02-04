@@ -5,6 +5,6 @@
 #include "gui.h"
 
 void AppState_display(AppState *app_state, Renderer *renderer, GUIOverlay *gui,
-                      Window *ctx);
+                      Window *window);
 
 #endif // APP_STATE_DISPLAY_H_

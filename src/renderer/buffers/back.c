@@ -1,6 +1,6 @@
 #include "renderer/buffers/back.h"
 #include "opengl/gl_call.h"
-#include "opengl/resolution.h"
+#include "window/resolution.h"
 #include <stddef.h>
 
 RendererBuffersBack RendererBuffersBack_new(void) {
@@ -29,7 +29,7 @@ RendererBuffersBack RendererBuffersBack_new(void) {
 }
 
 void RendererBuffersBack_resize(RendererBuffersBack *self,
-                                OpenGLResolution res) {
+                                WindowResolution res) {
   GL_CALL(glBindTexture(GL_TEXTURE_2D, self->fboTex));
   GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, res.width, res.height, 0, GL_RGB,
                GL_UNSIGNED_BYTE, NULL));
