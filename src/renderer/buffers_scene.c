@@ -48,6 +48,4 @@ void RendererBuffersScene_delete(RendererBuffersScene *self) {
   GL_CALL(glDeleteBuffers(1, &self->mesh_instances_ssbo));
   GL_CALL(glDeleteBuffers(1, &self->tlas_nodes_ssbo));
   GL_CALL(glDeleteBuffers(1, &self->camera_ssbo));
-
-  self = NULL;
 }

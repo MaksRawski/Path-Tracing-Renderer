@@ -18,10 +18,6 @@
 #define VERTEX_SHADER_PATH "shaders" PATH_SEPARATOR "vertex.glsl"
 #define FRAGMENT_SHADER_PATH "shaders" PATH_SEPARATOR "renderer.glsl"
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
 Renderer Renderer_new(void) {
   Renderer self = {
       ._shaders = RendererShaders_new(VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH),

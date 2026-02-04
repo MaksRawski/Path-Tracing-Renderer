@@ -33,13 +33,13 @@ AppState AppState_default(void) {
   };
 }
 
-void AppState__restart_progressive_rendering(AppState *app_state,
-                                             Renderer *renderer) {
+static void AppState__restart_progressive_rendering(AppState *app_state,
+                                                    Renderer *renderer) {
   Renderer_clear_backbuffer(renderer);
   Stats_reset_rendering(&app_state->stats);
 }
 
-void AppState__set_camera(AppState *app_state, Renderer *renderer) {
+static void AppState__set_camera(AppState *app_state, Renderer *renderer) {
   Renderer_set_camera(renderer, app_state->cam);
   AppState__restart_progressive_rendering(app_state, renderer);
 }

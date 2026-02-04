@@ -1,7 +1,7 @@
 #include "scene/camera.h"
-#include <math.h>
 #include "asserts.h"
 #include "rad_deg.h"
+#include <math.h>
 
 // NOTE: right now this is basically assuming that up is (0,1,0)
 Camera Camera_new(vec3 pos, vec3 dir, vec3 up, float fov, float focal_length,
@@ -62,20 +62,20 @@ void Camera_move(Camera *cam, CameraTranslation translation, double step_size) {
   Camera_move_up(cam, translation.up, step_size);
 }
 
-double Camera__fix_yaw(double yaw) {
+static double Camera__fix_yaw(double yaw) {
   yaw = fmod(yaw, 2 * M_PI);
   if (yaw < 0)
     yaw += 2 * M_PI;
   return yaw;
 }
 
-double Camera__fix_pitch(double pitch) {
+static double Camera__fix_pitch(double pitch) {
   pitch = pitch < CAMERA_PITCH_MIN_RAD ? CAMERA_PITCH_MIN_RAD : pitch;
   pitch = pitch > CAMERA_PITCH_MAX_RAD ? CAMERA_PITCH_MAX_RAD : pitch;
   return pitch;
 }
 
-void Camera__fix_yaw_pitch(YawPitch *yp) {
+static void Camera__fix_yaw_pitch(YawPitch *yp) {
   yp->yaw_rad = Camera__fix_yaw(yp->yaw_rad);
   yp->pitch_rad = Camera__fix_pitch(yp->pitch_rad);
 }

@@ -14,5 +14,4 @@ void Scene_delete(Scene *self) {
   free(self->meshes);
   free(self->mesh_instances);
   free(self->tlas_nodes);
-  self = NULL;
 }

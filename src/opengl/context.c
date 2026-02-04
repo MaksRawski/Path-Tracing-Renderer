@@ -18,7 +18,7 @@ void glfw_error_callback(int error, const char *description) {
 }
 
 Window Window_new(const char *window_title, int desired_width,
-                                int desired_height) {
+                  int desired_height) {
   Window self = {0};
 
   glfwSetErrorCallback(glfw_error_callback);
@@ -73,14 +73,15 @@ Window Window_new(const char *window_title, int desired_width,
 
 OpenGLResolution Window_get_framebuffer_size(const Window *self) {
   OpenGLResolution res = {0};
-  glfwGetFramebufferSize(self->glfw_window, (int *)&res.width, (int *)&res.height);
+  glfwGetFramebufferSize(self->glfw_window, (int *)&res.width,
+                         (int *)&res.height);
 
   return res;
 }
 
 void Window_display_framebuffer(GLuint fbo, OpenGLResolution fbo_res,
-                                       OpenGLResolution display_res,
-                                       OpenGLScalingMode scaling_mode) {
+                                OpenGLResolution display_res,
+                                OpenGLScalingMode scaling_mode) {
   // desired x and y offset and width and height
   int dx, dy, dw, dh;
   switch (scaling_mode) {
@@ -151,17 +152,13 @@ WindowEventsData Window_poll_events(Window *self) {
   return events;
 }
 
-void Window_swap_buffers(Window *self) {
-  glfwSwapBuffers(self->glfw_window);
-}
+void Window_swap_buffers(Window *self) { glfwSwapBuffers(self->glfw_window); }
 
 GLFWUserData *Window_get_user_data(Window *window) {
   return (GLFWUserData *)glfwGetWindowUserPointer(window->glfw_window);
 }
 
 void Window_delete(Window *self) {
-  if (self == NULL)
-    return;
+  (void)(self);
   glfwTerminate();
-  self = NULL;
 }

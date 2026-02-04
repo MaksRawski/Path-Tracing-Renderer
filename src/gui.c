@@ -53,5 +53,4 @@ void GUIOverlay_delete(GUIOverlay *self) {
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   igDestroyContext(self->_imgui_ctx);
-  self = NULL;
 }
