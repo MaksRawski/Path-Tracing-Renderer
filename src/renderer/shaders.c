@@ -13,10 +13,11 @@
   "#version 330 core\nlayout(location = 0) in vec3 aPos;\nvoid "               \
   "main(){gl_Position=vec4(aPos,1.0);}"
 
-GLuint create_shader_program(const char *vertex_shader_filename,
-                             const char *fragment_shader_filename);
-GLuint create_shader_program_from_source(const char *vertex_shader_src,
-                                         const char *fragment_shader_src);
+static GLuint create_shader_program(const char *vertex_shader_filename,
+                                    const char *fragment_shader_filename);
+static GLuint
+create_shader_program_from_source(const char *vertex_shader_src,
+                                  const char *fragment_shader_src);
 
 RendererShaders RendererShaders_new(const char *vertex_shader_path,
                                     const char *fragment_shader_path) {
@@ -62,7 +63,7 @@ void RendererShaders_delete(RendererShaders *self) {
   GL_CALL(glDeleteProgram(self->program));
 }
 
-GLuint compile_shader(const char *shader_source, GLenum shader_type) {
+static GLuint compile_shader(const char *shader_source, GLenum shader_type) {
   GLuint shader = glCreateShader(shader_type);
   GL_CALL(glShaderSource(shader, 1, &shader_source, NULL));
   GL_CALL(glCompileShader(shader));
@@ -79,8 +80,9 @@ GLuint compile_shader(const char *shader_source, GLenum shader_type) {
   return shader;
 }
 
-GLuint create_shader_program_from_source(const char *vertex_shader_src,
-                                         const char *fragment_shader_src) {
+static GLuint
+create_shader_program_from_source(const char *vertex_shader_src,
+                                  const char *fragment_shader_src) {
 
   GLuint vertex_shader = compile_shader(vertex_shader_src, GL_VERTEX_SHADER);
   GLuint fragment_shader =
@@ -109,8 +111,8 @@ GLuint create_shader_program_from_source(const char *vertex_shader_src,
   return shaderProgram;
 }
 
-GLuint create_shader_program(const char *vertex_shader_filename,
-                             const char *fragment_shader_filename) {
+static GLuint create_shader_program(const char *vertex_shader_filename,
+                                    const char *fragment_shader_filename) {
 
   char *vertex_shader_src = File_read(vertex_shader_filename);
   char *fragment_shader_src = File_read(fragment_shader_filename);

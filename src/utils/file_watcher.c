@@ -18,10 +18,10 @@
 // TODO: instead use OS specific APIs that offer more reliable mechanisms for
 // this; inotify on Linux and ReadDirectoryChangesW on Windows
 
-void set_stats(FileWatcher *self, struct stat stats);
-bool stats_changed(FileWatcher *self, struct stat stats);
+static void set_stats(FileWatcher *self, struct stat stats);
+static bool stats_changed(FileWatcher *self, struct stat stats);
 
-void set_stats(FileWatcher *self, struct stat stats) {
+static void set_stats(FileWatcher *self, struct stat stats) {
 #ifdef __linux__
   self->_mtimensec = stats.st_mtimensec;
 #else
@@ -29,7 +29,7 @@ void set_stats(FileWatcher *self, struct stat stats) {
 #endif
 }
 
-bool stats_changed(FileWatcher *self, struct stat stats) {
+static bool stats_changed(FileWatcher *self, struct stat stats) {
 #ifdef __linux__
   return self->_mtimensec != stats.st_mtimensec;
 #else

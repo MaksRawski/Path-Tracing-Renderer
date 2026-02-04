@@ -19,7 +19,7 @@ const Material DEFAULT_MATERIAL = {
     .specular_component = 0,
 };
 
-const char *cgltf_result_str(cgltf_result res) {
+static const char *cgltf_result_str(cgltf_result res) {
   switch (res) {
   case cgltf_result_success:
     return "success";
@@ -45,7 +45,8 @@ const char *cgltf_result_str(cgltf_result res) {
 // this compared to ASSERTQ_* handles errors that /may/ actually happen because
 // of user input, whereas the latter is more for asserts that /should/ always
 // hold or otherwise it's an internal error
-void gltf_assert(bool cond, const char *path, const char *err_msg_fmt, ...) {
+static void gltf_assert(bool cond, const char *path, const char *err_msg_fmt,
+                        ...) {
   if (!cond) {
     char msg[256];
     va_list args;
@@ -57,9 +58,9 @@ void gltf_assert(bool cond, const char *path, const char *err_msg_fmt, ...) {
   }
 }
 
-void handle_mesh(cgltf_data *data, const char *path, cgltf_node *node,
-                 Scene *scene, int m, cgltf_size *const t_counter);
-void handle_camera(const char *path, cgltf_node *node, Scene *scene);
+static void handle_mesh(cgltf_data *data, const char *path, cgltf_node *node,
+                        Scene *scene, int m, cgltf_size *const t_counter);
+static void handle_camera(const char *path, cgltf_node *node, Scene *scene);
 
 // scene should be zero-intialized
 void load_gltf_scene(Scene *scene, const char *path) {
@@ -136,8 +137,8 @@ void load_gltf_scene(Scene *scene, const char *path) {
   cgltf_free(data);
 }
 
-void handle_mesh(cgltf_data *data, const char *path, cgltf_node *node,
-                 Scene *scene, int m, cgltf_size *const t_counter) {
+static void handle_mesh(cgltf_data *data, const char *path, cgltf_node *node,
+                        Scene *scene, int m, cgltf_size *const t_counter) {
   cgltf_mesh mesh = *node->mesh;
   cgltf_size primitives_count = mesh.primitives_count;
   scene->meshes[m].index = *t_counter;
@@ -212,7 +213,7 @@ void handle_mesh(cgltf_data *data, const char *path, cgltf_node *node,
   }
 }
 
-void handle_camera(const char *path, cgltf_node *node, Scene *scene) {
+static void handle_camera(const char *path, cgltf_node *node, Scene *scene) {
   gltf_assert(node->camera->type == cgltf_camera_type_perspective, path,
               "Only perspective camera type is supported! Got type %d\n",
               node->camera->type);
