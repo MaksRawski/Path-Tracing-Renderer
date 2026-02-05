@@ -11,12 +11,8 @@
 #define DEFAULT_CAM_DIR vec3_new(0, 0, -1)
 #define DEFAULT_CAM_UP vec3_new(0, 1, 0)
 #define DEFAULT_CAM_FOV M_PI / 4.0
-#define DEFAULT_CAM_FOCAL_LENGTH 20.0
 #define DEFAULT_CAM_MOVE_SPEED_PER_SECOND 1.0
 #define DEFAULT_CAM_ROTATE_SENSITIVITY 1.0
-
-#define CAMERA_FOCAL_LENGTH_MIN 0.1
-#define CAMERA_FOCAL_LENGTH_MAX 50
 
 #define CAMERA_FOV_MIN_RAD 0.001
 #define CAMERA_FOV_MAX_RAD (M_PI - CAMERA_FOV_MIN_RAD)
@@ -41,7 +37,6 @@ typedef struct {
   vec3 dir;
   vec3 up;
   float fov_rad;
-  float focal_length;
   float step_size_per_second;
   float sensitivity;
 } Camera;
@@ -59,7 +54,7 @@ typedef struct {
   CameraMovementDirection up;
 } CameraTranslation;
 
-Camera Camera_new(vec3 pos, vec3 dir, vec3 up, float fov, float focal_length,
+Camera Camera_new(vec3 pos, vec3 dir, vec3 up, float fov,
                   float step_size_per_second, float sensitivity);
 
 float Camera_get_fov_deg(const Camera *self);

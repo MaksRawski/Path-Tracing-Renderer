@@ -24,14 +24,11 @@ struct Parameters {
     uint width, height;
 };
 
-// https://raytracing.github.io/books/RayTracingInOneWeekend.html#positionablecamera (12.2)
 struct Camera {
     vec4 pos;
     vec4 dir;
     vec4 up;
-    // horizontal field of view in radians
-    float fov;
-    float focal_length;
+    float yfov;
 };
 
 struct Ray {
@@ -89,12 +86,6 @@ layout(std430, binding = 5) readonly buffer cameraBuffer {
 };
 layout(std430, binding = 6) readonly buffer rendererParametersBuffer {
     Parameters params;
-};
-
-struct Sphere {
-    vec3 pos;
-    float r;
-    Material mat;
 };
 
 struct HitInfo {
@@ -408,7 +399,7 @@ CameraViewport GetCameraViewport(Camera camera, float aspectRatio) {
     cameraViewport.right = cross(camera.dir.xyz, camera.up.xyz);
     cameraViewport.up = cross(cameraViewport.right, camera.dir.xyz);
 
-    cameraViewport.halfHeight = tan(camera.fov / 2.0);
+    cameraViewport.halfHeight = tan(camera.yfov / 2.0);
     cameraViewport.halfWidth = cameraViewport.halfHeight * aspectRatio;
 
     return cameraViewport;
@@ -436,7 +427,6 @@ Ray JitterRay(Ray ray, CameraViewport viewport, inout uint rngState) {
 
 void main() {
     vec2 resolution = vec2(params.width, params.height);
-    float aspectRatio = float(params.width) / float(params.height);
 
     uint pixelIndex = uint(gl_FragCoord.x) + uint(gl_FragCoord.y) * uint(params.width);
     uint rngState = uint(pixelIndex + uint(frame_number * 719393));
@@ -445,6 +435,7 @@ void main() {
     vec2 uv = gl_FragCoord.xy / resolution.xy; // normalized coordinates [0, 1]
     uv = 2.0 * uv - 1.0; // normalized coordinates [-1, 1]
 
+    float aspectRatio = resolution.x / resolution.y;
     CameraViewport viewport = GetCameraViewport(camera, aspectRatio);
 
     Ray ray = RayGenPerspectiveCamera(camera, viewport, uv);

@@ -6,7 +6,7 @@
 #include <math.h>
 
 // NOTE: right now this is basically assuming that up is (0,1,0)
-Camera Camera_new(vec3 pos, vec3 dir, vec3 up, float fov, float focal_length,
+Camera Camera_new(vec3 pos, vec3 dir, vec3 up, float fov,
                   float step_size_per_second, float sensitivity) {
   vec3 dir_xz_normalized = vec3_norm(vec3_new(dir.x, 0, dir.z));
   vec3 dir_normalized =
@@ -16,15 +16,13 @@ Camera Camera_new(vec3 pos, vec3 dir, vec3 up, float fov, float focal_length,
                   .dir = dir_normalized,
                   .up = up,
                   .fov_rad = fov,
-                  .focal_length = focal_length,
                   .step_size_per_second = step_size_per_second,
                   .sensitivity = sensitivity};
 }
 
 Camera Camera_default(void) {
   return Camera_new(DEFAULT_CAM_POS, DEFAULT_CAM_DIR, DEFAULT_CAM_UP,
-                    DEFAULT_CAM_FOV, DEFAULT_CAM_FOCAL_LENGTH,
-                    DEFAULT_CAM_MOVE_SPEED_PER_SECOND,
+                    DEFAULT_CAM_FOV, DEFAULT_CAM_MOVE_SPEED_PER_SECOND,
                     DEFAULT_CAM_ROTATE_SENSITIVITY);
 }
 

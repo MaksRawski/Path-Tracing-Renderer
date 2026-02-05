@@ -85,9 +85,6 @@ static bool GUISettings_Camera(AppState *params) {
                            CAMERA_FOV_MAX_DEG, "%3.1f", 0);
   Camera_set_fov_deg(&params->cam, fov_deg);
 
-  changed |= igSliderFloat("Focal length", &params->cam.focal_length,
-                           CAMERA_FOCAL_LENGTH_MIN, CAMERA_FOCAL_LENGTH_MAX,
-                           "%3.1f", 0);
   changed |= igSliderFloat("Movement speed", &params->cam.step_size_per_second,
                            CAMERA_MOVE_SPEED_PER_SECOND_MIN,
                            CAMERA_MOVE_SPEED_PER_SECOND_MAX, "%.2f", 0);
