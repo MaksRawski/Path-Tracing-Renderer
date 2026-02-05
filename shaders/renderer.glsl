@@ -159,7 +159,6 @@ vec3 SRGBToLinear(vec3 rgb) {
     );
 }
 
-
 // using Möller-Trumbore intersection algorithm
 // https://www.youtube.com/watch?v=fK1RPmF_zjQ
 // https://cadxfem.org/inf/Fast%20MinimumStorage%20RayTriangle%20Intersection.pdf
@@ -347,7 +346,6 @@ HitInfo CalculateRayCollision(Ray ray) {
                 if (hit.didHit && hit.dst < closestHit.dst) {
                     closestHit = hit;
                     closestHit.mat = mats[primitives[t_index].mat];
-                    // closestHit.mat = Material(vec3(0.0, 0.0, 0.0), 0.0, hsv2rgb(vec3(float(stack_ptr) / float(bvhNodeCount), 0.5, 0.5)), 0.0);
                 }
             }
         } else {
@@ -401,17 +399,6 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
     return incomingLight;
 }
 
-// ACES tone mapping curve fit to go from HDR to LDR
-//https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/
-vec3 ACESFilm(vec3 x)
-{
-    float a = 2.51f;
-    float b = 0.03f;
-    float c = 2.43f;
-    float d = 0.59f;
-    float e = 0.14f;
-    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0f, 1.0f);
-}
 void main() {
     vec2 resolution = vec2(params.width, params.height);
     uint pixelIndex = uint(gl_FragCoord.x) + uint(gl_FragCoord.y) * uint(params.width);
@@ -445,14 +432,13 @@ void main() {
         totalIncomingLight += GetColorForRay(ray, rngState);
     }
     totalIncomingLight /= float(params.samples_per_pixel);
-    totalIncomingLight = ACESFilm(totalIncomingLight);
-    totalIncomingLight = LinearToSRGB(totalIncomingLight);
 
     if (frame_number > 0) {
         vec3 lastFrameColor = texture(backBufferTexture, gl_FragCoord.xy / resolution.xy).rgb;
         float weight = 1.0 / float(frame_number);
-        totalIncomingLight = lastFrameColor * (1.0 - weight) + totalIncomingLight * weight;
+        totalIncomingLight = SRGBToLinear(lastFrameColor) * (1.0 - weight) + totalIncomingLight * weight;
     }
+    totalIncomingLight = LinearToSRGB(totalIncomingLight);
 
     FragColor = vec4(totalIncomingLight, 1.0);
 }
