@@ -1,18 +1,18 @@
 #include "gui/settings.h"
 #include "gui/file_browser.h"
-#include "window/scaling.h"
 #include "rad_deg.h"
 #include "scene/bvh/strategies.h"
 #include "scene/camera.h"
 #include "small_string.h"
 #include "stats.h"
 #include "utils.h"
+#include "window/scaling.h"
 #include "yawpitch.h"
 
 #define CIMGUI_DEFINE_ENUMS_AND_STRUCTS
 #include "cimgui.h"
 
-void tooltip(const char *desc) {
+static void tooltip(const char *desc) {
   igSameLine(0.0f, -1.0f);
   igTextDisabled("(?)");
   if (igBeginItemTooltip()) {
@@ -23,7 +23,7 @@ void tooltip(const char *desc) {
   }
 }
 
-bool _Scene_settings(AppState *state) {
+static bool GuiSettings_Scene(AppState *state) {
   bool changed = false;
   ImVec2 button_size = {.x = 0, .y = 0};
   if (igButton("Load scene", button_size)) {
@@ -57,7 +57,7 @@ bool _Scene_settings(AppState *state) {
   return changed;
 }
 
-bool _Camera_settings(AppState *params) {
+static bool GUISettings_Camera(AppState *params) {
   bool changed = false;
 
   // position
@@ -97,7 +97,7 @@ bool _Camera_settings(AppState *params) {
   return changed;
 }
 
-bool _Rendering_settings(AppState *state) {
+static bool GuiSettings_Rendering(AppState *state) {
   bool changed = false;
 
   igSetNextItemWidth(0.5 * igGetWindowWidth());
@@ -161,7 +161,7 @@ bool _Rendering_settings(AppState *state) {
   return changed;
 }
 
-void _Misc_settings(GUIOverlay *gui, AppState *state) {
+static void GuiSettings_Misc(GUIOverlay *gui, AppState *state) {
   if (igSliderFloat("UI scale", &gui->ui_scale, 0.5, 2.5, "%3.2f", 0))
     GUIOverlay_scale(gui, gui->ui_scale);
 
@@ -191,17 +191,17 @@ void GuiSettings_draw(GUIOverlay *gui, AppState *state) {
 
   if (igCollapsingHeader_TreeNodeFlags("Scene",
                                        ImGuiTreeNodeFlags_DefaultOpen)) {
-    state->scene_paths_changed |= _Scene_settings(state);
+    state->scene_paths_changed |= GuiSettings_Scene(state);
   }
   if (igCollapsingHeader_TreeNodeFlags("Camera", 0)) {
-    state->cam_changed |= _Camera_settings(state);
+    state->cam_changed |= GUISettings_Camera(state);
   }
   if (igCollapsingHeader_TreeNodeFlags("Rendering", 0)) {
-    state->rendering_params_changed |= _Rendering_settings(state);
+    state->rendering_params_changed |= GuiSettings_Rendering(state);
   }
   if (igCollapsingHeader_TreeNodeFlags("Misc",
                                        ImGuiTreeNodeFlags_DefaultOpen)) {
-    _Misc_settings(gui, state);
+    GuiSettings_Misc(gui, state);
   }
 
   igEnd();
