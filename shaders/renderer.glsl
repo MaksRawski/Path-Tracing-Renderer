@@ -132,6 +132,34 @@ vec2 RandomPointInCircle(inout uint state) {
     return pointOnCircle * sqrt(RandomFloat(state));
 }
 
+// sRGB
+vec3 LessThan(vec3 f, float value) {
+    return vec3((f.x < value) ? 1.0f : 0.0f,
+        (f.y < value) ? 1.0f : 0.0f,
+        (f.z < value) ? 1.0f : 0.0f);
+}
+
+vec3 LinearToSRGB(vec3 rgb) {
+    rgb = clamp(rgb, 0.0f, 1.0f);
+
+    return mix(
+        pow(rgb, vec3(1.0f / 2.4f)) * 1.055f - 0.055f,
+        rgb * 12.92f,
+        LessThan(rgb, 0.0031308f)
+    );
+}
+
+vec3 SRGBToLinear(vec3 rgb) {
+    rgb = clamp(rgb, 0.0f, 1.0f);
+
+    return mix(
+        pow(((rgb + 0.055f) / 1.055f), vec3(2.4f)),
+        rgb / 12.92f,
+        LessThan(rgb, 0.04045f)
+    );
+}
+
+
 // using Möller-Trumbore intersection algorithm
 // https://www.youtube.com/watch?v=fK1RPmF_zjQ
 // https://cadxfem.org/inf/Fast%20MinimumStorage%20RayTriangle%20Intersection.pdf
@@ -358,15 +386,15 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
             ray.inv_dir = 1.0 / ray.dir;
 
             // calculate the potential light that the object is emitting
-            vec3 emittedLight = hitInfo.mat.emissionColor * hitInfo.mat.emissionStrength;
+            vec3 emittedLight = SRGBToLinear(hitInfo.mat.emissionColor) * hitInfo.mat.emissionStrength;
 
             incomingLight += emittedLight * c;
 
             // tint the final color by hit point's material color
-            c *= hitInfo.mat.albedo;
+            c *= SRGBToLinear(hitInfo.mat.albedo);
         } else {
             // get color from environment
-            incomingLight += params.env_color.rgb * c;
+            incomingLight += SRGBToLinear(params.env_color.rgb) * c;
             break;
         }
     }
@@ -384,34 +412,6 @@ vec3 ACESFilm(vec3 x)
     float e = 0.14f;
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0f, 1.0f);
 }
-
-// sRGB
-vec3 LessThan(vec3 f, float value) {
-    return vec3((f.x < value) ? 1.0f : 0.0f,
-        (f.y < value) ? 1.0f : 0.0f,
-        (f.z < value) ? 1.0f : 0.0f);
-}
-
-vec3 LinearToSRGB(vec3 rgb) {
-    rgb = clamp(rgb, 0.0f, 1.0f);
-
-    return mix(
-        pow(rgb, vec3(1.0f / 2.4f)) * 1.055f - 0.055f,
-        rgb * 12.92f,
-        LessThan(rgb, 0.0031308f)
-    );
-}
-
-vec3 SRGBToLinear(vec3 rgb) {
-    rgb = clamp(rgb, 0.0f, 1.0f);
-
-    return mix(
-        pow(((rgb + 0.055f) / 1.055f), vec3(2.4f)),
-        rgb / 12.92f,
-        LessThan(rgb, 0.04045f)
-    );
-}
-
 void main() {
     vec2 resolution = vec2(params.width, params.height);
     uint pixelIndex = uint(gl_FragCoord.x) + uint(gl_FragCoord.y) * uint(params.width);
