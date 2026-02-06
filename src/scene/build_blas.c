@@ -39,9 +39,9 @@ void Scene_build_blas(Scene *scene, BVHStrategy strategy, Arena *arena) {
     return;
 
   build_bvh_tmp tmps = {0};
-  unsigned int alloced_bytes =
-      scene->mesh_primitives_count * sizeof(TriangleList);
-  tmps.bvh_roots = Arena_alloc(arena, alloced_bytes);
+  ArenaSnapshot as = Arena_snapshot(arena);
+  tmps.bvh_roots =
+      Arena_alloc(arena, scene->mesh_primitives_count * sizeof(TriangleList));
 
   for (unsigned int mp = 0; mp < scene->mesh_primitives_count; ++mp) {
     tmps.bvh_roots[mp].first =
@@ -56,17 +56,14 @@ void Scene_build_blas(Scene *scene, BVHStrategy strategy, Arena *arena) {
   for (unsigned int mp = 0; mp < scene->mesh_primitives_count; ++mp) {
     scene->mesh_primitives[mp].BVH_index = scene->bvh_nodes_count;
 
-    unsigned int swaps_lut_size_in_bytes =
-        sizeof(unsigned int) * tmps.bvh_roots[mp].count;
-    tmps.swaps_lut = Arena_alloc(arena, swaps_lut_size_in_bytes);
+    tmps.swaps_lut =
+        Arena_alloc(arena, sizeof(unsigned int) * tmps.bvh_roots[mp].count);
 
     BVH_build(scene->bvh_nodes, &scene->bvh_nodes_count, tmps.swaps_lut,
               scene->triangles, tmps.bvh_roots[mp].first,
               tmps.bvh_roots[mp].count, BVHStrategy_get[strategy]);
-
-    arena->offset -= swaps_lut_size_in_bytes;
   }
 
-  arena->offset -= alloced_bytes;
+  Arena_rewind(as);
   Scene_set_meshes_bounds(scene);
 }

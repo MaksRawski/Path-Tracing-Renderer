@@ -1,3 +1,4 @@
+#include "arena.h"
 #include "asserts.h"
 #include "scene.h"
 #include "scene/mesh.h"
@@ -84,9 +85,9 @@ void Scene_build_tlas(Scene *scene, Arena *arena) {
   if (Scene_is_empty(scene))
     return;
 
-  unsigned int alloced_bytes =
-      scene->mesh_instances_count * sizeof(unsigned int);
-  unsigned int *unmatched_nodes = Arena_alloc(arena, alloced_bytes);
+  ArenaSnapshot as = Arena_snapshot(arena);
+  unsigned int *unmatched_nodes =
+      Arena_alloc(arena, scene->mesh_instances_count * sizeof(unsigned int));
 
   create_leaf_nodes(scene, unmatched_nodes);
   unsigned int unmatched_nodes_count = scene->mesh_instances_count;
@@ -121,5 +122,5 @@ void Scene_build_tlas(Scene *scene, Arena *arena) {
     }
   }
   scene->tlas_nodes[0] = scene->tlas_nodes[unmatched_nodes[un_A_idx]];
-  arena->offset -= alloced_bytes;
+  Arena_rewind(as);
 }

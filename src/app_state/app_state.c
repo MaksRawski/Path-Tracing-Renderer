@@ -1,4 +1,5 @@
 #include "app_state.h"
+#include "arena.h"
 #include "file_formats/gltf.h"
 #include "gui.h"
 #include "opengl/gl_call.h"
@@ -194,9 +195,9 @@ void AppState_save_image(AppState *app_state, GLuint fbo,
   GL_CALL(glReadBuffer(GL_COLOR_ATTACHMENT0));
   GL_CALL(glPixelStorei(GL_PACK_ALIGNMENT, 1));
 
-  unsigned int alloced_bytes =
-      resolution.width * resolution.height * BYTES_PER_PIXEL;
-  void *pixels = Arena_alloc(arena, alloced_bytes);
+  ArenaSnapshot as = Arena_snapshot(arena);
+  void *pixels = Arena_alloc(arena, resolution.width * resolution.height *
+                                        BYTES_PER_PIXEL);
 
   GL_CALL(glReadPixels(0, 0, resolution.width, resolution.height, GL_RGB,
                        GL_UNSIGNED_BYTE, pixels));
@@ -213,5 +214,5 @@ void AppState_save_image(AppState *app_state, GLuint fbo,
 
   Image_add_metadata(app_state->save_image_info.path,
                      &app_state->rendering_params);
-  arena->offset -= alloced_bytes;
+  Arena_rewind(as);
 }
