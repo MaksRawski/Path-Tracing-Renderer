@@ -160,6 +160,33 @@ vec3 TransformDir(mat4 transform, vec3 dir) {
     return vec3(transform * vec4(dir, 0.0));
 }
 
+// sRGB
+vec3 LessThan(vec3 f, float value) {
+    return vec3((f.x < value) ? 1.0f : 0.0f,
+        (f.y < value) ? 1.0f : 0.0f,
+        (f.z < value) ? 1.0f : 0.0f);
+}
+
+vec3 LinearToSRGB(vec3 rgb) {
+    rgb = clamp(rgb, 0.0f, 1.0f);
+
+    return mix(
+        pow(rgb, vec3(1.0f / 2.4f)) * 1.055f - 0.055f,
+        rgb * 12.92f,
+        LessThan(rgb, 0.0031308f)
+    );
+}
+
+vec3 SRGBToLinear(vec3 rgb) {
+    rgb = clamp(rgb, 0.0f, 1.0f);
+
+    return mix(
+        pow(((rgb + 0.055f) / 1.055f), vec3(2.4f)),
+        rgb / 12.92f,
+        LessThan(rgb, 0.04045f)
+    );
+}
+
 // using Möller-Trumbore intersection algorithm
 // https://www.youtube.com/watch?v=fK1RPmF_zjQ
 // https://cadxfem.org/inf/Fast%20MinimumStorage%20RayTriangle%20Intersection.pdf
@@ -441,10 +468,9 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
             ray.origin = hitInfo.hitPoint;
 
             vec3 diffuseDir = DiffuseDirection(hitInfo.normal, rngState);
-            // vec3 reflectDir = ReflectDirection(ray.dir, hitInfo.normal);
+            vec3 reflectDir = ReflectDirection(ray.dir, hitInfo.normal);
 
-            ray.dir = diffuseDir;
-            // ray.dir = mix(diffuseDir, reflectDir, hitInfo.mat.specularComponent);
+            ray.dir = mix(diffuseDir, reflectDir, mat.metallic_factor);
             ray.inv_dir = 1.0 / ray.dir;
 
             // calculate the potential light that the object is emitting
@@ -461,44 +487,6 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
         }
     }
     return incomingLight;
-}
-// ACES tone mapping curve fit to go from HDR to LDR
-//https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/
-vec3 ACESFilm(vec3 x)
-{
-    float a = 2.51f;
-    float b = 0.03f;
-    float c = 2.43f;
-    float d = 0.59f;
-    float e = 0.14f;
-    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0f, 1.0f);
-}
-
-// sRGB
-vec3 LessThan(vec3 f, float value) {
-    return vec3((f.x < value) ? 1.0f : 0.0f,
-        (f.y < value) ? 1.0f : 0.0f,
-        (f.z < value) ? 1.0f : 0.0f);
-}
-
-vec3 LinearToSRGB(vec3 rgb) {
-    rgb = clamp(rgb, 0.0f, 1.0f);
-
-    return mix(
-        pow(rgb, vec3(1.0f / 2.4f)) * 1.055f - 0.055f,
-        rgb * 12.92f,
-        LessThan(rgb, 0.0031308f)
-    );
-}
-
-vec3 SRGBToLinear(vec3 rgb) {
-    rgb = clamp(rgb, 0.0f, 1.0f);
-
-    return mix(
-        pow(((rgb + 0.055f) / 1.055f), vec3(2.4f)),
-        rgb / 12.92f,
-        LessThan(rgb, 0.04045f)
-    );
 }
 
 void main() {
@@ -534,14 +522,13 @@ void main() {
         totalIncomingLight += GetColorForRay(ray, rngState);
     }
     totalIncomingLight /= float(params.samples_per_pixel);
-    totalIncomingLight = ACESFilm(totalIncomingLight);
-    totalIncomingLight = LinearToSRGB(totalIncomingLight);
 
     if (frame_number > 0) {
         vec3 lastFrameColor = texture(backBufferTexture, gl_FragCoord.xy / resolution.xy).rgb;
         float weight = 1.0 / float(frame_number);
-        totalIncomingLight = lastFrameColor * (1.0 - weight) + totalIncomingLight * weight;
+        totalIncomingLight = SRGBToLinear(lastFrameColor) * (1.0 - weight) + totalIncomingLight * weight;
     }
+    totalIncomingLight = LinearToSRGB(totalIncomingLight);
 
     FragColor = vec4(totalIncomingLight, 1.0);
 }
