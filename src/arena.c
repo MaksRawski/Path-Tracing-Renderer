@@ -29,10 +29,10 @@ void *Arena_alloc(Arena *arena, size_t size) {
   size_t required_capacity = arena->offset + size + sizeof(Arena);
   if (required_capacity > arena->capacity) {
     if (arena->next_arena == NULL) {
-      Arena_set_full(arena);
       arena->next_arena = Arena_alloc(arena, sizeof(Arena));
-      *arena->next_arena =
-          Arena_new(MAX(next_power_of_2(size + sizeof(Arena)), arena->capacity));
+      *arena->next_arena = Arena_new(
+          MAX(next_power_of_2(size + sizeof(Arena)), arena->capacity));
+      Arena_set_full(arena);
     }
     return Arena_alloc(arena->next_arena, size);
   }
