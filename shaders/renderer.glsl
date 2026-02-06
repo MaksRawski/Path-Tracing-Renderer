@@ -374,15 +374,15 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
             ray.inv_dir = 1.0 / ray.dir;
 
             // calculate the potential light that the object is emitting
-            vec3 emittedLight = SRGBToLinear(hitInfo.mat.emissionColor) * hitInfo.mat.emissionStrength;
+            vec3 emittedLight = hitInfo.mat.emissionColor * hitInfo.mat.emissionStrength;
 
             incomingLight += emittedLight * c;
 
             // tint the final color by hit point's material color
-            c *= SRGBToLinear(hitInfo.mat.albedo);
+            c *= hitInfo.mat.albedo;
         } else {
             // get color from environment
-            incomingLight += SRGBToLinear(params.env_color.rgb) * c;
+            incomingLight += params.env_color.rgb * c;
             break;
         }
     }
