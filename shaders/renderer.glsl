@@ -160,6 +160,10 @@ vec3 TransformDir(mat4 transform, vec3 dir) {
     return vec3(transform * vec4(dir, 0.0));
 }
 
+vec3 TransformNormal(mat4 inv_transform, vec3 normal) {
+    return normalize(vec3(vec4(normal, 0.0) * inv_transform));
+}
+
 // sRGB
 vec3 LessThan(vec3 f, float value) {
     return vec3((f.x < value) ? 1.0f : 0.0f,
@@ -434,7 +438,7 @@ HitInfo CalculateRayCollision(Ray ray) {
             if (hit.didHit && hit.dst < closestHit.dst) {
                 closestHit = hit;
                 closestHit.hitPoint = TransformPoint(mi.transform, closestHit.hitPoint);
-                closestHit.normal = TransformDir(mi.transform, closestHit.normal);
+                closestHit.normal = TransformNormal(mi.inv_transform, closestHit.normal);
             }
         } else {
             uint node_left = node.leftRight >> 16;
