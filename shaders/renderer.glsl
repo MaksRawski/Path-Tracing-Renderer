@@ -489,36 +489,60 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
     return incomingLight;
 }
 
+struct CameraViewport {
+    vec3 right, up;
+    float halfWidth, halfHeight;
+};
+
+CameraViewport GetCameraViewport(Camera camera, float aspectRatio) {
+    CameraViewport cameraViewport;
+    cameraViewport.right = cross(camera.dir.xyz, camera.up.xyz);
+    cameraViewport.up = cross(cameraViewport.right, camera.dir.xyz);
+
+    cameraViewport.halfHeight = tan(camera.fov / 2.0);
+    cameraViewport.halfWidth = cameraViewport.halfHeight * aspectRatio;
+
+    return cameraViewport;
+}
+
+// uv must be in range [-1,1]
+Ray RayGenPerspectiveCamera(Camera camera, CameraViewport viewport, vec2 uv) {
+    Ray ray;
+    ray.origin = camera.pos.xyz;
+    ray.dir = camera.dir.xyz +
+            viewport.halfWidth * viewport.right * uv.x +
+            viewport.halfHeight * viewport.up * uv.y;
+    ray.inv_dir = 1.0 / ray.dir;
+    return ray;
+}
+
+Ray JitterRay(Ray ray, CameraViewport viewport, inout uint rngState) {
+    Ray jittered;
+    jittered.origin = ray.origin;
+    vec2 jitter = RandomPointInCircle(rngState) * params.diverge_strength;
+    jittered.dir = ray.dir + viewport.right * jitter.x + viewport.up * jitter.y;
+    jittered.inv_dir = 1.0 / ray.dir;
+    return jittered;
+}
+
 void main() {
     vec2 resolution = vec2(params.width, params.height);
+    float aspectRatio = float(params.width) / float(params.height);
+
     uint pixelIndex = uint(gl_FragCoord.x) + uint(gl_FragCoord.y) * uint(params.width);
     uint rngState = uint(pixelIndex + uint(frame_number * 719393));
 
     // gl_FragCoord stores the pixel coordinates [0.5, resolution-0.5]
     vec2 uv = gl_FragCoord.xy / resolution.xy; // normalized coordinates [0, 1]
     uv = 2.0 * uv - 1.0; // normalized coordinates [-1, 1]
-    float aspectRatio = float(params.width) / float(params.height);
 
-    vec3 viewportRight = cross(camera.dir.xyz, camera.up.xyz);
-    vec3 viewportUp = cross(viewportRight, camera.dir.xyz);
-    float cameraDistanceFromViewport = camera.focal_length;
+    CameraViewport viewport = GetCameraViewport(camera, aspectRatio);
 
-    float viewportWidth = 2.0 * cameraDistanceFromViewport * tan(camera.fov / 2.0);
-    float viewportHeight = viewportWidth / aspectRatio;
-
-    vec3 rayTarget = camera.dir.xyz * cameraDistanceFromViewport +
-            viewportWidth * viewportRight * uv.x +
-            viewportHeight * viewportUp * uv.y;
+    Ray ray = RayGenPerspectiveCamera(camera, viewport, uv);
 
     vec3 totalIncomingLight = vec3(0.0, 0.0, 0.0);
     for (int i = 0; i < params.samples_per_pixel; ++i) {
-        Ray ray;
-        ray.origin = camera.pos.xyz;
-        vec2 jitter = RandomPointInCircle(rngState) * params.diverge_strength;
-        vec3 jitteredRayTarget = rayTarget + viewportRight * jitter.x + viewportUp * jitter.y;
-
-        ray.dir = normalize(jitteredRayTarget - ray.origin);
-        ray.inv_dir = 1.0 / ray.dir;
+        Ray jitteredRay = JitterRay(ray, viewport, rngState);
         totalIncomingLight += GetColorForRay(ray, rngState);
     }
     totalIncomingLight /= float(params.samples_per_pixel);
