@@ -32,7 +32,7 @@ void *Arena_alloc(Arena *arena, size_t size) {
       Arena_set_full(arena);
       arena->next_arena = Arena_alloc(arena, sizeof(Arena));
       *arena->next_arena =
-          Arena_new(MAX(next_power_of_2(size), arena->capacity));
+          Arena_new(MAX(next_power_of_2(size + sizeof(Arena)), arena->capacity));
     }
     return Arena_alloc(arena->next_arena, size);
   }
