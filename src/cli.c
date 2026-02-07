@@ -1,9 +1,9 @@
 #include "cli.h"
 #include "app_state.h"
 #include "asserts.h"
-#include "window/resolution.h"
 #include "scene/bvh/strategies.h"
 #include "utils.h"
+#include "window/resolution.h"
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
@@ -58,17 +58,20 @@ typedef struct {
 Option Option_new(enum Options option, const AppState *default_app_state) {
   switch (option) {
   case Options_SAMPLES_PER_PIXEL:
-    RETURN_OPTION_DV_FMT("-spp", "--samples-per-pixel", "", "%d",
-                         default_app_state->rendering_params.samples_per_pixel);
+    RETURN_OPTION_DV_FMT(
+        "-spp", "--samples-per-pixel", "", "%d",
+        default_app_state->settings.rendering_params.samples_per_pixel);
   case Options_MAX_BOUNCE_COUNT:
-    RETURN_OPTION_DV_FMT("", "--max-bounce-count", "", "%d",
-                         default_app_state->rendering_params.max_bounce_count);
+    RETURN_OPTION_DV_FMT(
+        "", "--max-bounce-count", "", "%d",
+        default_app_state->settings.rendering_params.max_bounce_count);
   case Options_FRAMES_TO_RENDER:
-    RETURN_OPTION_DV_FMT("-F", "--frames-to-render", "", "%d",
-                         default_app_state->rendering_params.frames_to_render);
+    RETURN_OPTION_DV_FMT(
+        "-F", "--frames-to-render", "", "%d",
+        default_app_state->settings.rendering_params.frames_to_render);
   case Options_RESOLUTION: {
     WindowResolution resolution =
-        default_app_state->rendering_params.rendering_resolution;
+        default_app_state->settings.rendering_params.rendering_resolution;
     RETURN_OPTION_DV_FMT("-R", "--resolution", "", "%dx%d", resolution.width,
                          resolution.height);
   }
@@ -81,7 +84,7 @@ Option Option_new(enum Options option, const AppState *default_app_state) {
     StringArray_join(res.description, sizeof(res.description), BVHStrategy_str,
                      BVHStrategy__COUNT, ", ");
     strncpy(res.default_value,
-            BVHStrategy_str[default_app_state->BVH_build_strat],
+            BVHStrategy_str[default_app_state->settings.BVH_build_strat],
             sizeof(res.default_value));
     return res;
   }
@@ -225,7 +228,7 @@ static void parse_arg(int argc, char **argv, int *i,
               argv[*i], argv[0]);
       exit(1);
     } else {
-      app_state->scene_paths.new_scene_path = SmallString_new(arg);
+      app_state->settings.scene_paths.new_scene_path = SmallString_new(arg);
       return;
     }
   }
@@ -237,24 +240,29 @@ static void parse_arg(int argc, char **argv, int *i,
 
   case Options_SAMPLES_PER_PIXEL:
     parse_number_exit(get_value_for_option(i, argc, argv, arg),
-                      &app_state->rendering_params.samples_per_pixel, arg);
+                      &app_state->settings.rendering_params.samples_per_pixel,
+                      arg);
     break;
 
   case Options_MAX_BOUNCE_COUNT:
     parse_number_exit(get_value_for_option(i, argc, argv, arg),
-                      &app_state->rendering_params.max_bounce_count, arg);
+                      &app_state->settings.rendering_params.max_bounce_count,
+                      arg);
     break;
 
   case Options_FRAMES_TO_RENDER:
     parse_number_exit(get_value_for_option(i, argc, argv, arg),
-                      &app_state->rendering_params.frames_to_render, arg);
+                      &app_state->settings.rendering_params.frames_to_render,
+                      arg);
     break;
 
   case Options_RESOLUTION: {
     char *res_value = get_value_for_option(i, argc, argv, arg);
     if (!parse_resolution(
-            res_value, &app_state->rendering_params.rendering_resolution.width,
-            &app_state->rendering_params.rendering_resolution.height)) {
+            res_value,
+            &app_state->settings.rendering_params.rendering_resolution.width,
+            &app_state->settings.rendering_params.rendering_resolution
+                 .height)) {
       fprintf(stderr, "Error: Invalid resolution format '%s'.\n", res_value);
       exit(1);
     }
@@ -275,36 +283,36 @@ static void parse_arg(int argc, char **argv, int *i,
                                    BVHStrategy__COUNT);
     if (match == -1)
       ERROR_FMT("BVH strategy '%s' is not available", arg_val_str);
-    app_state->BVH_build_strat = match;
+    app_state->settings.BVH_build_strat = match;
     break;
   }
 
   case Options_FLAG_NO_GUI:
-    app_state->gui_enabled = false;
+    app_state->settings.gui_enabled = false;
     break;
 
   case Options_FLAG_NO_HOT_RELOAD:
-    app_state->hot_reload_enabled = false;
+    app_state->settings.hot_reload_enabled = false;
     break;
 
   case Options_FLAG_NO_MOVEMENT:
-    app_state->movement_enabled = false;
+    app_state->settings.movement_enabled = false;
     break;
 
   case Options_FLAG_EXIT_AFTER_RENDERING:
-    app_state->exit_after_rendering = true;
+    app_state->settings.exit_after_rendering = true;
     break;
 
   case Options_FLAG_SAVE_AFTER_RENDERING:
-    app_state->save_after_rendering = true;
+    app_state->settings.save_after_rendering = true;
     break;
 
   case Options_FLAG_JUST_RENDER:
-    app_state->gui_enabled = false;
-    app_state->hot_reload_enabled = false;
-    app_state->movement_enabled = false;
-    app_state->save_after_rendering = true;
-    app_state->exit_after_rendering = true;
+    app_state->settings.gui_enabled = false;
+    app_state->settings.hot_reload_enabled = false;
+    app_state->settings.movement_enabled = false;
+    app_state->settings.save_after_rendering = true;
+    app_state->settings.exit_after_rendering = true;
     break;
 
   case Options__COUNT:
@@ -327,14 +335,15 @@ void handle_args(int argc, char *argv[], AppState *app_state) {
     parse_arg(argc, argv, &i, all_options, app_state);
   }
 
-  if (!app_state->gui_enabled &&
-      SmallString_is_empty(&app_state->scene_paths.new_scene_path)) {
+  if (!app_state->settings.gui_enabled &&
+      SmallString_is_empty(&app_state->settings.scene_paths.new_scene_path)) {
     fprintf(stderr, "GUI was disabled, yet no scene was specified. Exiting!\n");
     exit(1);
   }
 
-  if (!app_state->gui_enabled && app_state->save_after_rendering &&
-      app_state->rendering_params.frames_to_render < 0) {
+  if (!app_state->settings.gui_enabled &&
+      app_state->settings.save_after_rendering &&
+      app_state->settings.rendering_params.frames_to_render < 0) {
     fprintf(stderr,
             "WARNING: GUI was disabled, and infinite number of frames were "
             "asked for, if you wanted to render an image consider setting "

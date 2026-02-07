@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
 
     AppState_hot_reload_shaders(&app_state, &renderer);
 
-    if (app_state.gui_enabled)
+    if (app_state.settings.gui_enabled)
       GUIOverlay_update_state(&gui, &app_state);
 
     AppState_update_scene(&app_state, &renderer);
@@ -46,9 +46,11 @@ int main(int argc, char *argv[]) {
 
     AppState_post_rendering(&app_state, &renderer);
 
-    bool rendering_finished = (int)app_state.stats.frame_number ==
-                              app_state.rendering_params.frames_to_render;
-    if (app_state.exit_after_rendering && rendering_finished)
+    bool rendering_finished =
+        (int)app_state.stats.frame_number ==
+        app_state.settings.rendering_params.frames_to_render;
+
+    if (rendering_finished && app_state.settings.exit_after_rendering)
       break;
   }
 

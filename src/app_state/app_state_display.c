@@ -6,7 +6,7 @@
 // NOTE: renders everything that has to be rendered to the screen
 void AppState_display(AppState *app_state, Renderer *renderer, GUIOverlay *gui,
                       Window *window) {
-  int frames_to_render = app_state->rendering_params.frames_to_render;
+  int frames_to_render = app_state->settings.rendering_params.frames_to_render;
   unsigned int frame_number = app_state->stats.frame_number;
 
   GLuint renderer_fbo = Renderer_get_fbo(renderer);
@@ -27,12 +27,12 @@ void AppState_display(AppState *app_state, Renderer *renderer, GUIOverlay *gui,
     Renderer_render_frame(renderer, app_state->stats.frame_number++);
   }
 
-  Window_display_framebuffer(renderer_fbo,
-                             app_state->rendering_params.rendering_resolution,
-                             app_state->viewport_size, app_state->scaling_mode);
+  Window_display_framebuffer(
+      renderer_fbo, app_state->settings.rendering_params.rendering_resolution,
+      app_state->viewport_size, app_state->scaling_mode);
 
   GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
-  if (app_state->gui_enabled)
+  if (app_state->settings.gui_enabled)
     GUIOverlay_render_frame(gui);
 
   Window_swap_buffers(window);

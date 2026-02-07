@@ -2,34 +2,22 @@
 #define APP_STATE_H_
 
 #include "app_state/app_state_save_image.h"
-#include "gui/scene_paths.h"
+#include "renderer.h"
+#include "scene.h"
+#include "settings.h"
+#include "stats.h"
 #include "window.h"
 #include "window/resolution.h"
 #include "window/scaling.h"
 #include "window/window_events.h"
-#include "renderer.h"
-#include "renderer/parameters.h"
-#include "scene.h"
-#include "scene/bvh/strategies.h"
-#include "scene/camera.h"
-#include "stats.h"
 
-// NOTE: *_changed attributes are added for each field that can be modified
-// through gui
 typedef struct {
-  Camera cam;
-  RendererParameters rendering_params;
   Stats stats;
-  ScenePaths scene_paths;
   WindowResolution viewport_size;
   WindowScalingMode scaling_mode;
   AppStateSaveImageInfo save_image_info;
   Scene scene;
-  BVHStrategy BVH_build_strat;
-  bool cam_changed, rendering_params_changed, scene_paths_changed,
-      BVH_build_strat_changed;
-  bool gui_enabled, hot_reload_enabled, save_after_rendering,
-      exit_after_rendering, movement_enabled;
+  Settings settings;
   bool _renderer_focused;
 } AppState;
 
