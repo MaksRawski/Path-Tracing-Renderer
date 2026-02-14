@@ -27,7 +27,7 @@ inline static Settings Settings_default(void) {
       .save_after_rendering = false,
       .exit_after_rendering = false,
       .movement_enabled = true,
-      .BVH_build_strat = BVHStrategy_Naive,
+      .BVH_build_strat = BVHStrategy_Midpoint,
       .cam_changed = true,
       .rendering_params_changed = true,
       .scene_paths_changed = true,

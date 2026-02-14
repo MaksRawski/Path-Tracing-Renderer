@@ -3,7 +3,7 @@
 #include "scene/aabb.h"
 #include <math.h>
 
-void FindBestSplitFn_longest_mid(const BVHnode *node, const Triangle *triangles,
+void FindBestSplitFn_midpoint(const BVHnode *node, const Triangle *triangles,
                                  const vec3 *centroids, int *best_axis,
                                  float *best_split_pos) {
   UNUSED(triangles, centroids);
