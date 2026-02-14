@@ -1,8 +1,8 @@
 #ifndef RENDERER_BUFFERS_SCENE_H_
 #define RENDERER_BUFFERS_SCENE_H_
 
+#include "glad/gl.h" // GLuint
 #include "scene.h"
-#include <glad/gl.h> // GLuint
 
 typedef struct {
   int triangle_count, bvh_nodes_count, mats_count;

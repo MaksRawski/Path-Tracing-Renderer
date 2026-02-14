@@ -2,7 +2,6 @@
 #include "scene/bvh.h"
 #include "scene/bvh/strategies.h"
 #include <stddef.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 Scene Scene_empty(void) {
@@ -28,5 +27,4 @@ void Scene_delete(Scene *self) {
   free(self->primitives);
   free(self->meshes);
   BVH_delete(&self->bvh);
-  self = NULL;
 }

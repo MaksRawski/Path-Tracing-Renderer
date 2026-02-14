@@ -155,8 +155,6 @@ WindowEventsData Window_poll_events(Window *self) {
 void Window_swap_buffers(Window *self) { glfwSwapBuffers(self->glfw_window); }
 
 void Window_delete(Window *self) {
-  if (self == NULL)
-    return;
+  (void)(self);
   glfwTerminate();
-  self = NULL;
 }

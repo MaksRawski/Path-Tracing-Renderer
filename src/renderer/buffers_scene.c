@@ -41,6 +41,4 @@ void RendererBuffersScene_delete(RendererBuffersScene *self) {
   GL_CALL(glDeleteBuffers(1, &self->mats_ssbo));
   GL_CALL(glDeleteBuffers(1, &self->primitives_ssbo));
   GL_CALL(glDeleteBuffers(1, &self->camera_ssbo));
-
-  self = NULL;
 }

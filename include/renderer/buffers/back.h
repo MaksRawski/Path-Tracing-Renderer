@@ -1,8 +1,8 @@
 #ifndef RENDERER_BUFFERS_BACK_H_
 #define RENDERER_BUFFERS_BACK_H_
 
+#include "glad/gl.h" // GLuint
 #include "window/resolution.h"
-#include <glad/gl.h> // GLuint
 
 typedef struct {
   GLuint fbo, fboTex;

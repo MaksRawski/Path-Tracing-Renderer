@@ -2,7 +2,6 @@
 #include "vec3.h"
 #include <math.h>
 #include <stdlib.h>
-#include <string.h>
 
 static void calculate_centroids(Triangle *tri, int tri_count, vec3 centroids[]);
 static void set_node_bounds(BVHnode *node, const Triangle tris[]);
@@ -35,10 +34,7 @@ BVHresult BVH_build(Triangle triangles[], BVHTriCount count,
   return res;
 }
 
-void BVH_delete(BVH *self) {
-  free(self->nodes);
-  self = NULL;
-}
+void BVH_delete(BVH *self) { free(self->nodes); }
 
 // recursively subdivide a node until there are 2 primitives left
 void subdivide(BVHnode nodes[], int node_idx, Triangle tris[], vec3 centroids[],

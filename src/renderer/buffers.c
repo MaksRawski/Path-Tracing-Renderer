@@ -25,6 +25,4 @@ void RendererBuffers_delete(RendererBuffers *self) {
   RendererBuffersInternal_delete(&self->internal);
   RendererBuffersScene_delete(&self->scene);
   RendererParametersBuffer_delete(&self->parameters);
-
-  self = NULL;
 }
