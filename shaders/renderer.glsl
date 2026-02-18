@@ -440,7 +440,7 @@ void main() {
     vec3 totalIncomingLight = vec3(0.0, 0.0, 0.0);
     for (int i = 0; i < params.samples_per_pixel; ++i) {
         Ray jitteredRay = JitterRay(ray, viewport, rngState);
-        totalIncomingLight += GetColorForRay(ray, rngState);
+        totalIncomingLight += GetColorForRay(jitteredRay, rngState);
     }
     totalIncomingLight /= float(params.samples_per_pixel);
 
