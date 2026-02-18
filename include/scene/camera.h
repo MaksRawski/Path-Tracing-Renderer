@@ -39,6 +39,7 @@ typedef struct {
   float fov_rad;
   float step_size_per_second;
   float sensitivity;
+  float _;
 } Camera;
 
 typedef enum {

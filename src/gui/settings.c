@@ -44,7 +44,7 @@ static bool GuiSettings_Scene(AppState *state) {
            FilePath_get_file_name(
                state->settings.scene_paths.loaded_scene_path.str));
     igText("Loaded Triangles: %d", state->scene.triangles_count);
-    igText("Created BVH nodes: %d", state->scene.bvh.nodes_count);
+    igText("Created BVH nodes: %d", state->scene.bvh_nodes_count);
 
     char load_scene_time[16] = {0};
     char bvh_build_time[16] = {0};
@@ -62,7 +62,8 @@ static bool GUISettings_Camera(AppState *state) {
   bool changed = false;
 
   // position
-  float cam_pos[3] = {state->settings.cam.pos.x, state->settings.cam.pos.y, state->settings.cam.pos.z};
+  float cam_pos[3] = {state->settings.cam.pos.x, state->settings.cam.pos.y,
+                      state->settings.cam.pos.z};
   changed |= igInputFloat3("Position", cam_pos, "%6.3f", 0);
   state->settings.cam.pos.x = cam_pos[0];
   state->settings.cam.pos.y = cam_pos[1];
@@ -86,12 +87,14 @@ static bool GUISettings_Camera(AppState *state) {
                            CAMERA_FOV_MAX_DEG, "%3.1f", 0);
   Camera_set_fov_deg(&state->settings.cam, fov_deg);
 
-  changed |= igSliderFloat("Movement speed", &state->settings.cam.step_size_per_second,
-                           CAMERA_MOVE_SPEED_PER_SECOND_MIN,
-                           CAMERA_MOVE_SPEED_PER_SECOND_MAX, "%.2f", 0);
-  changed |= igSliderFloat(
-      "Sensitivity", &state->settings.cam.sensitivity, CAMERA_ROTATE_SENSITIVITY_MIN,
-      CAMERA_ROTATE_SENSITIVITY_MAX, "%.4f", ImGuiSliderFlags_Logarithmic);
+  changed |=
+      igSliderFloat("Movement speed", &state->settings.cam.step_size_per_second,
+                    CAMERA_MOVE_SPEED_PER_SECOND_MIN,
+                    CAMERA_MOVE_SPEED_PER_SECOND_MAX, "%.2f", 0);
+  changed |= igSliderFloat("Sensitivity", &state->settings.cam.sensitivity,
+                           CAMERA_ROTATE_SENSITIVITY_MIN,
+                           CAMERA_ROTATE_SENSITIVITY_MAX, "%.4f",
+                           ImGuiSliderFlags_Logarithmic);
   return changed;
 }
 

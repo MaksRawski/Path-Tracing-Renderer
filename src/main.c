@@ -13,11 +13,13 @@
 #define WINDOW_TITLE "Path Tracing Renderer"
 
 int main(int argc, char *argv[]) {
+  Arena tmp_arena = Arena_new(256 * 1024);
   AppState app_state = AppState_default();
   handle_args(argc, argv, &app_state);
 
 #ifdef __linux__
-  // Connects to X11 or Wayland, necessary for native file dialog creation.
+  // NOTE: Connects to X11 or Wayland. Necessary for native file dialog
+  // creation.
   gtk_init(&argc, &argv);
 #endif
 
@@ -38,7 +40,7 @@ int main(int argc, char *argv[]) {
     if (app_state.settings.gui_enabled)
       GUIOverlay_update_state(&gui, &app_state);
 
-    AppState_update_scene(&app_state, &renderer);
+    AppState_update_scene(&app_state, &renderer, &tmp_arena);
     AppState_update_camera(&app_state, &renderer, &events);
     AppState_update_renderer_parameters(&app_state, &renderer);
 

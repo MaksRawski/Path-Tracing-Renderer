@@ -1,9 +1,9 @@
 #include "app_state.h"
-#include "file_formats/gltf.h"
 #include "gui.h"
 #include "opengl/gl_call.h"
 #include "renderer/inputs.h"
 #include "scene.h"
+#include "scene/file_formats/gltf.h"
 #include "stats.h"
 #include "stb_image_write.h"
 #include "utils.h"
@@ -13,7 +13,7 @@ AppState AppState_default(void) {
   return (AppState){
       .settings = Settings_default(),
       .viewport_size = WindowResolution_new(0, 0),
-      .scene = Scene_empty(),
+      .scene = Scene_default(),
       .scaling_mode = WindowScalingMode_FIT_CENTER,
       .save_image_info = AppStateSaveImageInfo_default(),
       .stats = Stats_default(),
@@ -34,7 +34,8 @@ void AppState__set_camera(AppState *app_state, Renderer *renderer) {
 }
 
 // NOTE: handles scene_paths_changed and BVH_strat_changed signals
-void AppState_update_scene(AppState *app_state, Renderer *renderer) {
+void AppState_update_scene(AppState *app_state, Renderer *renderer,
+                           Arena *tmp_arena) {
   SmallString *new_scene_path = &app_state->settings.scene_paths.new_scene_path;
   SmallString *loaded_scene_path =
       &app_state->settings.scene_paths.loaded_scene_path;
@@ -54,7 +55,8 @@ void AppState_update_scene(AppState *app_state, Renderer *renderer) {
   if (scene_changed || app_state->settings.BVH_build_strat_changed) {
     app_state->settings.BVH_build_strat_changed = false;
     StatsTimer_start(&app_state->stats.bvh_build);
-    Scene_build_bvh(&app_state->scene, app_state->settings.BVH_build_strat);
+    Scene_build_bvh(&app_state->scene, app_state->settings.BVH_build_strat,
+                    tmp_arena);
     StatsTimer_stop(&app_state->stats.bvh_build);
     char bvh_build_time[16] = {0};
     Stats_string_time(app_state->stats.bvh_build.total_time, bvh_build_time,

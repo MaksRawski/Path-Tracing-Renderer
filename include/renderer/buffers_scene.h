@@ -5,14 +5,11 @@
 #include "scene.h"
 
 typedef struct {
-  int triangle_count, bvh_nodes_count, mats_count;
-  GLuint triangles_ssbo, bvh_nodes_ssbo, mats_ssbo;
-  GLuint primitives_ssbo, camera_ssbo;
-  Camera _camera;
+  GLuint triangles_ssbo, bvh_nodes_ssbo, mats_ssbo, triangles_data_ssbo,
+      camera_ssbo;
 } RendererBuffersScene;
 
 RendererBuffersScene RendererBuffersScene_new(const Scene *scene);
-Camera RendererBuffersScene_get_camera(const RendererBuffersScene *self);
 void RendererBuffersScene_set_camera(RendererBuffersScene *self, Camera cam);
 
 void RendererBuffersScene_delete(RendererBuffersScene *self);

@@ -5,8 +5,9 @@ uniform sampler2D backBufferTexture;
 
 const float EPSILON = 0.00001;
 const float INFINITY = 1.0e30;
-const float C_PI = 3.141592653589793;
-const float C_TWOPI = 6.283185307179586;
+const float PI = 3.141592653589793;
+const float TWOPI = 6.283185307179586;
+const float INV_PI = 0.3183098861837907;
 
 out vec4 FragColor;
 
@@ -52,19 +53,18 @@ struct BVHnode {
 };
 
 struct Material {
-    // what color it emits
-    vec3 emissionColor;
-    // how much light it emits, in range [0; 1]
-    float emissionStrength;
-    // what color it is under white light
-    vec3 albedo;
-    // how reflective a surface is, in range [0; 1]
-    // when 0, diffuse
-    // when 1, reflect
-    float specularComponent;
+    vec4 base_color_factor;
+    vec3 emissive_factor;
+    uint base_color_texture;
+    uint metallic_texture;
+    float metallic_factor;
+    uint roughness_texture;
+    float roughness_factor;
+    uint emissive_texture;
+    int _, _1, _2;
 };
 
-struct Primitive {
+struct TriangleEx {
     // index of the material in materialsBuffer
     uint mat;
 };
@@ -79,7 +79,7 @@ layout(std430, binding = 3) readonly buffer materialsBuffer {
     Material mats[];
 };
 layout(std430, binding = 4) readonly buffer primitivesBuffer {
-    Primitive primitives[];
+    TriangleEx triangles_data[];
 };
 layout(std430, binding = 5) readonly buffer cameraBuffer {
     Camera camera;
@@ -110,7 +110,7 @@ float RandomFloat(inout uint state) {
 
 vec3 RandomUnitVector(inout uint state) {
     float z = RandomFloat(state) * 2.0f - 1.0f;
-    float a = RandomFloat(state) * C_TWOPI;
+    float a = RandomFloat(state) * TWOPI;
     float r = sqrt(1.0f - z * z);
     float x = r * cos(a);
     float y = r * sin(a);
@@ -118,7 +118,7 @@ vec3 RandomUnitVector(inout uint state) {
 }
 
 vec2 RandomPointInCircle(inout uint state) {
-    float angle = RandomFloat(state) * C_TWOPI;
+    float angle = RandomFloat(state) * TWOPI;
     vec2 pointOnCircle = vec2(cos(angle), sin(angle));
     return pointOnCircle * sqrt(RandomFloat(state));
 }
@@ -336,7 +336,7 @@ HitInfo CalculateRayCollision(Ray ray) {
                 HitInfo hit = RayTriangleIntersection(ray, t);
                 if (hit.didHit && hit.dst < closestHit.dst) {
                     closestHit = hit;
-                    closestHit.mat = mats[primitives[t_index].mat];
+                    closestHit.mat = mats[triangles_data[t_index].mat];
                 }
             }
         } else {
@@ -349,7 +349,7 @@ HitInfo CalculateRayCollision(Ray ray) {
     return closestHit;
 }
 
-vec3 DiffuseDirection(vec3 normal, inout uint rngState) {
+vec3 RandomCosineWeightedHemisphere(vec3 normal, inout uint rngState) {
     return normalize(normal + RandomUnitVector(rngState));
 }
 
@@ -361,25 +361,22 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
     vec3 c = vec3(1.0, 1.0, 1.0);
     vec3 incomingLight = vec3(0.0, 0.0, 0.0);
 
-    for (int i = 0; i <= params.max_bounce_count; ++i) {
+    for (int i = 0; i < params.max_bounce_count; ++i) {
         HitInfo hitInfo = CalculateRayCollision(ray);
         if (hitInfo.didHit) {
-            // bounce
             ray.origin = hitInfo.hitPoint;
 
-            vec3 diffuseDir = DiffuseDirection(hitInfo.normal, rngState);
+            vec3 diffuseDir = RandomCosineWeightedHemisphere(hitInfo.normal, rngState);
             vec3 reflectDir = ReflectDirection(ray.dir, hitInfo.normal);
 
-            ray.dir = mix(diffuseDir, reflectDir, hitInfo.mat.specularComponent);
+            ray.dir = mix(diffuseDir, reflectDir, hitInfo.mat.metallic_factor * (1 - hitInfo.mat.roughness_factor));
             ray.inv_dir = 1.0 / ray.dir;
 
             // calculate the potential light that the object is emitting
-            vec3 emittedLight = hitInfo.mat.emissionColor * hitInfo.mat.emissionStrength;
+            vec3 emittedLight = hitInfo.mat.emissive_factor;
 
+            c *= hitInfo.mat.base_color_factor.rgb;
             incomingLight += emittedLight * c;
-
-            // tint the final color by hit point's material color
-            c *= hitInfo.mat.albedo;
         } else {
             // get color from environment
             incomingLight += params.env_color.rgb * c;

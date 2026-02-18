@@ -99,3 +99,16 @@ void Image_add_metadata(const char *image_path,
     ASSERTQ_CUSTOM(system(cmd) == 0, "Command failed!");
   }
 }
+
+// https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+// HACK: returns 0 when x is 0
+uint32_t next_power_of_2(uint32_t x) {
+  --x;
+  x |= x >> 1;
+  x |= x >> 2;
+  x |= x >> 4;
+  x |= x >> 8;
+  x |= x >> 16;
+  ++x;
+  return x;
+}

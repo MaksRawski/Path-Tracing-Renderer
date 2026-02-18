@@ -1,7 +1,8 @@
 #include "scene/bvh.h"
+#include "arena.h"
+#include "scene/aabb.h"
 #include "vec3.h"
 #include <math.h>
-#include <stdlib.h>
 
 static void calculate_centroids(Triangle *tri, int tri_count, vec3 centroids[]);
 static void set_node_bounds(BVHnode *node, const Triangle tris[]);
@@ -14,27 +15,28 @@ static BVHTriCount split_group(Triangle *tris, vec3 *centroids,
                                unsigned int axis, float split_pos,
                                BVHTriCount swaps_lut[]);
 
-BVHresult BVH_build(Triangle triangles[], BVHTriCount count,
-                    FindBestSplitFn find_best_split_fn) {
-  BVHresult res = {0};
-  res.bvh.nodes = calloc(count * 2 - 1, sizeof(BVHnode));
-  res.swaps_lut = malloc(count * sizeof(BVHTriCount));
-  for (BVHTriCount i = 0; i < count; ++i)
-    res.swaps_lut[i] = i;
+// NOTE: nodes should be zero allocated for 2 * t_count * sizeof(BVHNode) bytes
+// NOTE: swaps_lut should be allocated for t_count * sizeof(BVHTriCount) bytes
+// NOTE: nodes_offset afterwards will contain the index after the last node
+void BVH_build(BVHnode *nodes, BVHNodeCount *nodes_offset,
+               BVHSwapsLUTElement *swaps_lut, Triangle triangles[],
+               BVHTriCount tri_offset, BVHTriCount t_count,
+               FindBestSplitFn find_best_split_fn, Arena *arena) {
+  for (BVHTriCount i = 0; i < t_count; ++i)
+    swaps_lut[i] = tri_offset + i;
 
-  vec3 *centroids = malloc(count * sizeof(vec3));
-  calculate_centroids(triangles, count, centroids);
+  ArenaSnapshot as = Arena_snapshot(arena);
+  vec3 *centroids = Arena_alloc(arena, t_count * sizeof(vec3));
+  calculate_centroids(triangles + tri_offset, t_count, centroids);
 
-  res.bvh.nodes_count = 1;
-  res.bvh.nodes[0].count = count;
-  subdivide(res.bvh.nodes, 0, triangles, centroids, &res.bvh.nodes_count,
-            res.swaps_lut, find_best_split_fn);
+  nodes[*nodes_offset].first = tri_offset;
+  nodes[*nodes_offset].count = t_count;
+  subdivide(nodes, *nodes_offset, triangles, centroids, nodes_offset, swaps_lut,
+            find_best_split_fn);
+  ++(*nodes_offset);
 
-  free(centroids);
-  return res;
+  Arena_rewind(as);
 }
-
-void BVH_delete(BVH *self) { free(self->nodes); }
 
 // recursively subdivide a node until there are 2 primitives left
 void subdivide(BVHnode nodes[], int node_idx, Triangle tris[], vec3 centroids[],
@@ -64,8 +66,8 @@ void subdivide(BVHnode nodes[], int node_idx, Triangle tris[], vec3 centroids[],
   if (split_index == node->first || split_index == (node->first + node->count))
     return;
 
-  int left_node_idx = (*created_nodes)++;
-  int right_node_idx = (*created_nodes)++;
+  int left_node_idx = ++(*created_nodes);
+  int right_node_idx = ++(*created_nodes);
   BVHnode *left_node = &nodes[left_node_idx];
   BVHnode *right_node = &nodes[right_node_idx];
   left_node->first = node->first;
@@ -93,24 +95,13 @@ void calculate_centroids(Triangle *tri, int tri_count, vec3 *centroids) {
 
 // sets node bounds on a leaf node
 void set_node_bounds(BVHnode *node, const Triangle *tris) {
+  AABB aabb = AABB_new();
   int last_tri = node->first + node->count;
-  node->bound_min.x = INFINITY;
-  node->bound_min.y = INFINITY;
-  node->bound_min.z = INFINITY;
-
-  node->bound_max.x = -INFINITY;
-  node->bound_max.y = -INFINITY;
-  node->bound_max.z = -INFINITY;
-
   for (int t = node->first; t < last_tri; ++t) {
-
-    node->bound_min = vec3_min(node->bound_min, tris[t].a);
-    node->bound_min = vec3_min(node->bound_min, tris[t].b);
-    node->bound_min = vec3_min(node->bound_min, tris[t].c);
-    node->bound_max = vec3_max(node->bound_max, tris[t].a);
-    node->bound_max = vec3_max(node->bound_max, tris[t].b);
-    node->bound_max = vec3_max(node->bound_max, tris[t].c);
+    AABB_grow_tri(&aabb, &tris[t]);
   }
+  node->bound_min = aabb.min;
+  node->bound_max = aabb.max;
 }
 
 // Swaps positions of triangles (and centroids) so that all to the "left" of

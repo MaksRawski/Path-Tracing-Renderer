@@ -1,11 +1,11 @@
 #include "renderer.h"
 #include "opengl/gl_call.h"
-#include "window/resolution.h"
 #include "renderer/buffers/back.h"
 #include "renderer/buffers/parameters_buffer.h"
 #include "renderer/buffers_scene.h"
 #include "renderer/parameters.h"
 #include "scene/camera.h"
+#include "window/resolution.h"
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 
@@ -34,7 +34,7 @@ Renderer Renderer_new(void) {
 void Renderer_load_scene(Renderer *self, const Scene *scene) {
   RendererBuffers_set_scene(&self->_buffers, scene);
   printf("Loaded triangles: %d\n", scene->triangles_count);
-  printf("Created nodes: %d\n", scene->bvh.nodes_count);
+  printf("Created nodes: %d\n", scene->bvh_nodes_count);
 }
 
 void Renderer_set_camera(Renderer *self, Camera cam) {
