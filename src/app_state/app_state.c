@@ -4,6 +4,7 @@
 #include "gui.h"
 #include "opengl/gl_call.h"
 #include "renderer/inputs.h"
+#include "scene/bvh/strategies.h"
 #include "stats.h"
 #include "stb_image_write.h"
 #include "utils.h"
@@ -23,7 +24,7 @@ AppState AppState_default(void) {
       .save_after_rendering = false,
       .exit_after_rendering = false,
       .movement_enabled = true,
-      .BVH_build_strat = BVHStrategy_Naive,
+      .BVH_build_strat = BVHStrategy_Midpoint,
       .stats = Stats_default(),
       //
       .cam_changed = true,

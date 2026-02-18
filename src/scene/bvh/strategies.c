@@ -3,9 +3,9 @@
 #include "scene/aabb.h"
 #include <math.h>
 
-void FindBestSplitFn_longest_mid(const BVHNode *node, const Triangle *triangles,
-                                 const vec3 *centroids, int *best_axis,
-                                 float *best_split_pos) {
+void FindBestSplitFn_midpoint(const BVHNode *node, const Triangle *triangles,
+                              const vec3 *centroids, int *best_axis,
+                              float *best_split_pos) {
   UNUSED(triangles, centroids);
   vec3 extent = vec3_sub(node->bound_max, node->bound_min);
   // find out longest axis
