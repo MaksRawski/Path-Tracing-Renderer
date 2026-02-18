@@ -474,7 +474,7 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
             vec3 diffuseDir = DiffuseDirection(hitInfo.normal, rngState);
             vec3 reflectDir = ReflectDirection(ray.dir, hitInfo.normal);
 
-            ray.dir = mix(diffuseDir, reflectDir, mat.metallic_factor);
+            ray.dir = mix(diffuseDir, reflectDir, mat.metallic_factor * (1 - mat.roughness_factor));
             ray.inv_dir = 1.0 / ray.dir;
 
             // calculate the potential light that the object is emitting
