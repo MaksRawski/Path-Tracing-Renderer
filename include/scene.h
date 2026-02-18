@@ -13,7 +13,6 @@
 #include "scene/tlas.h"
 #include "scene/triangle.h"
 
-// NOTE: this is a flat SOA (no nested arrays)
 typedef struct {
   Triangle *triangles;
   BVHNode *bvh_nodes;

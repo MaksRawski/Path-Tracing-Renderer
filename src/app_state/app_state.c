@@ -47,7 +47,7 @@ static void AppState__set_camera(AppState *app_state, Renderer *renderer) {
 
 // NOTE: handles scene_paths_changed and BVH_strat_changed signals
 void AppState_update_scene(AppState *app_state, Renderer *renderer,
-                           Arena *arena) {
+                           Arena *tmp_arena) {
   SmallString *new_scene_path = &app_state->scene_paths.new_scene_path;
   SmallString *loaded_scene_path = &app_state->scene_paths.loaded_scene_path;
   bool scene_changed = false;
@@ -66,7 +66,7 @@ void AppState_update_scene(AppState *app_state, Renderer *renderer,
   if (scene_changed || app_state->BVH_build_strat_changed) {
     app_state->BVH_build_strat_changed = false;
     StatsTimer_start(&app_state->stats.bvh_build);
-    Scene_build_blas(&app_state->scene, app_state->BVH_build_strat, arena);
+    Scene_build_blas(&app_state->scene, app_state->BVH_build_strat, tmp_arena);
     StatsTimer_stop(&app_state->stats.bvh_build);
     char bvh_build_time[16] = {0};
     Stats_string_time(app_state->stats.bvh_build.total_time, bvh_build_time,
@@ -78,7 +78,7 @@ void AppState_update_scene(AppState *app_state, Renderer *renderer,
 
   if (scene_changed) {
     StatsTimer_start(&app_state->stats.tlas_build);
-    Scene_build_tlas(&app_state->scene, arena);
+    Scene_build_tlas(&app_state->scene, tmp_arena);
     StatsTimer_stop(&app_state->stats.tlas_build);
     char tlas_build_time[16] = {0};
     Stats_string_time(app_state->stats.tlas_build.total_time, tlas_build_time,
@@ -155,15 +155,6 @@ void AppState_post_rendering(AppState *app_state, Renderer *renderer,
 
   bool display_rendering_time = false;
   if (should_save_image) {
-
-    // NOTE: this will also stop the rendering timer as requesting pixels
-    // from the GPU forces synchronization, which allows for _accurate_
-    // reading of rendering time (albeit with the additional time of
-    // transferring pixels included). According to the OpenGL documentation
-    // (https://wikis.khronos.org/opengl/Synchronization#Implicit_synchronization):
-    // "attempt to read from a framebuffer to CPU memory (not to a buffer
-    // object) will halt until all rendering commands affecting that
-    // framebuffer have completed."
     AppState_save_image(app_state, Renderer_get_fbo(renderer),
                         app_state->rendering_params.rendering_resolution,
                         arena);
@@ -174,6 +165,8 @@ void AppState_post_rendering(AppState *app_state, Renderer *renderer,
     // NOTE: this reading will be slightly inaccurate as it's stopped right
     // after *queueing* all operations to the GPU and there is no guarantee
     // whatsoever whether all the frames have been rendered.
+    // Only in case where the image was saved are we guaranteed that
+    // synchronization must have taken place.
     StatsTimer_stop(&app_state->stats.rendering);
     display_rendering_time = true;
   }
@@ -201,8 +194,6 @@ void AppState_save_image(AppState *app_state, GLuint fbo,
 
   GL_CALL(glReadPixels(0, 0, resolution.width, resolution.height, GL_RGB,
                        GL_UNSIGNED_BYTE, pixels));
-
-  StatsTimer_stop(&app_state->stats.rendering);
 
   const int stride = resolution.width * 3;
   stbi_flip_vertically_on_write(true);

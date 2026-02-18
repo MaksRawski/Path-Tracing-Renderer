@@ -37,7 +37,7 @@ typedef struct {
 AppState AppState_default(void);
 
 void AppState_update_scene(AppState *app_state, Renderer *renderer,
-                           Arena *arena);
+                           Arena *tmp_arena);
 void AppState_update_camera(AppState *app_state, Renderer *renderer,
                             const WindowEventsData *events);
 void AppState_update_focus(AppState *app_state, const WindowEventsData *events,
