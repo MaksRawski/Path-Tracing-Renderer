@@ -1,11 +1,13 @@
 #include "app_state_display.h"
 #include "app_state/app_state_save_image.h"
 #include "opengl/gl_call.h"
+#include "scene.h"
+#include "window.h"
 
 // NOTE: sets the rendering_params received from GUI in Renderer
 // NOTE: renders everything that has to be rendered to the screen
-void AppState_display(AppState *app_state, Renderer *renderer, GUIOverlay *gui,
-                      Window *window) {
+void AppState_render_frame(AppState *app_state, Renderer *renderer,
+                           GUIOverlay *gui, Window *window) {
   int frames_to_render = app_state->settings.rendering_params.frames_to_render;
   unsigned int frame_number = app_state->stats.frame_number;
 
@@ -13,12 +15,13 @@ void AppState_display(AppState *app_state, Renderer *renderer, GUIOverlay *gui,
 
   bool infinite_progressive_rendering = frames_to_render < 0;
   bool should_render_new_frame =
-      infinite_progressive_rendering ||
-      (frame_number < (unsigned int)frames_to_render);
+      !Scene_is_empty(&app_state->scene) &&
+      (infinite_progressive_rendering ||
+       (frame_number < (unsigned int)frames_to_render));
 
   GL_CALL(glClear(GL_COLOR_BUFFER_BIT));
 
-  if (frames_to_render == 0) {
+  if (frames_to_render <= 0) {
     Renderer_clear_backbuffer(renderer);
   }
 
@@ -29,7 +32,7 @@ void AppState_display(AppState *app_state, Renderer *renderer, GUIOverlay *gui,
 
   Window_display_framebuffer(
       renderer_fbo, app_state->settings.rendering_params.rendering_resolution,
-      app_state->viewport_size, app_state->scaling_mode);
+      Window_get_framebuffer_size(window), app_state->settings.scaling_mode);
 
   GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
   if (app_state->settings.gui_enabled)

@@ -24,8 +24,10 @@ WindowEventsData Window_poll_events(Window *self);
 void Window_display_framebuffer(GLuint fbo, WindowResolution fbo_res,
                                 WindowResolution display_res,
                                 WindowScalingMode scaling_mode);
-
 WindowResolution Window_get_framebuffer_size(const Window *self);
+
+bool Window_is_key_pressed(const Window *events, int key);
+bool Window_is_mouse_button_pressed(const Window *events, int key);
 
 void Window_steal_mouse(GLFWwindow *window);
 void Window_give_back_mouse(GLFWwindow *window);

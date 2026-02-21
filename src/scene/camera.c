@@ -87,3 +87,9 @@ void Camera_rotate(Camera *cam, YawPitch rotation) {
   Camera__fix_yaw_pitch(&yp);
   cam->dir = Vec3d_to_vec3(YawPitch_to_dir(yp));
 }
+
+void Camera_transform(Camera *cam, CameraTransformation transform,
+                      double step_size) {
+  Camera_move(cam, transform.translation, step_size);
+  Camera_rotate(cam, transform.rotation);
+}

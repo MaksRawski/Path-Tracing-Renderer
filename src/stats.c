@@ -1,5 +1,6 @@
 #include "stats.h"
 #include "GLFW/glfw3.h"
+#include "asserts.h"
 #include <stdio.h>
 
 StatsTimer StatsTimer_new(void) { return (StatsTimer){0}; }
@@ -48,4 +49,12 @@ bool Stats_string_time(double time_in_s, char *buffer, size_t buf_size) {
     return false;
   }
   return true;
+}
+
+TinyString Stats_display(double time_in_s) {
+  TinyString out = {0};
+  ASSERTQ_CUSTOM(Stats_string_time(time_in_s, out.str, sizeof(out)),
+                 "TinyString turned out to be too tiny for `Stats_string_time` "
+                 "formatting!");
+  return out;
 }

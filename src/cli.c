@@ -77,7 +77,7 @@ Option Option_new(enum Options option, const AppState *default_app_state) {
   }
   case Options_OUTPUT_PATH:
     RETURN_OPTION_DV_FMT("-o", "--out", "", "%s",
-                         default_app_state->save_image_info.path);
+                         default_app_state->settings.saved_image_path.str);
   case Options_BVH_TYPE: {
     Option res = {.short_name = "", .long_name = "--bvh"};
     strcpy(res.description, "BVH strategy to use, choose from: ");
@@ -228,7 +228,7 @@ static void parse_arg(int argc, char **argv, int *i,
               argv[*i], argv[0]);
       exit(1);
     } else {
-      app_state->settings.scene_paths.new_scene_path = SmallString_new(arg);
+      app_state->settings.scene_path = SmallString_new(arg);
       return;
     }
   }
@@ -271,8 +271,8 @@ static void parse_arg(int argc, char **argv, int *i,
 
   case Options_OUTPUT_PATH: {
     char *path = get_value_for_option(i, argc, argv, arg);
-    snprintf(app_state->save_image_info.path,
-             sizeof(app_state->save_image_info.path), "%s", path);
+    snprintf(app_state->settings.saved_image_path.str,
+             sizeof(app_state->settings.saved_image_path.str), "%s", path);
     break;
   }
   case Options_BVH_TYPE: {
@@ -336,7 +336,7 @@ void handle_args(int argc, char *argv[], AppState *app_state) {
   }
 
   if (!app_state->settings.gui_enabled &&
-      SmallString_is_empty(&app_state->settings.scene_paths.new_scene_path)) {
+      SmallString_is_empty(&app_state->settings.scene_path)) {
     fprintf(stderr, "GUI was disabled, yet no scene was specified. Exiting!\n");
     exit(1);
   }

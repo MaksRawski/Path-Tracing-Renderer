@@ -4,14 +4,15 @@
 #include "window/resolution.h"
 #include <assert.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 typedef struct {
   float env_color[3];
-  int max_bounce_count;
-  int samples_per_pixel;
+  int32_t max_bounce_count;
+  int32_t samples_per_pixel;
   float diverge_strength;
   // -1 means infinite, NOTE: assuming progressive rendering
-  int frames_to_render;
+  int32_t frames_to_render;
   WindowResolution rendering_resolution;
 } RendererParameters;
 

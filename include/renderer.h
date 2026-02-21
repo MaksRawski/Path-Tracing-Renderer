@@ -9,6 +9,7 @@ typedef struct {
   RendererShaders _shaders;
   RendererBuffers _buffers;
   WindowResolution _res;
+  uint32_t _frame_number;
 } Renderer;
 
 Renderer Renderer_new(void);

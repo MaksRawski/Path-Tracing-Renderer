@@ -1,39 +1,46 @@
 #ifndef APP_STATE_H_
 #define APP_STATE_H_
 
+#include "action.h"
 #include "app_state/app_state_save_image.h"
+#include "input_handler.h"
 #include "renderer.h"
 #include "scene.h"
 #include "settings.h"
 #include "stats.h"
-#include "window.h"
 #include "window/resolution.h"
-#include "window/scaling.h"
 #include "window/window_events.h"
 
 typedef struct {
-  Stats stats;
-  WindowResolution viewport_size;
-  WindowScalingMode scaling_mode;
-  AppStateSaveImageInfo save_image_info;
   Scene scene;
+  Stats stats;
   Settings settings;
-  bool _renderer_focused;
+  Action pending_actions;
 } AppState;
 
-AppState AppState_default(void);
+inline static AppState AppState_default(void) {
+  return (AppState){
+      .settings = Settings_default(),
+      .scene = Scene_default(),
+      .stats = Stats_default(),
+      .pending_actions = 0,
+  };
+}
 
-void AppState_update_scene(AppState *app_state, Renderer *renderer, Arena *tmp_arena);
-void AppState_update_camera(AppState *app_state, Renderer *renderer,
+inline static bool AppState_is_rendering_finished(AppState *app_state) {
+  return app_state->settings.rendering_params.frames_to_render >= 0 &&
+         app_state->stats.frame_number ==
+             (uint32_t)app_state->settings.rendering_params.frames_to_render;
+}
+
+void AppState_restart_progressive_rendering(AppState *app_state,
+                                            Renderer *renderer);
+void AppState_load_scene(AppState *app_state);
+void AppState_build_bvh(AppState *app_state, Arena *tmp_arena);
+
+void AppState_handle_inputs(AppState *app_state, InputHandler *input_handler,
                             const WindowEventsData *events);
-void AppState_update_focus(AppState *app_state, const WindowEventsData *events,
-                           Window *window);
 
-void AppState_hot_reload_shaders(AppState *app_state, Renderer *renderer);
-void AppState_update_renderer_parameters(AppState *app_state,
-                                         Renderer *renderer);
-
-void AppState_post_rendering(AppState *app_state, Renderer *renderer);
 void AppState_save_image(AppState *save_image_info, GLuint fbo,
                          WindowResolution resolution);
 

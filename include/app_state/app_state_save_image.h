@@ -6,7 +6,6 @@
 
 typedef struct {
   char path[1024];
-  bool to_save;
 } AppStateSaveImageInfo;
 
 AppStateSaveImageInfo AppStateSaveImageInfo_default(void);

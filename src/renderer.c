@@ -4,9 +4,11 @@
 #include "renderer/buffers/parameters_buffer.h"
 #include "renderer/buffers_scene.h"
 #include "renderer/parameters.h"
+#include "scene.h"
 #include "scene/camera.h"
 #include "window/resolution.h"
 #include <GLFW/glfw3.h>
+#include <stdint.h>
 #include <stdio.h>
 
 #if defined(__linux__)
@@ -56,7 +58,7 @@ GLuint Renderer_get_fbo(const Renderer *self) {
   return self->_buffers.back.fbo;
 }
 
-void Renderer_render_frame(const Renderer *self, unsigned int frame_number) {
+void Renderer_render_frame(const Renderer *self, uint32_t frame_number) {
   // setup the program and bind the vao associated with the quad
   // and the vbo holding the vertices of the quad
   GL_CALL(glUseProgram(self->_shaders.program));

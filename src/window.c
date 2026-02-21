@@ -137,8 +137,7 @@ WindowEventsData Window_poll_events(Window *self) {
   glfwPollEvents();
   GLFWUserData *user_data = Window_get_user_data(self);
   WindowEventsData events = {0};
-  events._window = self->glfw_window;
-  glfwGetWindowSize(events._window, (int *)&events.window_size.width,
+  glfwGetWindowSize(self->glfw_window, (int *)&events.window_size.width,
                     (int *)&events.window_size.height);
 
   // NOTE: user_data->last_mouse_pos would be zero initalized, in which case
@@ -157,4 +156,14 @@ void Window_swap_buffers(Window *self) { glfwSwapBuffers(self->glfw_window); }
 void Window_delete(Window *self) {
   (void)(self);
   glfwTerminate();
+}
+
+// NOTE: key must be a GLFW_KEY_*
+bool Window_is_key_pressed(const Window *window, int key) {
+  return glfwGetKey(window->glfw_window, key) == GLFW_PRESS;
+}
+
+// NOTE: key must be a GLFW_KEY_*
+bool Window_is_mouse_button_pressed(const Window *window, int key) {
+  return glfwGetMouseButton(window->glfw_window, key) == GLFW_PRESS;
 }

@@ -1,6 +1,10 @@
+#include "action.h"
 #include "cli.h"
-#include "renderer/parameters.h"
+#include "input_handler.h"
+#include "renderer.h"
+#include "scene.h"
 #include "stats.h"
+#include <stdint.h>
 #ifdef __linux__
 #include <gtk/gtk.h>
 #endif
@@ -24,36 +28,78 @@ int main(int argc, char *argv[]) {
 #endif
 
   Window window = Window_new(WINDOW_TITLE, DESIRED_WIDTH, DESIRED_HEIGHT);
-  app_state.viewport_size = Window_get_framebuffer_size(&window);
-
   GUIOverlay gui = GUIOverlay_new(&window);
-
   Renderer renderer = Renderer_new();
+  InputHandler input_handler = InputHandler_new(&window);
 
   while (!glfwWindowShouldClose(window.glfw_window)) {
+    // NOTE: must poll every frame for the OS to know that this application is
+    // working
     WindowEventsData events = Window_poll_events(&window);
-    app_state.viewport_size = Window_get_framebuffer_size(&window);
-    AppState_update_focus(&app_state, &events, &window);
 
-    AppState_hot_reload_shaders(&app_state, &renderer);
+    // === Settings ===
+    if (app_state.settings.hot_reload_enabled) {
+      if (RendererShaders_update(&renderer._shaders))
+        app_state.pending_actions |= Action_restart_rendering;
+    }
+
+    if (app_state.settings.movement_enabled)
+      AppState_handle_inputs(&app_state, &input_handler, &events);
 
     if (app_state.settings.gui_enabled)
       GUIOverlay_update_state(&gui, &app_state);
 
-    AppState_update_scene(&app_state, &renderer, &tmp_arena);
-    AppState_update_camera(&app_state, &renderer, &events);
-    AppState_update_renderer_parameters(&app_state, &renderer);
+    // === pre-render Actions ===
+    if (Action_load_scene & app_state.pending_actions)
+      AppState_load_scene(&app_state);
 
-    AppState_display(&app_state, &renderer, &gui, &window);
+    if (Action_build_bvh & app_state.pending_actions)
+      AppState_build_bvh(&app_state, &tmp_arena);
 
-    AppState_post_rendering(&app_state, &renderer);
+    if (Action_update_ssbo_scene & app_state.pending_actions) {
+      Renderer_load_scene(&renderer, &app_state.scene);
+      app_state.pending_actions |= Action_restart_rendering;
+    }
 
-    bool rendering_finished =
-        (int)app_state.stats.frame_number ==
-        app_state.settings.rendering_params.frames_to_render;
+    if (Action_update_ssbo_camera & app_state.pending_actions) {
+      Renderer_set_camera(&renderer, app_state.settings.cam);
+      app_state.pending_actions |= Action_restart_rendering;
+    }
 
-    if (rendering_finished && app_state.settings.exit_after_rendering)
+    if (Action_update_ssbo_renderer_parameters & app_state.pending_actions) {
+      Renderer_set_params(&renderer, app_state.settings.rendering_params);
+      app_state.pending_actions |= Action_restart_rendering;
+    }
+
+    if (Action_restart_rendering & app_state.pending_actions) {
+      AppState_restart_progressive_rendering(&app_state, &renderer);
+    }
+
+    // === Rendering ===
+    AppState_render_frame(&app_state, &renderer, &gui, &window);
+
+    // === post-render Actions ===
+    if (Action_save_image & app_state.pending_actions) {
+      AppState_save_image(
+          &app_state, Renderer_get_fbo(&renderer),
+          app_state.settings.rendering_params.rendering_resolution);
+    }
+
+    if (AppState_is_rendering_finished(&app_state)) {
+      printf("Rendered %d frames in %s.\n",
+             app_state.settings.rendering_params.frames_to_render,
+             Stats_display(app_state.stats.rendering.total_time).str);
+
+      if (app_state.settings.exit_after_rendering)
+        app_state.pending_actions |= Action_exit;
+    }
+
+    if (Action_exit & app_state.pending_actions) {
       break;
+    }
+
+    // reset pending_actions for the next frame
+    app_state.pending_actions = 0;
   }
 
   Renderer_delete(&renderer);
