@@ -49,10 +49,12 @@ void AppState_handle_inputs(AppState *app_state, InputHandler *input_handler,
                             const WindowEventsData *events) {
   InputHandlerAction input_handler_action =
       InputHandler_update(input_handler, events);
+  double dt = app_state->stats.last_frame_rendering.total_time;
   switch (input_handler_action.type) {
   case InputHandlerActionType_CameraMoved:
     Camera_transform(&app_state->settings.cam, input_handler_action.CameraMoved,
-                     app_state->settings.cam.step_size_per_second);
+                     app_state->settings.cam.step_size_per_second * dt);
+    app_state->pending_actions |= Action_update_ssbo_camera;
     break;
   case InputHandlerActionType_Nothing:
     break;
