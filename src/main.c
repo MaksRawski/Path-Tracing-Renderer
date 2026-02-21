@@ -2,7 +2,6 @@
 #include "cli.h"
 #include "input_handler.h"
 #include "renderer.h"
-#include "scene.h"
 #include "stats.h"
 #include <stdint.h>
 #ifdef __linux__
@@ -17,7 +16,8 @@
 #define WINDOW_TITLE "Path Tracing Renderer"
 
 int main(int argc, char *argv[]) {
-  Arena tmp_arena = Arena_new(256 * 1024);
+  // pre-allocate 16MB of memory for any operations that may need it
+  Arena tmp_arena = Arena_new(16 * 1024 * 1024);
   AppState app_state = AppState_default();
   handle_args(argc, argv, &app_state);
 
@@ -31,6 +31,8 @@ int main(int argc, char *argv[]) {
   GUIOverlay gui = GUIOverlay_new(&window);
   Renderer renderer = Renderer_new();
   InputHandler input_handler = InputHandler_new(&window);
+
+  Renderer_set_params(&renderer, app_state.settings.rendering_params);
 
   while (!glfwWindowShouldClose(window.glfw_window)) {
     // NOTE: must poll every frame for the OS to know that this application is
@@ -72,26 +74,33 @@ int main(int argc, char *argv[]) {
     }
 
     if (Action_restart_rendering & app_state.pending_actions) {
-      AppState_restart_progressive_rendering(&app_state, &renderer);
+      Renderer_clear_backbuffer(&renderer);
+      Stats_reset_rendering(&app_state.stats);
     }
 
     // === Rendering ===
-    AppState_render_frame(&app_state, &renderer, &gui, &window);
+    AppState_render_and_display_frame(&app_state, &renderer, &gui, &window);
 
     // === post-render Actions ===
     if (Action_save_image & app_state.pending_actions) {
       AppState_save_image(
           &app_state, Renderer_get_fbo(&renderer),
-          app_state.settings.rendering_params.rendering_resolution);
+          app_state.settings.rendering_params.rendering_resolution, &tmp_arena);
     }
 
-    if (AppState_is_rendering_finished(&app_state)) {
+    RenderingState render_state = AppState_get_rendering_state(&app_state);
+    // if just finished rendering
+    if (app_state.stats.rendering.total_time == 0 &&
+        render_state == RenderingState_FINISHED) {
+      StatsTimer_stop(&app_state.stats.rendering);
       printf("Rendered %d frames in %s.\n",
              app_state.settings.rendering_params.frames_to_render,
              Stats_display(app_state.stats.rendering.total_time).str);
+    }
 
-      if (app_state.settings.exit_after_rendering)
-        app_state.pending_actions |= Action_exit;
+    if (app_state.settings.exit_after_rendering &&
+        render_state == RenderingState_FINISHED) {
+      app_state.pending_actions |= Action_exit;
     }
 
     if (Action_exit & app_state.pending_actions) {

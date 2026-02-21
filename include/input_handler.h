@@ -17,11 +17,4 @@ InputHandlerAction InputHandler_update(InputHandler *self,
                                        const WindowEventsData *events);
 void InputHandler_update_focus(InputHandler *self);
 
-/* bool InputHandler_update_camera(Camera *cam, const Window *window, */
-/*                                 const WindowEventsData *events, double dt);
- */
-
-/* CameraTranslation InputHandler_move_camera(const Window *window); */
-/* YawPitch InputHandler_rotate_camera(const WindowEventsData *events); */
-
 #endif // RENDERER_INPUTS_H_

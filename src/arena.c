@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 Arena Arena_new(size_t capacity) {
-  uint8_t *data = calloc(capacity, 1);
+  uint8_t *data = malloc(capacity);
   if (data == NULL) {
     ERROR_FMT("Failed to create an Arena with capacity of %d bytes.", capacity);
   }

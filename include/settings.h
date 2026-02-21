@@ -23,7 +23,7 @@ inline static Settings Settings_default(void) {
       .cam = Camera_default(),
       .rendering_params = RendererParameters_default(),
       .scene_path = SmallString_new(""),
-      .saved_image_path = SmallString_new(""),
+      .saved_image_path = SmallString_new("output.png"),
       .gui_enabled = true,
       .hot_reload_enabled = true,
       .save_after_rendering = false,

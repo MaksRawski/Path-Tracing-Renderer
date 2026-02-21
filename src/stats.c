@@ -29,8 +29,8 @@ Stats Stats_default(void) {
 }
 
 void Stats_reset_rendering(Stats *self) {
-  StatsTimer_start(&self->last_frame_rendering);
-  StatsTimer_start(&self->rendering);
+  self->last_frame_rendering = StatsTimer_new();
+  self->rendering = StatsTimer_new();
   self->frame_number = 0;
 }
 

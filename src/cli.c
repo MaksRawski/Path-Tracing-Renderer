@@ -1,4 +1,5 @@
 #include "cli.h"
+#include "action.h"
 #include "app_state.h"
 #include "asserts.h"
 #include "scene/bvh/strategies.h"
@@ -229,6 +230,7 @@ static void parse_arg(int argc, char **argv, int *i,
       exit(1);
     } else {
       app_state->settings.scene_path = SmallString_new(arg);
+      app_state->pending_actions |= Action_load_scene;
       return;
     }
   }
@@ -239,24 +241,28 @@ static void parse_arg(int argc, char **argv, int *i,
     break;
 
   case Options_SAMPLES_PER_PIXEL:
+    app_state->pending_actions |= Action_update_ssbo_renderer_parameters;
     parse_number_exit(get_value_for_option(i, argc, argv, arg),
                       &app_state->settings.rendering_params.samples_per_pixel,
                       arg);
     break;
 
   case Options_MAX_BOUNCE_COUNT:
+    app_state->pending_actions |= Action_update_ssbo_renderer_parameters;
     parse_number_exit(get_value_for_option(i, argc, argv, arg),
                       &app_state->settings.rendering_params.max_bounce_count,
                       arg);
     break;
 
   case Options_FRAMES_TO_RENDER:
+    app_state->pending_actions |= Action_update_ssbo_renderer_parameters;
     parse_number_exit(get_value_for_option(i, argc, argv, arg),
                       &app_state->settings.rendering_params.frames_to_render,
                       arg);
     break;
 
   case Options_RESOLUTION: {
+    app_state->pending_actions |= Action_update_ssbo_renderer_parameters;
     char *res_value = get_value_for_option(i, argc, argv, arg);
     if (!parse_resolution(
             res_value,

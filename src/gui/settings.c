@@ -39,21 +39,17 @@ static void GuiSettings_Scene(AppState *state) {
     state->pending_actions |= Action_build_bvh;
   }
 
-  // NOTE: if scene is loaded
+  // if scene is loaded
   if (!SmallString_is_empty(&state->settings.scene_path)) {
     igText("Loaded scene: %s",
            FilePath_get_file_name(state->settings.scene_path.str));
     igText("Loaded Triangles: %d", state->scene.triangles_count);
     igText("Created BVH nodes: %d", state->scene.bvh_nodes_count);
 
-    char load_scene_time[16] = {0};
-    char bvh_build_time[16] = {0};
-    Stats_string_time(state->stats.scene_load.total_time, load_scene_time,
-                      sizeof(load_scene_time));
-    Stats_string_time(state->stats.bvh_build.total_time, bvh_build_time,
-                      sizeof(bvh_build_time));
-    igText("Loading scene time: %s", load_scene_time);
-    igText("BVH build time: %s", bvh_build_time);
+    igText("Loading scene time: %s",
+           Stats_display(state->stats.scene_load.total_time).str);
+    igText("BVH build time: %s",
+           Stats_display(state->stats.bvh_build.total_time).str);
   }
 }
 
@@ -156,16 +152,23 @@ static void GuiSettings_Rendering(AppState *state) {
 
   igText("Rendering last frame took: %s", last_frame_time_str);
   char rendering_time_str[16] = {0};
-  if (state->stats.rendering.total_time == 0) {
+
+  RenderingState render_state = AppState_get_rendering_state(state);
+  switch (render_state) {
+  case RenderingState_NOT_RENDERING:
+    break;
+  case RenderingState_RENDERING: {
     double rendering_time = StatsTimer_elapsed(&state->stats.rendering);
     Stats_string_time(rendering_time, rendering_time_str,
                       sizeof(rendering_time_str));
     igText("Elapsed rendering time: %s", rendering_time_str);
-  } else {
+  } break;
+  case RenderingState_FINISHED: {
     double rendering_time = state->stats.rendering.total_time;
     Stats_string_time(rendering_time, rendering_time_str,
                       sizeof(rendering_time_str));
     igText("Total rendering time: %s", rendering_time_str);
+  } break;
   }
   igText("Rendered frames: %d", state->stats.frame_number);
 
