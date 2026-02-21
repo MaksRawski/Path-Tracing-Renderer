@@ -92,9 +92,9 @@ void Image_add_metadata(const char *image_path,
         RendererParameters_str(renderer_parameters, params, sizeof(params)),
         "Buffer 'params' too small!");
 
-    int to_write = snprintf(cmd, sizeof(cmd),
-                            "exiftool -overwrite_original -Description='%s' %s",
-                            params, image_path);
+    int to_write = snprintf(
+        cmd, sizeof(cmd), "exiftool -overwrite_original -Description='%s' '%s'",
+        params, image_path);
     ASSERTQ_CUSTOM(to_write < (int)sizeof(cmd), "Buffer 'cmd' too small!");
     ASSERTQ_CUSTOM(system(cmd) == 0, "Command failed!");
   }

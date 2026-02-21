@@ -97,15 +97,16 @@ struct HitInfo {
 };
 
 // RNG
-uint pcg_hash(inout uint seed) {
+uint PCG_hash(inout uint seed) {
     seed = seed * 747796405u + 2891336453u;
     uint result = ((seed >> ((seed >> 28u) + 4u)) ^ seed) * 277803737u;
     result = (result >> 22) ^ result;
     return result;
 }
 
+// [0, 1]
 float RandomFloat(inout uint state) {
-    return float(pcg_hash(state)) / 4294967296.0;
+    return float(PCG_hash(state)) / 4294967296.0;
 }
 
 vec3 RandomUnitVector(inout uint state) {
@@ -452,4 +453,5 @@ void main() {
     totalIncomingLight = LinearToSRGB(totalIncomingLight);
 
     FragColor = vec4(totalIncomingLight, 1.0);
+    // FragColor = vec4(mats[6].base_color_factor.rgb, 1.0);
 }

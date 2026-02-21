@@ -1,5 +1,7 @@
-#include "app_state.h"
+#include "glad/gl.h"
+
 #include "action.h"
+#include "app_state.h"
 #include "arena.h"
 #include "input_handler.h"
 #include "opengl/gl_call.h"
@@ -28,11 +30,9 @@ void AppState_build_bvh(AppState *app_state, Arena *tmp_arena) {
                   tmp_arena);
   StatsTimer_stop(&app_state->stats.bvh_build);
 
-  char bvh_build_time[16] = {0};
-  Stats_string_time(app_state->stats.bvh_build.total_time, bvh_build_time,
-                    sizeof(bvh_build_time));
   printf("Building BVH using the strategy '%s' took: %s\n",
-         BVHStrategy_str[app_state->settings.BVH_build_strat], bvh_build_time);
+         BVHStrategy_str[app_state->settings.BVH_build_strat],
+         Stats_display(app_state->stats.bvh_build.total_time).str);
 }
 
 void AppState_handle_inputs(AppState *app_state, InputHandler *input_handler,
@@ -69,7 +69,7 @@ void AppState_save_image(AppState *app_state, GLuint fbo,
   stbi_flip_vertically_on_write(true);
   if (stbi_write_png(app_state->settings.saved_image_path.str, resolution.width,
                      resolution.height, 3, pixels, stride)) {
-    printf("Sucessfully saved image to %s\n",
+    printf("Sucessfully saved image to '%s'\n",
            app_state->settings.saved_image_path.str);
   }
   GL_CALL(glBindFramebuffer(GL_READ_FRAMEBUFFER, 0));

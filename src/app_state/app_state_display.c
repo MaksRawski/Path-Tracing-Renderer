@@ -1,6 +1,4 @@
 #include "app_state_display.h"
-#include "app_state.h"
-#include "app_state/app_state_save_image.h"
 #include "opengl/gl_call.h"
 #include "window.h"
 

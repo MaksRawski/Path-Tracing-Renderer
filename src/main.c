@@ -1,15 +1,16 @@
+#include "renderer.h"
+
 #include "action.h"
+#include "app_state.h"
+#include "app_state_display.h"
 #include "cli.h"
 #include "input_handler.h"
-#include "renderer.h"
 #include "stats.h"
 #include <stdint.h>
+
 #ifdef __linux__
 #include <gtk/gtk.h>
 #endif
-
-#include "app_state.h"
-#include "app_state_display.h"
 
 #define DESIRED_WIDTH 1280
 #define DESIRED_HEIGHT 720
@@ -82,25 +83,25 @@ int main(int argc, char *argv[]) {
     AppState_render_and_display_frame(&app_state, &renderer, &gui, &window);
 
     // === post-render Actions ===
-    if (Action_save_image & app_state.pending_actions) {
-      AppState_save_image(
-          &app_state, Renderer_get_fbo(&renderer),
-          app_state.settings.rendering_params.rendering_resolution, &tmp_arena);
-    }
-
-    RenderingState render_state = AppState_get_rendering_state(&app_state);
     // if just finished rendering
-    if (app_state.stats.rendering.total_time == 0 &&
-        render_state == RenderingState_FINISHED) {
+    if (AppState_get_rendering_state(&app_state) == RenderingState_FINISHED &&
+        app_state.stats.rendering.total_time == 0) {
       StatsTimer_stop(&app_state.stats.rendering);
       printf("Rendered %d frames in %s.\n",
              app_state.settings.rendering_params.frames_to_render,
              Stats_display(app_state.stats.rendering.total_time).str);
+
+      if (app_state.settings.save_after_rendering)
+        app_state.pending_actions |= Action_save_image;
+
+      if (app_state.settings.exit_after_rendering)
+        app_state.pending_actions |= Action_exit;
     }
 
-    if (app_state.settings.exit_after_rendering &&
-        render_state == RenderingState_FINISHED) {
-      app_state.pending_actions |= Action_exit;
+    if (Action_save_image & app_state.pending_actions) {
+      AppState_save_image(
+          &app_state, Renderer_get_fbo(&renderer),
+          app_state.settings.rendering_params.rendering_resolution, &tmp_arena);
     }
 
     if (Action_exit & app_state.pending_actions) {

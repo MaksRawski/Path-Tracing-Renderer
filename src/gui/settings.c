@@ -145,30 +145,21 @@ static void GuiSettings_Rendering(AppState *state) {
   state->settings.rendering_params.rendering_resolution.width = res[0];
   state->settings.rendering_params.rendering_resolution.height = res[1];
 
-  char last_frame_time_str[16] = {0};
-  double last_frame_time = state->stats.last_frame_rendering.total_time;
-  Stats_string_time(last_frame_time, last_frame_time_str,
-                    sizeof(last_frame_time_str));
-
-  igText("Rendering last frame took: %s", last_frame_time_str);
-  char rendering_time_str[16] = {0};
+  igText("Rendering last frame took: %s",
+         Stats_display(state->stats.last_frame_rendering.total_time).str);
 
   RenderingState render_state = AppState_get_rendering_state(state);
   switch (render_state) {
   case RenderingState_NOT_RENDERING:
     break;
-  case RenderingState_RENDERING: {
-    double rendering_time = StatsTimer_elapsed(&state->stats.rendering);
-    Stats_string_time(rendering_time, rendering_time_str,
-                      sizeof(rendering_time_str));
-    igText("Elapsed rendering time: %s", rendering_time_str);
-  } break;
-  case RenderingState_FINISHED: {
-    double rendering_time = state->stats.rendering.total_time;
-    Stats_string_time(rendering_time, rendering_time_str,
-                      sizeof(rendering_time_str));
-    igText("Total rendering time: %s", rendering_time_str);
-  } break;
+  case RenderingState_RENDERING:
+    igText("Elapsed rendering time: %s",
+           Stats_display(StatsTimer_elapsed(&state->stats.rendering)).str);
+    break;
+  case RenderingState_FINISHED:
+    igText("Total rendering time: %s",
+           Stats_display(state->stats.rendering.total_time).str);
+    break;
   }
   igText("Rendered frames: %d", state->stats.frame_number);
 

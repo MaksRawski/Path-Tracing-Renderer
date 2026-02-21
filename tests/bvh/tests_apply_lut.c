@@ -10,13 +10,15 @@ bool assert_arrays_equal(BVHTriCount *a, BVHTriCount *b, size_t size) {
   return true;
 }
 
+static Arena tmp_arena = {0};
+
 bool test_apply_swaps_lut__id(void) {
   BVHTriCount numbers[] = {0, 1, 2, 3, 4, 5};
   BVHTriCount lut[] = {0, 1, 2, 3, 4, 5};
   BVHTriCount expected[] = {0, 1, 2, 3, 4, 5};
 
   const unsigned int count = sizeof(lut) / sizeof(BVHTriCount);
-  BVH_apply_swaps_lut(lut, numbers, BVHTriCount, count);
+  BVH_apply_swaps_lut(lut, numbers, BVHTriCount, count, &tmp_arena);
 
   assert_arrays_equal(numbers, expected, count);
   return true;
@@ -28,7 +30,7 @@ bool test_apply_swaps_lut__rev(void) {
   BVHTriCount expected[] = {5, 4, 3, 2, 1, 0};
 
   const unsigned int count = sizeof(lut) / sizeof(BVHTriCount);
-  BVH_apply_swaps_lut(lut, numbers, BVHTriCount, count);
+  BVH_apply_swaps_lut(lut, numbers, BVHTriCount, count, &tmp_arena);
 
   assert_arrays_equal(numbers, expected, count);
   return true;
@@ -40,7 +42,7 @@ bool test_apply_swaps_lut__random(void) {
   BVHTriCount expected[] = {2, 4, 1, 3, 5, 0};
   const unsigned int count = sizeof(lut) / sizeof(BVHTriCount);
 
-  BVH_apply_swaps_lut(lut, numbers, BVHTriCount, count);
+  BVH_apply_swaps_lut(lut, numbers, BVHTriCount, count, &tmp_arena);
 
   assert_arrays_equal(numbers, expected, count);
   return true;
@@ -52,13 +54,14 @@ bool test_apply_swaps_lut__simplest_earlier_breaking_case(void) {
   BVHTriCount expected[] = {2, 0, 1, 3, 4, 5};
   const unsigned int count = sizeof(lut) / sizeof(BVHTriCount);
 
-  BVH_apply_swaps_lut(lut, numbers, BVHTriCount, count);
+  BVH_apply_swaps_lut(lut, numbers, BVHTriCount, count, &tmp_arena);
 
   assert_arrays_equal(numbers, expected, count);
   return true;
 }
 
 bool all_bvh_lut_tests(void) {
+  tmp_arena = Arena_new(256);
   bool ok = true;
   TEST_RUN(test_apply_swaps_lut__id, &ok);
   TEST_RUN(test_apply_swaps_lut__rev, &ok);

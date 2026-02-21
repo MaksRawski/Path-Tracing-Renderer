@@ -175,6 +175,8 @@ void alloc_if_necessary(void **dst, size_t count, size_t element_size,
       ERROR_FMT("Failed to allocate %lu bytes of memory",
                 *capacity * element_size);
     }
+  } else if (should_zero) {
+    memset(*dst, 0, *capacity * element_size);
   }
 }
 

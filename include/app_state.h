@@ -2,7 +2,6 @@
 #define APP_STATE_H_
 
 #include "action.h"
-#include "app_state/app_state_save_image.h"
 #include "input_handler.h"
 #include "scene.h"
 #include "settings.h"
