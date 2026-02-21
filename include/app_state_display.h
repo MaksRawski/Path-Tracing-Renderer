@@ -3,8 +3,9 @@
 
 #include "app_state.h"
 #include "gui.h"
+#include "renderer.h"
 
-void AppState_render_frame(AppState *app_state, Renderer *renderer, GUIOverlay *gui,
-                      Window *window);
+void AppState_render_and_display_frame(AppState *app_state, Renderer *renderer,
+                                       GUIOverlay *gui, Window *window);
 
 #endif // APP_STATE_DISPLAY_H_

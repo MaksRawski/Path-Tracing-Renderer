@@ -1,55 +1,35 @@
 #include "app_state_display.h"
+#include "app_state.h"
 #include "app_state/app_state_save_image.h"
 #include "opengl/gl_call.h"
-#include "scene.h"
 #include "window.h"
 
-// NOTE: sets the rendering_params received from GUI in Renderer
 // NOTE: renders everything that has to be rendered to the screen
-void AppState_render_frame(AppState *app_state, Renderer *renderer,
-                           GUIOverlay *gui, Window *window) {
-  int frames_to_render = app_state->settings.rendering_params.frames_to_render;
-  unsigned int frame_number = app_state->stats.frame_number;
-
-  GLuint renderer_fbo = Renderer_get_fbo(renderer);
-
-  bool infinite_progressive_rendering = frames_to_render < 0;
-  bool should_render_new_frame =
-      !Scene_is_empty(&app_state->scene) &&
-      (infinite_progressive_rendering ||
-       (frame_number < (unsigned int)frames_to_render));
-
+void AppState_render_and_display_frame(AppState *app_state, Renderer *renderer,
+                                       GUIOverlay *gui, Window *window) {
+  RenderingState render_state = AppState_get_rendering_state(app_state);
   GL_CALL(glClear(GL_COLOR_BUFFER_BIT));
 
-  if (frames_to_render <= 0) {
-    Renderer_clear_backbuffer(renderer);
-  }
-
-  if (should_render_new_frame) {
+  if (render_state == RenderingState_RENDERING) {
+    if (app_state->stats.frame_number == 0) {
+      StatsTimer_start(&app_state->stats.rendering);
+    }
     StatsTimer_start(&app_state->stats.last_frame_rendering);
     Renderer_render_frame(renderer, app_state->stats.frame_number++);
   }
-
-  Window_display_framebuffer(
-      renderer_fbo, app_state->settings.rendering_params.rendering_resolution,
-      Window_get_framebuffer_size(window), app_state->settings.scaling_mode);
+  if (render_state == RenderingState_RENDERING ||
+      render_state == RenderingState_FINISHED) {
+    Window_display_framebuffer(
+        Renderer_get_fbo(renderer),
+        app_state->settings.rendering_params.rendering_resolution,
+        Window_get_framebuffer_size(window), app_state->settings.scaling_mode);
+  }
 
   GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
   if (app_state->settings.gui_enabled)
     GUIOverlay_render_frame(gui);
 
   Window_swap_buffers(window);
-
-  // NOTE: getting to this point doesn't necessarily mean that the frame (or
-  // even the one before this one) has finished rendering, as we're simply
-  // queuing commands for rendering. Those times only seem somewhat reasonable
-  // when at least 3 frames have been queued (on my machine). According to
-  // OpenGL documentation: "Swapping the back and front buffers on the Default
-  // Framebuffer may cause some form of synchronization (though the actual
-  // moment of synchronization event may be delayed until later GL commands),
-  // if there are still commands affecting the default framebuffer that have
-  // not yet completed. Swapping buffers only technically needs to sync to the
-  // last command that affects the default framebuffer, but it may perform a
-  // full glFinish."
+  // NOTE: only at this point can we expect the frame to actually be rendered
   StatsTimer_stop(&app_state->stats.last_frame_rendering);
 }

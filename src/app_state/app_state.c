@@ -1,5 +1,6 @@
 #include "app_state.h"
 #include "action.h"
+#include "arena.h"
 #include "input_handler.h"
 #include "opengl/gl_call.h"
 #include "scene.h"
@@ -8,17 +9,6 @@
 #include "stb_image_write.h"
 #include "utils.h"
 #include <stdio.h>
-
-void AppState_restart_progressive_rendering(AppState *app_state,
-                                            Renderer *renderer) {
-  Renderer_clear_backbuffer(renderer);
-  Stats_reset_rendering(&app_state->stats);
-}
-
-void AppState_update_ssbo_camera(AppState *app_state, Renderer *renderer) {
-  Renderer_set_camera(renderer, app_state->settings.cam);
-  app_state->pending_actions |= Action_restart_rendering;
-}
 
 void AppState_load_scene(AppState *app_state) {
   StatsTimer_start(&app_state->stats.scene_load);
@@ -63,12 +53,14 @@ void AppState_handle_inputs(AppState *app_state, InputHandler *input_handler,
 
 const int BYTES_PER_PIXEL = 3;
 void AppState_save_image(AppState *app_state, GLuint fbo,
-                         WindowResolution resolution) {
+                         WindowResolution resolution, Arena *tmp_arena) {
   GL_CALL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo));
   GL_CALL(glReadBuffer(GL_COLOR_ATTACHMENT0));
   GL_CALL(glPixelStorei(GL_PACK_ALIGNMENT, 1));
 
-  void *pixels = malloc(resolution.width * resolution.height * BYTES_PER_PIXEL);
+  ArenaSnapshot as = Arena_snapshot(tmp_arena);
+  void *pixels = Arena_alloc(tmp_arena, resolution.width * resolution.height *
+                                            BYTES_PER_PIXEL);
 
   GL_CALL(glReadPixels(0, 0, resolution.width, resolution.height, GL_RGB,
                        GL_UNSIGNED_BYTE, pixels));
@@ -84,5 +76,19 @@ void AppState_save_image(AppState *app_state, GLuint fbo,
 
   Image_add_metadata(app_state->settings.saved_image_path.str,
                      &app_state->settings.rendering_params);
-  free(pixels);
+  Arena_rewind(as);
+}
+
+RenderingState AppState_get_rendering_state(const AppState *app_state) {
+  if (Scene_is_empty(&app_state->scene)) {
+    return RenderingState_NOT_RENDERING;
+  }
+
+  if (app_state->settings.rendering_params.frames_to_render >= 0 &&
+      app_state->stats.frame_number >=
+          (uint32_t)app_state->settings.rendering_params.frames_to_render) {
+    return RenderingState_FINISHED;
+  }
+
+  return RenderingState_RENDERING;
 }

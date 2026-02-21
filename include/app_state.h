@@ -4,7 +4,6 @@
 #include "action.h"
 #include "app_state/app_state_save_image.h"
 #include "input_handler.h"
-#include "renderer.h"
 #include "scene.h"
 #include "settings.h"
 #include "stats.h"
@@ -27,21 +26,21 @@ inline static AppState AppState_default(void) {
   };
 }
 
-inline static bool AppState_is_rendering_finished(AppState *app_state) {
-  return app_state->settings.rendering_params.frames_to_render >= 0 &&
-         app_state->stats.frame_number ==
-             (uint32_t)app_state->settings.rendering_params.frames_to_render;
-}
+typedef enum {
+  RenderingState_NOT_RENDERING,
+  RenderingState_RENDERING,
+  RenderingState_FINISHED,
+} RenderingState;
 
-void AppState_restart_progressive_rendering(AppState *app_state,
-                                            Renderer *renderer);
+RenderingState AppState_get_rendering_state(const AppState *app_state);
+
 void AppState_load_scene(AppState *app_state);
 void AppState_build_bvh(AppState *app_state, Arena *tmp_arena);
 
 void AppState_handle_inputs(AppState *app_state, InputHandler *input_handler,
                             const WindowEventsData *events);
 
-void AppState_save_image(AppState *save_image_info, GLuint fbo,
-                         WindowResolution resolution);
+void AppState_save_image(AppState *app_state, GLuint fbo,
+                         WindowResolution resolution, Arena *tmp_arena);
 
 #endif // APP_STATE_H_
