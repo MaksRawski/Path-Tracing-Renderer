@@ -53,7 +53,8 @@ bool Stats_string_time(double time_in_s, char *buffer, size_t buf_size) {
 
 TinyString Stats_display(double time_in_s) {
   TinyString out = {0};
-  ASSERTQ_CUSTOM(Stats_string_time(time_in_s, out.str, sizeof(out)),
+  bool fit_in_buffer = Stats_string_time(time_in_s, out.str, sizeof(out));
+  ASSERTQ_CUSTOM(fit_in_buffer,
                  "TinyString turned out to be too tiny for `Stats_string_time` "
                  "formatting!");
   return out;
