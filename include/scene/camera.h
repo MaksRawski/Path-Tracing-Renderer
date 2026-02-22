@@ -72,8 +72,7 @@ void Camera_move_left(Camera *cam, float dir, float step_size);
 
 void Camera_move(Camera *cam, CameraTranslation translation, double step_size);
 void Camera_rotate(Camera *cam, YawPitch rotation);
-void Camera_transform(Camera *cam, CameraTransformation transform,
-                      double step_size);
+void Camera_transform(Camera *cam, CameraTransformation transform, double dt);
 
 Camera Camera_default(void);
 

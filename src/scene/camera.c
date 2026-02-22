@@ -82,14 +82,13 @@ void Camera__fix_yaw_pitch(YawPitch *yp) {
 
 void Camera_rotate(Camera *cam, YawPitch rotation) {
   YawPitch yp = YawPitch_from_dir(Vec3d_from_vec3(cam->dir));
-  yp.yaw_rad += rotation.yaw_rad;
-  yp.pitch_rad += rotation.pitch_rad;
+  yp.yaw_rad += rotation.yaw_rad * cam->sensitivity;
+  yp.pitch_rad += rotation.pitch_rad * cam->sensitivity;
   Camera__fix_yaw_pitch(&yp);
   cam->dir = Vec3d_to_vec3(YawPitch_to_dir(yp));
 }
 
-void Camera_transform(Camera *cam, CameraTransformation transform,
-                      double step_size) {
-  Camera_move(cam, transform.translation, step_size);
+void Camera_transform(Camera *cam, CameraTransformation transform, double dt) {
+  Camera_move(cam, transform.translation, cam->step_size_per_second * dt);
   Camera_rotate(cam, transform.rotation);
 }

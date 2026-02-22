@@ -35,6 +35,7 @@ void AppState_build_bvh(AppState *app_state, Arena *tmp_arena) {
   printf("Building BVH using the strategy '%s' took: %s\n",
          BVHStrategy_str[app_state->settings.BVH_build_strat],
          Stats_display(app_state->stats.bvh_build.total_time).str);
+  app_state->pending_actions |= Action_update_ssbo_scene;
 }
 
 void AppState_handle_inputs(AppState *app_state, InputHandler *input_handler,
@@ -45,7 +46,7 @@ void AppState_handle_inputs(AppState *app_state, InputHandler *input_handler,
   switch (input_handler_action.type) {
   case InputHandlerActionType_CameraMoved:
     Camera_transform(&app_state->settings.cam, input_handler_action.CameraMoved,
-                     app_state->settings.cam.step_size_per_second * dt);
+                     dt);
     app_state->pending_actions |= Action_update_ssbo_camera;
     break;
   case InputHandlerActionType_Nothing:

@@ -54,6 +54,9 @@ static void GuiSettings_Scene(AppState *state) {
 }
 
 static void GUISettings_Camera(AppState *state) {
+  igTextWrapped("To move the camera using keyboard (WASD keys) and mouse: "
+                "Hold the left mouse button over the rendered scene "
+                "(outside this Settings window).");
   // position
   float cam_pos[3] = {state->settings.cam.pos.x, state->settings.cam.pos.y,
                       state->settings.cam.pos.z};
