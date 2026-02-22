@@ -58,3 +58,17 @@ TinyString Stats_display(double time_in_s) {
                  "formatting!");
   return out;
 }
+
+SmallString Stats_str(const Stats *self) {
+  SmallString out = {0};
+  int written =
+      snprintf(out.str, sizeof(out.str),
+               "scene load time: %s\nbvh build time: %s\nrendering time: %s\n",
+               Stats_display(self->scene_load.total_time).str,
+               Stats_display(self->bvh_build.total_time).str,
+               Stats_display(self->rendering.total_time).str);
+  ASSERTQ_CUSTOM(written < (int)sizeof(out.str),
+                 "SmallString turned out to be too small for Stats");
+
+  return out;
+}

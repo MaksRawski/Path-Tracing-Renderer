@@ -1,6 +1,7 @@
 #ifndef STATS_H_
 #define STATS_H_
 
+#include "small_string.h"
 #include "tiny_string.h"
 #include <stdbool.h>
 #include <stddef.h>
@@ -36,5 +37,7 @@ bool Stats_string_time(double time_in_s, char *buffer, size_t buf_size);
 // wrapper around Stats that returns a TinyString or panics if TinyString is too
 // small (should be impossible)
 TinyString Stats_display(double time_in_s);
+
+SmallString Stats_str(const Stats *self);
 
 #endif // STATS_H_

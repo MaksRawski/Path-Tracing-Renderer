@@ -1,4 +1,5 @@
 #include "renderer/parameters.h"
+#include "asserts.h"
 #include "window/resolution.h"
 #include <stdio.h>
 
@@ -11,16 +12,14 @@ RendererParameters RendererParameters_default(void) {
                                   WindowResolution_new(1280, 720)};
 }
 
-// NOTE: the buffer should at the very least allocate 128 bytes
-// writes at max `buf_size` bytes into `out` and return whether the output did
-// fit.
-bool RendererParameters_str(const RendererParameters *self, char *out,
-                            unsigned long buf_size) {
-  // NOTE: str_len is the length of the string that should have been written.
-  int str_len = snprintf(out, buf_size,
+SmallString RendererParameters_str(const RendererParameters *self) {
+  SmallString str = {0};
+  int written = snprintf(str.str, sizeof(str.str),
                          "max_bounce_count: %d\nsamples_per_pixel: %d\n"
                          "diverge_strength: %.5f\nframes_to_render: %d\n",
                          self->max_bounce_count, self->samples_per_pixel,
                          self->diverge_strength, self->frames_to_render);
-  return str_len < (int)buf_size;
+  ASSERTQ_CUSTOM(written < (int)sizeof(str.str),
+                 "SmallString too small to store RendererParameters!");
+  return str;
 }

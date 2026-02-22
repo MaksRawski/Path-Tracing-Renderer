@@ -1,6 +1,7 @@
 #ifndef RENDERER_PARAMETERS_H_
 #define RENDERER_PARAMETERS_H_
 
+#include "small_string.h"
 #include "window/resolution.h"
 #include <assert.h>
 #include <stdbool.h>
@@ -17,7 +18,6 @@ typedef struct {
 } RendererParameters;
 
 RendererParameters RendererParameters_default(void);
-bool RendererParameters_str(const RendererParameters *self, char *out,
-                            unsigned long buf_size);
+SmallString RendererParameters_str(const RendererParameters *self);
 
 #endif // RENDERER_PARAMETERS_H_

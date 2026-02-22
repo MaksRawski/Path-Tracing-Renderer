@@ -5,8 +5,10 @@
 #include "arena.h"
 #include "input_handler.h"
 #include "opengl/gl_call.h"
+#include "renderer/parameters.h"
 #include "scene.h"
 #include "scene/file_formats/gltf.h"
+#include "small_string.h"
 #include "stats.h"
 #include "stb_image_write.h"
 #include "utils.h"
@@ -51,6 +53,16 @@ void AppState_handle_inputs(AppState *app_state, InputHandler *input_handler,
   }
 }
 
+static SmallString AppState_str(const AppState *app_state) {
+  SmallString res = {0};
+
+  snprintf(res.str, sizeof(res.str), "RendererParameters:\n%s\nStats:\n%s\n",
+           RendererParameters_str(&app_state->settings.rendering_params).str,
+           Stats_str(&app_state->stats).str);
+
+  return res;
+}
+
 const int BYTES_PER_PIXEL = 3;
 void AppState_save_image(AppState *app_state, GLuint fbo,
                          WindowResolution resolution, Arena *tmp_arena) {
@@ -75,7 +87,7 @@ void AppState_save_image(AppState *app_state, GLuint fbo,
   GL_CALL(glBindFramebuffer(GL_READ_FRAMEBUFFER, 0));
 
   Image_add_metadata(app_state->settings.saved_image_path.str,
-                     &app_state->settings.rendering_params);
+                     AppState_str(app_state).str);
   Arena_rewind(as);
 }
 
