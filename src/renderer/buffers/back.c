@@ -14,8 +14,8 @@ RendererBuffersBack RendererBuffersBack_new(void) {
   GL_CALL(glBindTexture(GL_TEXTURE_2D, self.fboTex));
   // NOTE: resolution has to be set with the resize function, which is assumed
   // to happen before drawing to this framebuffer
-  GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, 0, GL_RGB,
-                       GL_UNSIGNED_BYTE, NULL));
+  GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, 1, 1, 0, GL_RGB,
+                       GL_FLOAT, NULL));
   GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
   GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
   GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
@@ -31,8 +31,8 @@ RendererBuffersBack RendererBuffersBack_new(void) {
 void RendererBuffersBack_resize(RendererBuffersBack *self,
                                 WindowResolution res) {
   GL_CALL(glBindTexture(GL_TEXTURE_2D, self->fboTex));
-  GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, res.width, res.height, 0,
-                       GL_RGB, GL_UNSIGNED_BYTE, NULL));
+  GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, res.width, res.height, 0,
+                       GL_RGB, GL_FLOAT, NULL));
   GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
 }
 
