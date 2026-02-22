@@ -97,16 +97,16 @@ struct HitInfo {
 };
 
 // RNG
-uint PCG_hash(inout uint seed) {
+//
+uint pcg32_hash(inout uint seed) {
     seed = seed * 747796405u + 2891336453u;
     uint result = ((seed >> ((seed >> 28u) + 4u)) ^ seed) * 277803737u;
     result = (result >> 22) ^ result;
     return result;
 }
 
-// [0, 1]
 float RandomFloat(inout uint state) {
-    return float(PCG_hash(state)) / 4294967296.0;
+    return float(pcg32_hash(state)) / 4294967296.0;
 }
 
 vec3 RandomUnitVector(inout uint state) {
@@ -438,7 +438,8 @@ void main() {
     vec2 resolution = vec2(params.width, params.height);
 
     uint pixelIndex = uint(gl_FragCoord.x) + uint(gl_FragCoord.y) * uint(params.width);
-    uint rngState = uint(pixelIndex + uint(frame_number * 719393));
+    uint rngState = pixelIndex;
+    rngState = pcg32_hash(rngState) ^ uint(frame_number);
 
     // gl_FragCoord stores the pixel coordinates [0.5, resolution-0.5]
     vec2 uv = gl_FragCoord.xy / resolution.xy; // normalized coordinates [0, 1]
@@ -451,8 +452,7 @@ void main() {
 
     vec3 totalIncomingLight = vec3(0.0, 0.0, 0.0);
     for (int i = 0; i < params.samples_per_pixel; ++i) {
-        Ray jitteredRay = JitterRay(ray, viewport, rngState);
-        totalIncomingLight += GetColorForRay(jitteredRay, rngState);
+        totalIncomingLight += GetColorForRay(JitterRay(ray, viewport, rngState), rngState);
     }
     totalIncomingLight /= float(params.samples_per_pixel);
 
@@ -464,5 +464,4 @@ void main() {
     totalIncomingLight = LinearToSRGB(totalIncomingLight);
 
     FragColor = vec4(totalIncomingLight, 1.0);
-    // FragColor = vec4(mats[6].base_color_factor.rgb, 1.0);
 }
