@@ -350,7 +350,7 @@ HitInfo CalculateRayCollision(Ray ray) {
     return closestHit;
 }
 
-vec3 RandomCosineWeightedHemisphere(vec3 normal, inout uint rngState) {
+vec3 DiffuseDir(vec3 normal, inout uint rngState) {
     return normalize(normal + RandomUnitVector(rngState));
 }
 
@@ -367,17 +367,28 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
         if (hitInfo.didHit) {
             ray.origin = hitInfo.hitPoint;
 
-            vec3 diffuseDir = RandomCosineWeightedHemisphere(hitInfo.normal, rngState);
-            vec3 reflectDir = ReflectDirection(ray.dir, hitInfo.normal);
+            float specularChance = hitInfo.mat.metallic_factor * (1.0 - hitInfo.mat.roughness_factor);
 
-            ray.dir = mix(diffuseDir, reflectDir, hitInfo.mat.metallic_factor * (1 - hitInfo.mat.roughness_factor));
+            if (RandomFloat(rngState) < specularChance) {
+                vec3 pureReflection = ReflectDirection(ray.dir, hitInfo.normal);
+
+                vec3 roughReflection = pureReflection + RandomUnitVector(rngState) * hitInfo.mat.roughness_factor;
+                ray.dir = normalize(roughReflection);
+
+                if (dot(ray.dir, hitInfo.normal) < 0.0) {
+                    ray.dir = DiffuseDir(hitInfo.normal, rngState);
+                }
+            } else {
+                ray.dir = DiffuseDir(hitInfo.normal, rngState);
+            }
             ray.inv_dir = 1.0 / ray.dir;
 
             // calculate the potential light that the object is emitting
             vec3 emittedLight = hitInfo.mat.emissive_factor;
 
-            c *= hitInfo.mat.base_color_factor.rgb;
             incomingLight += emittedLight * c;
+
+            c *= hitInfo.mat.base_color_factor.rgb;
         } else {
             // get color from environment
             incomingLight += params.env_color.rgb * c;
