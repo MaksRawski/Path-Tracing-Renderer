@@ -419,7 +419,7 @@ Ray JitterRay(Ray ray, CameraViewport viewport, inout uint rngState) {
     jittered.origin = ray.origin;
     vec2 jitter = RandomPointInCircle(rngState) * params.diverge_strength;
     jittered.dir = ray.dir + viewport.right * jitter.x + viewport.up * jitter.y;
-    jittered.inv_dir = 1.0 / ray.dir;
+    jittered.inv_dir = 1.0 / jittered.dir;
     return jittered;
 }
 
