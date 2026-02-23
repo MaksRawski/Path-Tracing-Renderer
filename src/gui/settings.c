@@ -108,10 +108,8 @@ static void GUISettings_Camera(AppState *state) {
 static void GuiSettings_Rendering(AppState *state) {
   bool rendering_param_changed = false;
 
-  igSetNextItemWidth(0.5 * igGetWindowWidth());
-  rendering_param_changed |= igColorPicker3(
-      "Environment color", state->settings.rendering_params.env_color,
-      ImGuiColorEditFlags_NoAlpha | ImGuiColorEditFlags_NoInputs);
+  rendering_param_changed |= igColorEdit3(
+      "Environment color", state->settings.rendering_params.env_color, 0);
 
   rendering_param_changed |=
       igInputInt("Max Bounce Count",
@@ -132,10 +130,10 @@ static void GuiSettings_Rendering(AppState *state) {
           "becomes. Serves as a simple form of antialiasing.");
 
   rendering_param_changed |=
-      igInputInt("Passes (-1 for inf)",
+      igInputInt("Frames to render (-1 for inf)",
                  &state->settings.rendering_params.frames_to_render, 1, 1, 0);
-  tooltip("A control for progressive rendering. Chosen count of frames will be "
-          "rendered and immediately averaged, which effectively causes more "
+  tooltip("A control for progressive rendering. This number of frames will be "
+          "rendered and immediately averaged, effectively causing more "
           "rays to be sent from each pixel over the span of many frames.");
 
   int res[2] = {state->settings.rendering_params.rendering_resolution.width,
