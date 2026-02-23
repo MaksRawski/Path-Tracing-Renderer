@@ -458,7 +458,7 @@ void main() {
 
     if (frame_number > 0) {
         vec3 lastFrameColor = texture(backBufferTexture, gl_FragCoord.xy / resolution.xy).rgb;
-        float weight = 1.0 / float(frame_number);
+        float weight = 1.0 / float(frame_number + 1);
         totalIncomingLight = SRGBToLinear(lastFrameColor) * (1.0 - weight) + totalIncomingLight * weight;
     }
     totalIncomingLight = LinearToSRGB(totalIncomingLight);
