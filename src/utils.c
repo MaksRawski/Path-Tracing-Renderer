@@ -10,11 +10,11 @@
 #define stat _stat
 #endif
 
-#if defined(__linux__)
+/* #if defined(__linux__) */
 #define PATH_SEPARATOR '/'
-#elif defined(_WIN32)
-#define PATH_SEPARATOR '\\'
-#endif
+/* #elif defined(_WIN32) */
+/* #define PATH_SEPARATOR '\\' */
+/* #endif */
 
 char *File_read(const char *filename) {
   FILE *file = fopen(filename, "r");
@@ -46,7 +46,7 @@ bool FilePath_exists(const char *path) {
 }
 
 const char *FilePath_get_file_name(const char *path) {
-  const char *last_path_sep = strrchr(path, PATH_SEPARATOR);
+  const char *last_path_sep = strrchr(path, '/');
   return last_path_sep ? last_path_sep + 1 : path;
 }
 

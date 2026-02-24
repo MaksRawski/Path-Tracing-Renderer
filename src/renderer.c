@@ -11,24 +11,18 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#if defined(__linux__)
-#define PATH_SEPARATOR "/"
-#elif defined(_WIN32)
-#define PATH_SEPARATOR "\\"
-#endif
-
-#define VERTEX_SHADER_PATH "shaders" PATH_SEPARATOR "vertex.glsl"
-#define FRAGMENT_SHADER_PATH "shaders" PATH_SEPARATOR "renderer.glsl"
+#define VERTEX_SHADER_PATH "shaders/vertex.glsl"
+#define FRAGMENT_SHADER_PATH "shaders/renderer.glsl"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
-Renderer Renderer_new(void) {
-  Renderer self = {
-      ._shaders = RendererShaders_new(VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH),
-      ._buffers = RendererBuffers_new(),
-      ._res = WindowResolution_new(0, 0)};
+Renderer Renderer_new(Arena *arena) {
+  Renderer self = {._shaders = RendererShaders_new(VERTEX_SHADER_PATH,
+                                                   FRAGMENT_SHADER_PATH, arena),
+                   ._buffers = RendererBuffers_new(),
+                   ._res = WindowResolution_new(0, 0)};
 
   return self;
 }

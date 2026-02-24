@@ -2,6 +2,7 @@
 
 #ifdef _WIN32
 #include "windows.h"
+#include "stdio.h"
 // https://learn.microsoft.com/en-us/windows/win32/dlgbox/using-common-dialog-boxes#opening-a-file
 bool GuiFileBrowser_open(char out_path[], size_t capacity) {
   OPENFILENAME ofn;
