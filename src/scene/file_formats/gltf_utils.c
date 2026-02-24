@@ -46,10 +46,10 @@ void gltf_assert(bool cond, const char *path, const char *err_msg_fmt, ...) {
 }
 
 // returns mat_index in Scene->mats for the provided mat
-static size_t set_material(const char *path, const cgltf_data *data,
-                           const cgltf_material *mat, Scene *scene) {
+static uint32_t set_material(const char *path, const cgltf_data *data,
+                             const cgltf_material *mat, Scene *scene) {
   // NOTE: must offset by 1 as we have a default material at index 0
-  size_t mat_index = cgltf_material_index(data, mat) + 1;
+  uint32_t mat_index = cgltf_material_index(data, mat) + 1;
 
   ASSERTQ_COND(mat_index < scene->mats_capacity, mat_index);
   if (scene->mats[mat_index]._set)
