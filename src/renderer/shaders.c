@@ -1,4 +1,5 @@
 #include "renderer/shaders.h"
+#include "arena.h"
 #include "opengl/gl_call.h"
 #include "utils.h"
 #include "utils/file_watcher.h"
@@ -14,35 +15,37 @@
   "main(){gl_Position=vec4(aPos,1.0);}"
 
 static GLuint create_shader_program(const char *vertex_shader_filename,
-                                    const char *fragment_shader_filename);
+                                    const char *fragment_shader_filename,
+                                    Arena *arena);
 static GLuint
 create_shader_program_from_source(const char *vertex_shader_src,
                                   const char *fragment_shader_src);
 
 RendererShaders RendererShaders_new(const char *vertex_shader_path,
-                                    const char *fragment_shader_path) {
+                                    const char *fragment_shader_path,
+                                    Arena *arena) {
   RendererShaders self = {0};
 
   self.vertex_shader = FileWatcher_new(vertex_shader_path);
   self.fragment_shader = FileWatcher_new(fragment_shader_path);
-  RendererShaders_force_update(&self);
+  RendererShaders_force_update(&self, arena);
 
   return self;
 }
 
-bool RendererShaders_update(RendererShaders *self) {
+bool RendererShaders_update(RendererShaders *self, Arena *arena) {
   if (FileWatcher_did_change(&self->vertex_shader) ||
       FileWatcher_did_change(&self->fragment_shader)) {
     printf("Shaders have changed, reloading...\n");
-    RendererShaders_force_update(self);
+    RendererShaders_force_update(self, arena);
     return true;
   }
   return false;
 }
 
-void RendererShaders_force_update(RendererShaders *self) {
+void RendererShaders_force_update(RendererShaders *self, Arena *arena) {
   GLuint new_program = create_shader_program(self->vertex_shader.path,
-                                             self->fragment_shader.path);
+                                             self->fragment_shader.path, arena);
 
   if (new_program == (GLuint)-1) {
     fprintf(stderr,
@@ -112,16 +115,15 @@ create_shader_program_from_source(const char *vertex_shader_src,
 }
 
 static GLuint create_shader_program(const char *vertex_shader_filename,
-                                    const char *fragment_shader_filename) {
-
-  char *vertex_shader_src = File_read(vertex_shader_filename);
-  char *fragment_shader_src = File_read(fragment_shader_filename);
+                                    const char *fragment_shader_filename,
+                                    Arena *arena) {
+  ArenaSnapshot as = Arena_snapshot(arena);
+  char *vertex_shader_src = File_read(vertex_shader_filename, arena);
+  char *fragment_shader_src = File_read(fragment_shader_filename, arena);
 
   GLuint shader_program =
       create_shader_program_from_source(vertex_shader_src, fragment_shader_src);
 
-  free(vertex_shader_src);
-  free(fragment_shader_src);
-
+  Arena_rewind(as);
   return shader_program;
 }

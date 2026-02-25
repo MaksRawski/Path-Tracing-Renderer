@@ -4,9 +4,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "arena.h"
 
 // FILES
-char *File_read(const char *filename);
+char *File_read(const char *filename, Arena *arena);
 
 bool FilePath_exists(const char *path);
 const char *FilePath_get_file_name(const char *path);

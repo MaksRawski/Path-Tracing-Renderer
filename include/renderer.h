@@ -1,6 +1,7 @@
 #ifndef RENDERER_H_
 #define RENDERER_H_
 
+#include "arena.h"
 #include "renderer/buffers.h"
 #include "renderer/parameters.h"
 #include "renderer/shaders.h"
@@ -12,7 +13,7 @@ typedef struct {
   uint32_t _frame_number;
 } Renderer;
 
-Renderer Renderer_new(void);
+Renderer Renderer_new(Arena *arena);
 
 void Renderer_load_scene(Renderer *self, const Scene *scene);
 void Renderer_set_camera(Renderer *self, Camera cam);

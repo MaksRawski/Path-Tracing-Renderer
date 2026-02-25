@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "arena.h"
 #include "asserts.h"
 
 #include <stdio.h>
@@ -10,33 +11,20 @@
 #define stat _stat
 #endif
 
-/* #if defined(__linux__) */
-#define PATH_SEPARATOR '/'
-/* #elif defined(_WIN32) */
-/* #define PATH_SEPARATOR '\\' */
-/* #endif */
-
-char *File_read(const char *filename) {
+char *File_read(const char *filename, Arena *arena) {
   FILE *file = fopen(filename, "r");
-  if (!file) {
-    fprintf(stderr, "Error: Could not open file %s\n", filename);
-    exit(EXIT_FAILURE);
-  }
+  if (!file)
+    ERROR_FMT("Could not open file %s", filename);
 
   fseek(file, 0, SEEK_END);
   long length = ftell(file);
   fseek(file, 0, SEEK_SET);
 
-  char *buffer = (char *)malloc(length + 1);
-  if (!buffer) {
-    fprintf(stderr, "Error: Could not allocate memory for file %s\n", filename);
-    exit(EXIT_FAILURE);
-  }
-
+  char *buffer = Arena_alloc(arena, length + 1);
   fread(buffer, 1, length, file);
   buffer[length] = '\0';
-
   fclose(file);
+
   return buffer;
 }
 

@@ -1,4 +1,5 @@
 #include "renderer.h"
+#include "arena.h"
 #include "opengl/gl_call.h"
 #include "renderer/buffers/back.h"
 #include "renderer/buffers/parameters_buffer.h"

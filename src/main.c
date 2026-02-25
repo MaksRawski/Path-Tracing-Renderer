@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
 
   Window window = Window_new(WINDOW_TITLE, DESIRED_WIDTH, DESIRED_HEIGHT);
   GUIOverlay gui = GUIOverlay_new(&window);
-  Renderer renderer = Renderer_new();
+  Renderer renderer = Renderer_new(&tmp_arena);
   InputHandler input_handler = InputHandler_new(&window);
 
   Renderer_set_params(&renderer, app_state.settings.rendering_params);
@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
 
     // === Settings ===
     if (app_state.settings.hot_reload_enabled) {
-      if (RendererShaders_update(&renderer._shaders))
+      if (RendererShaders_update(&renderer._shaders, &tmp_arena))
         app_state.pending_actions |= Action_restart_rendering;
     }
 
