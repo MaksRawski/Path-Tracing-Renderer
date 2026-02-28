@@ -1,46 +1,45 @@
 #ifndef APP_STATE_H_
 #define APP_STATE_H_
 
-#include "app_state/app_state_save_image.h"
-#include "gui/scene_paths.h"
-#include "opengl/resolution.h"
-#include "opengl/scaling.h"
-#include "renderer.h"
-#include "renderer/parameters.h"
+#include "action.h"
+#include "input_handler.h"
 #include "scene.h"
-#include "scene/bvh/strategies.h"
-#include "scene/camera.h"
+#include "settings.h"
 #include "stats.h"
+#include "window/resolution.h"
+#include "window/window_events.h"
 
-// NOTE: *_changed attributes are added for each field that can be modified
-// through gui
 typedef struct {
-  Camera cam;
-  RendererParameters rendering_params;
-  Stats stats;
-  ScenePaths scene_paths;
-  OpenGLResolution viewport_size;
-  OpenGLScalingMode scaling_mode;
-  AppStateSaveImageInfo save_image_info;
   Scene scene;
-  BVHStrategy BVH_build_strat;
-  bool cam_changed, rendering_params_changed, scene_paths_changed,
-      BVH_build_strat_changed;
-  bool gui_enabled, hot_reload_enabled, save_after_rendering,
-      exit_after_rendering, movement_enabled;
+  Stats stats;
+  Settings settings;
+  Action pending_actions;
 } AppState;
 
-AppState AppState_default(void);
+inline static AppState AppState_default(void) {
+  return (AppState){
+      .settings = Settings_default(),
+      .scene = Scene_default(),
+      .stats = Stats_default(),
+      .pending_actions = 0,
+  };
+}
 
-void AppState_update_scene(AppState *app_state, Renderer *renderer);
-void AppState_update_camera(AppState *app_state, Renderer *renderer,
+typedef enum {
+  RenderingState_NOT_RENDERING,
+  RenderingState_RENDERING,
+  RenderingState_FINISHED,
+} RenderingState;
+
+RenderingState AppState_get_rendering_state(const AppState *app_state);
+
+void AppState_load_scene(AppState *app_state);
+void AppState_build_bvh(AppState *app_state, Arena *tmp_arena);
+
+void AppState_handle_inputs(AppState *app_state, InputHandler *input_handler,
                             const WindowEventsData *events);
 
-void AppState_hot_reload_shaders(AppState *app_state, Renderer *renderer);
-void AppState_update_renderer_parameters(AppState *app_state,
-                                         Renderer *renderer);
-
-void AppState_save_image(AppState *save_image_info, GLuint fbo,
-                         OpenGLResolution resolution);
+void AppState_save_image(AppState *app_state, GLuint fbo,
+                         WindowResolution resolution, Arena *tmp_arena);
 
 #endif // APP_STATE_H_

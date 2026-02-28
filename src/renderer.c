@@ -1,33 +1,29 @@
 #include "renderer.h"
+#include "arena.h"
 #include "opengl/gl_call.h"
-#include "opengl/resolution.h"
 #include "renderer/buffers/back.h"
 #include "renderer/buffers/parameters_buffer.h"
 #include "renderer/buffers_scene.h"
 #include "renderer/parameters.h"
+#include "scene.h"
 #include "scene/camera.h"
+#include "window/resolution.h"
 #include <GLFW/glfw3.h>
+#include <stdint.h>
 #include <stdio.h>
 
-#if defined(__linux__)
-#define PATH_SEPARATOR "/"
-#elif defined(_WIN32)
-#define PATH_SEPARATOR "\\"
-#endif
-
-#define VERTEX_SHADER_PATH "shaders" PATH_SEPARATOR "vertex.glsl"
-#define FRAGMENT_SHADER_PATH "shaders" PATH_SEPARATOR "renderer.glsl"
+#define VERTEX_SHADER_PATH "shaders/vertex.glsl"
+#define FRAGMENT_SHADER_PATH "shaders/renderer.glsl"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
-Renderer Renderer_new(void) {
-  Renderer self = {
-      ._shaders = RendererShaders_new(VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH),
-      ._buffers = RendererBuffers_new(),
-      ._res = OpenGLResolution_new(1280, 720),
-      ._focused = false};
+Renderer Renderer_new(Arena *arena) {
+  Renderer self = {._shaders = RendererShaders_new(VERTEX_SHADER_PATH,
+                                                   FRAGMENT_SHADER_PATH, arena),
+                   ._buffers = RendererBuffers_new(),
+                   ._res = WindowResolution_new(0, 0)};
 
   return self;
 }
@@ -35,7 +31,7 @@ Renderer Renderer_new(void) {
 void Renderer_load_scene(Renderer *self, const Scene *scene) {
   RendererBuffers_set_scene(&self->_buffers, scene);
   printf("Loaded triangles: %d\n", scene->triangles_count);
-  printf("Created nodes: %d\n", scene->bvh.nodes_count);
+  printf("Created nodes: %d\n", scene->bvh_nodes_count);
 }
 
 void Renderer_set_camera(Renderer *self, Camera cam) {
@@ -53,32 +49,11 @@ void Renderer_clear_backbuffer(Renderer *self) {
   RendererBuffersBack_resize(&self->_buffers.back, self->_res);
 }
 
-void Renderer_set_focused(Renderer *self, bool focused) {
-  self->_focused = focused;
-}
-
-bool Renderer_is_focused(const Renderer *self) { return self->_focused; }
-
-// NOTE: steals or gives back mouse based on the WindowEventsData
-void Renderer_update_focus(Renderer *renderer, const WindowEventsData *events,
-                           OpenGLContext *ctx, bool mouse_over_renderer) {
-  bool lmb_pressed =
-      WindowEventsData_is_mouse_button_pressed(events, GLFW_MOUSE_BUTTON_1);
-
-  if (mouse_over_renderer && lmb_pressed && !Renderer_is_focused(renderer)) {
-    Renderer_set_focused(renderer, true);
-    OpenGLContext_steal_mouse(ctx->window);
-  } else if (!lmb_pressed && Renderer_is_focused(renderer)) {
-    Renderer_set_focused(renderer, false);
-    OpenGLContext_give_back_mouse(ctx->window);
-  }
-}
-
 GLuint Renderer_get_fbo(const Renderer *self) {
   return self->_buffers.back.fbo;
 }
 
-void Renderer_render_frame(const Renderer *self, unsigned int frame_number) {
+void Renderer_render_frame(const Renderer *self, uint32_t frame_number) {
   // setup the program and bind the vao associated with the quad
   // and the vbo holding the vertices of the quad
   GL_CALL(glUseProgram(self->_shaders.program));
@@ -98,5 +73,4 @@ void Renderer_render_frame(const Renderer *self, unsigned int frame_number) {
 void Renderer_delete(Renderer *self) {
   RendererShaders_delete(&self->_shaders);
   RendererBuffers_delete(&self->_buffers);
-  self = NULL;
 }

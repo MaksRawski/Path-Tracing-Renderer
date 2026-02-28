@@ -6,7 +6,7 @@
 #include <math.h>
 
 // NOTE: right now this is basically assuming that up is (0,1,0)
-Camera Camera_new(vec3 pos, vec3 dir, vec3 up, float fov, float focal_length,
+Camera Camera_new(vec3 pos, vec3 dir, vec3 up, float fov,
                   float step_size_per_second, float sensitivity) {
   vec3 dir_xz_normalized = vec3_norm(vec3_new(dir.x, 0, dir.z));
   vec3 dir_normalized =
@@ -16,15 +16,13 @@ Camera Camera_new(vec3 pos, vec3 dir, vec3 up, float fov, float focal_length,
                   .dir = dir_normalized,
                   .up = up,
                   .fov_rad = fov,
-                  .focal_length = focal_length,
                   .step_size_per_second = step_size_per_second,
                   .sensitivity = sensitivity};
 }
 
 Camera Camera_default(void) {
   return Camera_new(DEFAULT_CAM_POS, DEFAULT_CAM_DIR, DEFAULT_CAM_UP,
-                    DEFAULT_CAM_FOV, DEFAULT_CAM_FOCAL_LENGTH,
-                    DEFAULT_CAM_MOVE_SPEED_PER_SECOND,
+                    DEFAULT_CAM_FOV, DEFAULT_CAM_MOVE_SPEED_PER_SECOND,
                     DEFAULT_CAM_ROTATE_SENSITIVITY);
 }
 
@@ -84,8 +82,13 @@ void Camera__fix_yaw_pitch(YawPitch *yp) {
 
 void Camera_rotate(Camera *cam, YawPitch rotation) {
   YawPitch yp = YawPitch_from_dir(Vec3d_from_vec3(cam->dir));
-  yp.yaw_rad += rotation.yaw_rad;
-  yp.pitch_rad += rotation.pitch_rad;
+  yp.yaw_rad += rotation.yaw_rad * cam->sensitivity;
+  yp.pitch_rad += rotation.pitch_rad * cam->sensitivity;
   Camera__fix_yaw_pitch(&yp);
   cam->dir = Vec3d_to_vec3(YawPitch_to_dir(yp));
+}
+
+void Camera_transform(Camera *cam, CameraTransformation transform, double dt) {
+  Camera_move(cam, transform.translation, cam->step_size_per_second * dt);
+  Camera_rotate(cam, transform.rotation);
 }

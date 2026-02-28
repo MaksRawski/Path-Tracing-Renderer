@@ -5,8 +5,9 @@ uniform sampler2D backBufferTexture;
 
 const float EPSILON = 0.00001;
 const float INFINITY = 1.0e30;
-const float C_PI = 3.141592653589793;
-const float C_TWOPI = 6.283185307179586;
+const float PI = 3.141592653589793;
+const float TWOPI = 6.283185307179586;
+const float INV_PI = 0.3183098861837907;
 
 out vec4 FragColor;
 
@@ -24,14 +25,11 @@ struct Parameters {
     uint width, height;
 };
 
-// https://raytracing.github.io/books/RayTracingInOneWeekend.html#positionablecamera (12.2)
 struct Camera {
     vec4 pos;
     vec4 dir;
     vec4 up;
-    // horizontal field of view in radians
-    float fov;
-    float focal_length;
+    float yfov;
 };
 
 struct Ray {
@@ -55,19 +53,18 @@ struct BVHnode {
 };
 
 struct Material {
-    // what color it emits
-    vec3 emissionColor;
-    // how much light it emits, in range [0; 1]
-    float emissionStrength;
-    // what color it is under white light
-    vec3 albedo;
-    // how reflective a surface is, in range [0; 1]
-    // when 0, diffuse
-    // when 1, reflect
-    float specularComponent;
+    vec4 base_color_factor;
+    vec3 emissive_factor;
+    uint base_color_texture;
+    uint metallic_texture;
+    float metallic_factor;
+    uint roughness_texture;
+    float roughness_factor;
+    uint emissive_texture;
+    int _, _1, _2;
 };
 
-struct Primitive {
+struct TriangleEx {
     // index of the material in materialsBuffer
     uint mat;
 };
@@ -82,19 +79,13 @@ layout(std430, binding = 3) readonly buffer materialsBuffer {
     Material mats[];
 };
 layout(std430, binding = 4) readonly buffer primitivesBuffer {
-    Primitive primitives[];
+    TriangleEx triangles_data[];
 };
 layout(std430, binding = 5) readonly buffer cameraBuffer {
     Camera camera;
 };
 layout(std430, binding = 6) readonly buffer rendererParametersBuffer {
     Parameters params;
-};
-
-struct Sphere {
-    vec3 pos;
-    float r;
-    Material mat;
 };
 
 struct HitInfo {
@@ -106,7 +97,8 @@ struct HitInfo {
 };
 
 // RNG
-uint pcg_hash(inout uint seed) {
+//
+uint pcg32_hash(inout uint seed) {
     seed = seed * 747796405u + 2891336453u;
     uint result = ((seed >> ((seed >> 28u) + 4u)) ^ seed) * 277803737u;
     result = (result >> 22) ^ result;
@@ -114,12 +106,12 @@ uint pcg_hash(inout uint seed) {
 }
 
 float RandomFloat(inout uint state) {
-    return float(pcg_hash(state)) / 4294967296.0;
+    return float(pcg32_hash(state)) / 4294967296.0;
 }
 
 vec3 RandomUnitVector(inout uint state) {
     float z = RandomFloat(state) * 2.0f - 1.0f;
-    float a = RandomFloat(state) * C_TWOPI;
+    float a = RandomFloat(state) * TWOPI;
     float r = sqrt(1.0f - z * z);
     float x = r * cos(a);
     float y = r * sin(a);
@@ -127,9 +119,36 @@ vec3 RandomUnitVector(inout uint state) {
 }
 
 vec2 RandomPointInCircle(inout uint state) {
-    float angle = RandomFloat(state) * C_TWOPI;
+    float angle = RandomFloat(state) * TWOPI;
     vec2 pointOnCircle = vec2(cos(angle), sin(angle));
     return pointOnCircle * sqrt(RandomFloat(state));
+}
+
+// sRGB
+vec3 LessThan(vec3 f, float value) {
+    return vec3((f.x < value) ? 1.0f : 0.0f,
+        (f.y < value) ? 1.0f : 0.0f,
+        (f.z < value) ? 1.0f : 0.0f);
+}
+
+vec3 LinearToSRGB(vec3 rgb) {
+    rgb = clamp(rgb, 0.0f, 1.0f);
+
+    return mix(
+        pow(rgb, vec3(1.0f / 2.4f)) * 1.055f - 0.055f,
+        rgb * 12.92f,
+        LessThan(rgb, 0.0031308f)
+    );
+}
+
+vec3 SRGBToLinear(vec3 rgb) {
+    rgb = clamp(rgb, 0.0f, 1.0f);
+
+    return mix(
+        pow(((rgb + 0.055f) / 1.055f), vec3(2.4f)),
+        rgb / 12.92f,
+        LessThan(rgb, 0.04045f)
+    );
 }
 
 // using Möller-Trumbore intersection algorithm
@@ -318,8 +337,7 @@ HitInfo CalculateRayCollision(Ray ray) {
                 HitInfo hit = RayTriangleIntersection(ray, t);
                 if (hit.didHit && hit.dst < closestHit.dst) {
                     closestHit = hit;
-                    closestHit.mat = mats[primitives[t_index].mat];
-                    // closestHit.mat = Material(vec3(0.0, 0.0, 0.0), 0.0, hsv2rgb(vec3(float(stack_ptr) / float(bvhNodeCount), 0.5, 0.5)), 0.0);
+                    closestHit.mat = mats[triangles_data[t_index].mat];
                 }
             }
         } else {
@@ -332,7 +350,7 @@ HitInfo CalculateRayCollision(Ray ray) {
     return closestHit;
 }
 
-vec3 DiffuseDirection(vec3 normal, inout uint rngState) {
+vec3 DiffuseDir(vec3 normal, inout uint rngState) {
     return normalize(normal + RandomUnitVector(rngState));
 }
 
@@ -343,27 +361,34 @@ vec3 ReflectDirection(vec3 dir, vec3 normal) {
 vec3 GetColorForRay(Ray ray, inout uint rngState) {
     vec3 c = vec3(1.0, 1.0, 1.0);
     vec3 incomingLight = vec3(0.0, 0.0, 0.0);
-    // return hitInfo.didHit ? hitInfo.mat.albedo : vec3(0.0, 0.0, 0.0);
 
-    for (int i = 0; i <= params.max_bounce_count; ++i) {
+    for (int i = 0; i < params.max_bounce_count; ++i) {
         HitInfo hitInfo = CalculateRayCollision(ray);
         if (hitInfo.didHit) {
-            // bounce
             ray.origin = hitInfo.hitPoint;
 
-            vec3 diffuseDir = DiffuseDirection(hitInfo.normal, rngState);
-            vec3 reflectDir = ReflectDirection(ray.dir, hitInfo.normal);
+            float specularChance = hitInfo.mat.metallic_factor * (1.0 - hitInfo.mat.roughness_factor);
 
-            ray.dir = mix(diffuseDir, reflectDir, hitInfo.mat.specularComponent);
+            if (RandomFloat(rngState) < specularChance) {
+                vec3 pureReflection = ReflectDirection(ray.dir, hitInfo.normal);
+
+                vec3 roughReflection = pureReflection + RandomUnitVector(rngState) * hitInfo.mat.roughness_factor;
+                ray.dir = normalize(roughReflection);
+
+                if (dot(ray.dir, hitInfo.normal) < 0.0) {
+                    ray.dir = DiffuseDir(hitInfo.normal, rngState);
+                }
+            } else {
+                ray.dir = DiffuseDir(hitInfo.normal, rngState);
+            }
             ray.inv_dir = 1.0 / ray.dir;
 
             // calculate the potential light that the object is emitting
-            vec3 emittedLight = hitInfo.mat.emissionColor * hitInfo.mat.emissionStrength;
+            vec3 emittedLight = hitInfo.mat.emissive_factor;
 
             incomingLight += emittedLight * c;
 
-            // tint the final color by hit point's material color
-            c *= hitInfo.mat.albedo;
+            c *= hitInfo.mat.base_color_factor.rgb;
         } else {
             // get color from environment
             incomingLight += params.env_color.rgb * c;
@@ -373,86 +398,70 @@ vec3 GetColorForRay(Ray ray, inout uint rngState) {
     return incomingLight;
 }
 
-// ACES tone mapping curve fit to go from HDR to LDR
-//https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/
-vec3 ACESFilm(vec3 x)
-{
-    float a = 2.51f;
-    float b = 0.03f;
-    float c = 2.43f;
-    float d = 0.59f;
-    float e = 0.14f;
-    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0f, 1.0f);
+struct CameraViewport {
+    vec3 right, up;
+    float halfWidth, halfHeight;
+};
+
+CameraViewport GetCameraViewport(Camera camera, float aspectRatio) {
+    CameraViewport cameraViewport;
+    cameraViewport.right = cross(camera.dir.xyz, camera.up.xyz);
+    cameraViewport.up = cross(cameraViewport.right, camera.dir.xyz);
+
+    cameraViewport.halfHeight = tan(camera.yfov / 2.0);
+    cameraViewport.halfWidth = cameraViewport.halfHeight * aspectRatio;
+
+    return cameraViewport;
 }
 
-// sRGB
-vec3 LessThan(vec3 f, float value) {
-    return vec3((f.x < value) ? 1.0f : 0.0f,
-        (f.y < value) ? 1.0f : 0.0f,
-        (f.z < value) ? 1.0f : 0.0f);
+// uv must be in range [-1,1]
+Ray RayGenPerspectiveCamera(Camera camera, CameraViewport viewport, vec2 uv) {
+    Ray ray;
+    ray.origin = camera.pos.xyz;
+    ray.dir = camera.dir.xyz +
+            viewport.halfWidth * viewport.right * uv.x +
+            viewport.halfHeight * viewport.up * uv.y;
+    ray.inv_dir = 1.0 / ray.dir;
+    return ray;
 }
 
-vec3 LinearToSRGB(vec3 rgb) {
-    rgb = clamp(rgb, 0.0f, 1.0f);
-
-    return mix(
-        pow(rgb, vec3(1.0f / 2.4f)) * 1.055f - 0.055f,
-        rgb * 12.92f,
-        LessThan(rgb, 0.0031308f)
-    );
-}
-
-vec3 SRGBToLinear(vec3 rgb) {
-    rgb = clamp(rgb, 0.0f, 1.0f);
-
-    return mix(
-        pow(((rgb + 0.055f) / 1.055f), vec3(2.4f)),
-        rgb / 12.92f,
-        LessThan(rgb, 0.04045f)
-    );
+Ray JitterRay(Ray ray, CameraViewport viewport, inout uint rngState) {
+    Ray jittered;
+    jittered.origin = ray.origin;
+    vec2 jitter = RandomPointInCircle(rngState) * params.diverge_strength;
+    jittered.dir = ray.dir + viewport.right * jitter.x + viewport.up * jitter.y;
+    jittered.inv_dir = 1.0 / jittered.dir;
+    return jittered;
 }
 
 void main() {
     vec2 resolution = vec2(params.width, params.height);
+
     uint pixelIndex = uint(gl_FragCoord.x) + uint(gl_FragCoord.y) * uint(params.width);
-    uint rngState = uint(pixelIndex + uint(frame_number * 719393));
+    uint rngState = pixelIndex;
+    rngState = pcg32_hash(rngState) ^ uint(frame_number);
 
     // gl_FragCoord stores the pixel coordinates [0.5, resolution-0.5]
     vec2 uv = gl_FragCoord.xy / resolution.xy; // normalized coordinates [0, 1]
     uv = 2.0 * uv - 1.0; // normalized coordinates [-1, 1]
-    float aspectRatio = float(params.width) / float(params.height);
 
-    vec3 viewportRight = cross(camera.dir.xyz, camera.up.xyz);
-    vec3 viewportUp = cross(viewportRight, camera.dir.xyz);
-    float cameraDistanceFromViewport = camera.focal_length;
+    float aspectRatio = resolution.x / resolution.y;
+    CameraViewport viewport = GetCameraViewport(camera, aspectRatio);
 
-    float viewportWidth = 2.0 * cameraDistanceFromViewport * tan(camera.fov / 2.0);
-    float viewportHeight = viewportWidth / aspectRatio;
-
-    vec3 rayTarget = camera.dir.xyz * cameraDistanceFromViewport +
-            viewportWidth * viewportRight * uv.x +
-            viewportHeight * viewportUp * uv.y;
+    Ray ray = RayGenPerspectiveCamera(camera, viewport, uv);
 
     vec3 totalIncomingLight = vec3(0.0, 0.0, 0.0);
     for (int i = 0; i < params.samples_per_pixel; ++i) {
-        Ray ray;
-        ray.origin = camera.pos.xyz;
-        vec2 jitter = RandomPointInCircle(rngState) * params.diverge_strength;
-        vec3 jitteredRayTarget = rayTarget + viewportRight * jitter.x + viewportUp * jitter.y;
-
-        ray.dir = normalize(jitteredRayTarget - ray.origin);
-        ray.inv_dir = 1.0 / ray.dir;
-        totalIncomingLight += GetColorForRay(ray, rngState);
+        totalIncomingLight += GetColorForRay(JitterRay(ray, viewport, rngState), rngState);
     }
     totalIncomingLight /= float(params.samples_per_pixel);
-    totalIncomingLight = ACESFilm(totalIncomingLight);
-    totalIncomingLight = LinearToSRGB(totalIncomingLight);
 
     if (frame_number > 0) {
         vec3 lastFrameColor = texture(backBufferTexture, gl_FragCoord.xy / resolution.xy).rgb;
-        float weight = 1.0 / float(frame_number);
-        totalIncomingLight = lastFrameColor * (1.0 - weight) + totalIncomingLight * weight;
+        float weight = 1.0 / float(frame_number + 1);
+        totalIncomingLight = SRGBToLinear(lastFrameColor) * (1.0 - weight) + totalIncomingLight * weight;
     }
+    totalIncomingLight = LinearToSRGB(totalIncomingLight);
 
     FragColor = vec4(totalIncomingLight, 1.0);
 }

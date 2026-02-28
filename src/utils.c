@@ -1,4 +1,6 @@
 #include "utils.h"
+#include "arena.h"
+#include "asserts.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,33 +11,20 @@
 #define stat _stat
 #endif
 
-#if defined(__linux__)
-#define PATH_SEPARATOR '/'
-#elif defined(_WIN32)
-#define PATH_SEPARATOR '\\'
-#endif
-
-char *File_read(const char *filename) {
+char *File_read(const char *filename, Arena *arena) {
   FILE *file = fopen(filename, "r");
-  if (!file) {
-    fprintf(stderr, "Error: Could not open file %s\n", filename);
-    exit(EXIT_FAILURE);
-  }
+  if (!file)
+    ERROR_FMT("Could not open file %s", filename);
 
   fseek(file, 0, SEEK_END);
   long length = ftell(file);
   fseek(file, 0, SEEK_SET);
 
-  char *buffer = (char *)malloc(length + 1);
-  if (!buffer) {
-    fprintf(stderr, "Error: Could not allocate memory for file %s\n", filename);
-    exit(EXIT_FAILURE);
-  }
-
+  char *buffer = Arena_alloc(arena, length + 1);
   fread(buffer, 1, length, file);
   buffer[length] = '\0';
-
   fclose(file);
+
   return buffer;
 }
 
@@ -45,7 +34,7 @@ bool FilePath_exists(const char *path) {
 }
 
 const char *FilePath_get_file_name(const char *path) {
-  const char *last_path_sep = strrchr(path, PATH_SEPARATOR);
+  const char *last_path_sep = strrchr(path, '/');
   return last_path_sep ? last_path_sep + 1 : path;
 }
 
@@ -72,4 +61,37 @@ bool StringArray_join(char *out_str, size_t out_str_capacity, const char *arr[],
 
   strncat(out_str, arr[arr_len - 1], len);
   return true;
+}
+
+// NOTE: works only if exiftool is in PATH
+void Image_add_metadata(const char *image_path, const char *description) {
+  bool exiftool_available = false;
+#ifdef __linux__
+  exiftool_available = (system("exiftool -ver > /dev/null") == 0);
+#elif defined(_WIN32)
+  exiftool_available = (system("exiftool -ver >nul") == 0);
+#endif
+  if (exiftool_available) {
+    char cmd[2048];
+
+    int to_write = snprintf(
+        cmd, sizeof(cmd), "exiftool -overwrite_original -Description='%s' '%s'",
+        description, image_path);
+    ASSERTQ_CUSTOM(to_write < (int)sizeof(cmd), "Buffer 'cmd' too small!");
+    int cmd_result = system(cmd);
+    ASSERTQ_EQ(cmd_result, 0);
+  }
+}
+
+// https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+// HACK: returns 0 when x is 0
+uint32_t next_power_of_2(uint32_t x) {
+  --x;
+  x |= x >> 1;
+  x |= x >> 2;
+  x |= x >> 4;
+  x |= x >> 8;
+  x |= x >> 16;
+  ++x;
+  return x;
 }

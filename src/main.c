@@ -1,102 +1,120 @@
+#include "renderer.h"
+
+#include "action.h"
+#include "app_state.h"
+#include "app_state_display.h"
 #include "cli.h"
-#include "renderer/parameters.h"
+#include "input_handler.h"
 #include "stats.h"
+#include <stdint.h>
+
 #ifdef __linux__
 #include <gtk/gtk.h>
 #endif
-
-#include "app_state.h"
-#include "app_state/app_state_save_image.h"
-#include "app_state_display.h"
 
 #define DESIRED_WIDTH 1280
 #define DESIRED_HEIGHT 720
 #define WINDOW_TITLE "Path Tracing Renderer"
 
 int main(int argc, char *argv[]) {
+  // pre-allocate 16MB of memory for any operations that may need it
+  Arena tmp_arena = Arena_new(16 * 1024 * 1024);
   AppState app_state = AppState_default();
   handle_args(argc, argv, &app_state);
 
 #ifdef __linux__
-  // Connects to X11 or Wayland, necessary for native file dialog creation.
+  // NOTE: Connects to X11 or Wayland. Necessary for native file dialog
+  // creation.
   gtk_init(&argc, &argv);
 #endif
 
-  OpenGLContext ctx =
-      OpenGLContext_new(WINDOW_TITLE, DESIRED_WIDTH, DESIRED_HEIGHT);
-  app_state.viewport_size = OpenGLContext_get_framebuffer_size(&ctx);
+  Window window = Window_new(WINDOW_TITLE, DESIRED_WIDTH, DESIRED_HEIGHT);
+  GUIOverlay gui = GUIOverlay_new(&window);
+  Renderer renderer = Renderer_new(&tmp_arena);
+  InputHandler input_handler = InputHandler_new(&window);
 
-  GUIOverlay gui = GUIOverlay_new(&ctx);
+  Renderer_set_params(&renderer, app_state.settings.rendering_params);
 
-  Renderer renderer = Renderer_new();
+  while (!glfwWindowShouldClose(window.glfw_window)) {
+    // NOTE: must poll every frame for the OS to know that this application is
+    // working
+    WindowEventsData events = Window_poll_events(&window);
 
-  while (!glfwWindowShouldClose(ctx.window)) {
-    if (app_state.hot_reload_enabled)
-      AppState_hot_reload_shaders(&app_state, &renderer);
+    // === Settings ===
+    if (app_state.settings.hot_reload_enabled) {
+      if (RendererShaders_update(&renderer._shaders, &tmp_arena))
+        app_state.pending_actions |= Action_restart_rendering;
+    }
 
-    WindowEventsData events = OpenGLContext_poll_events(&ctx);
-    app_state.viewport_size = OpenGLContext_get_framebuffer_size(&ctx);
-    Renderer_update_focus(&renderer, &events, &ctx, !GUIOverlay_is_focused());
+    if (app_state.settings.movement_enabled)
+      AppState_handle_inputs(&app_state, &input_handler, &events);
 
-    if (app_state.gui_enabled)
+    if (app_state.settings.gui_enabled)
       GUIOverlay_update_state(&gui, &app_state);
 
-    // NOTE: loads a new scene if necessary
-    AppState_update_scene(&app_state, &renderer);
+    // === pre-render Actions ===
+    if (Action_load_scene & app_state.pending_actions)
+      AppState_load_scene(&app_state);
 
-    // NOTE: should be done after scene updating, so that camera isn't somehow
-    // maintained from previous scene
-    if (app_state.movement_enabled)
-      AppState_update_camera(&app_state, &renderer, &events);
+    if (Action_build_bvh & app_state.pending_actions)
+      AppState_build_bvh(&app_state, &tmp_arena);
 
-    // NOTE: this includes the renderer resolution
-    AppState_update_renderer_parameters(&app_state, &renderer);
+    if (Action_update_ssbo_scene & app_state.pending_actions) {
+      Renderer_load_scene(&renderer, &app_state.scene);
+      app_state.pending_actions |= Action_restart_rendering;
+    }
 
-    AppState_display(&app_state, &renderer, &gui, &ctx);
+    if (Action_update_ssbo_camera & app_state.pending_actions) {
+      Renderer_set_camera(&renderer, app_state.settings.cam);
+      app_state.pending_actions |= Action_restart_rendering;
+    }
 
-    bool rendering_finished = (int)app_state.stats.frame_number ==
-                              app_state.rendering_params.frames_to_render;
+    if (Action_update_ssbo_renderer_parameters & app_state.pending_actions) {
+      Renderer_set_params(&renderer, app_state.settings.rendering_params);
+      app_state.pending_actions |= Action_restart_rendering;
+    }
 
-    if (app_state.save_after_rendering && rendering_finished)
-      app_state.save_image_info.to_save = true;
+    if (Action_restart_rendering & app_state.pending_actions) {
+      Renderer_clear_backbuffer(&renderer);
+      Stats_reset_rendering(&app_state.stats);
+    }
 
-    bool display_rendering_time = false;
-    if (app_state.save_image_info.to_save) {
-      // NOTE: this will also stop the rendering timer as requesting pixels
-      // from the GPU forces synchronization, which allows for _accurate_
-      // reading of rendering time (albeit with the additional time of
-      // transferring pixels included). According to the OpenGL documentation
-      // (https://wikis.khronos.org/opengl/Synchronization#Implicit_synchronization):
-      // "attempt to read from a framebuffer to CPU memory (not to a buffer
-      // object) will halt until all rendering commands affecting that
-      // framebuffer have completed."
-      AppState_save_image(&app_state, Renderer_get_fbo(&renderer),
-                          app_state.rendering_params.rendering_resolution);
-      display_rendering_time = true;
-    } else if (rendering_finished &&
-               app_state.stats.rendering.total_time == 0) {
-      // NOTE: this reading will be slightly inaccurate as it's stopped right
-      // after *queueing* all operations to the GPU and there is no guarantee
-      // whatsoever whether all the frames have been rendered.
+    // === Rendering ===
+    AppState_render_and_display_frame(&app_state, &renderer, &gui, &window);
+
+    // === post-render Actions ===
+    // if just finished rendering
+    if (AppState_get_rendering_state(&app_state) == RenderingState_FINISHED &&
+        app_state.stats.rendering.total_time == 0) {
       StatsTimer_stop(&app_state.stats.rendering);
-      display_rendering_time = true;
-    }
-
-    if (display_rendering_time) {
-      char rendering_time_str[16];
-      Stats_string_time(app_state.stats.rendering.total_time,
-                        rendering_time_str, sizeof(rendering_time_str));
       printf("Rendered %d frames in %s.\n",
-             app_state.rendering_params.frames_to_render, rendering_time_str);
+             app_state.settings.rendering_params.frames_to_render,
+             Stats_display(app_state.stats.rendering.total_time).str);
+
+      if (app_state.settings.save_after_rendering)
+        app_state.pending_actions |= Action_save_image;
+
+      if (app_state.settings.exit_after_rendering)
+        app_state.pending_actions |= Action_exit;
     }
 
-    if (rendering_finished && app_state.exit_after_rendering)
+    if (Action_save_image & app_state.pending_actions) {
+      AppState_save_image(
+          &app_state, Renderer_get_fbo(&renderer),
+          app_state.settings.rendering_params.rendering_resolution, &tmp_arena);
+    }
+
+    if (Action_exit & app_state.pending_actions) {
       break;
+    }
+
+    // reset pending_actions for the next frame
+    app_state.pending_actions = 0;
   }
 
   Renderer_delete(&renderer);
   GUIOverlay_delete(&gui);
-  OpenGLContext_delete(&ctx);
+  Window_delete(&window);
 
   return 0;
 }

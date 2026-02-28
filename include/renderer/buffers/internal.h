@@ -1,7 +1,7 @@
 #ifndef RENDERER_BUFFERS_INTERNAL_H_
 #define RENDERER_BUFFERS_INTERNAL_H_
 
-#include <glad/gl.h> // GLuint
+#include "glad/gl.h" // GLuint
 
 typedef struct {
   GLuint vao;

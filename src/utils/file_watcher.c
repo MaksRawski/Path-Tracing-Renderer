@@ -1,8 +1,7 @@
 #include "utils/file_watcher.h"
+#include "asserts.h"
 
 #include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #if _POSIX_C_SOURCE >= 200809L
@@ -18,10 +17,7 @@
 // TODO: instead use OS specific APIs that offer more reliable mechanisms for
 // this; inotify on Linux and ReadDirectoryChangesW on Windows
 
-void set_stats(FileWatcher *self, struct stat stats);
-bool stats_changed(FileWatcher *self, struct stat stats);
-
-void set_stats(FileWatcher *self, struct stat stats) {
+static void set_stats(FileWatcher *self, struct stat stats) {
 #ifdef __linux__
   self->_mtimensec = stats.st_mtimensec;
 #else
@@ -29,7 +25,7 @@ void set_stats(FileWatcher *self, struct stat stats) {
 #endif
 }
 
-bool stats_changed(FileWatcher *self, struct stat stats) {
+static bool stats_changed(FileWatcher *self, struct stat stats) {
 #ifdef __linux__
   return self->_mtimensec != stats.st_mtimensec;
 #else
@@ -42,12 +38,13 @@ FileWatcher FileWatcher_new(const char *path) {
   FileWatcher self = {0};
 
   struct stat stats;
-  if (stat(path, &stats) == -1) {
-    perror("stat");
-  };
-  set_stats(&self, stats);
-
   strcpy(self.path, path);
+
+  if (stat(self.path, &stats) == -1) {
+    ERROR_FMT("Failed to stat %s: %s\n", self.path, strerror(errno));
+  }
+
+  set_stats(&self, stats);
 
   return self;
 }
@@ -55,10 +52,8 @@ FileWatcher FileWatcher_new(const char *path) {
 // NOTE: exits if the file becomes unreadable
 bool FileWatcher_did_change(FileWatcher *self) {
   struct stat stats;
-  if (stat(self->path, &stats) == -1) {
-    fprintf(stderr, "Failed to stat %s: %s\n", self->path, strerror(errno));
-    exit(EXIT_FAILURE);
-  }
+  if (stat(self->path, &stats) == -1)
+    ERROR_FMT("Failed to stat %s: %s\n", self->path, strerror(errno));
 
   if (stats_changed(self, stats)) {
     set_stats(self, stats);

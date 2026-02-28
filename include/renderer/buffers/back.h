@@ -1,8 +1,8 @@
 #ifndef RENDERER_BUFFERS_BACK_H_
 #define RENDERER_BUFFERS_BACK_H_
 
-#include "opengl/resolution.h"
-#include <glad/gl.h> // GLuint
+#include "glad/gl.h" // GLuint
+#include "window/resolution.h"
 
 typedef struct {
   GLuint fbo, fboTex;
@@ -10,7 +10,7 @@ typedef struct {
 
 RendererBuffersBack RendererBuffersBack_new(void);
 void RendererBuffersBack_resize(RendererBuffersBack *self,
-                                OpenGLResolution res);
+                                WindowResolution res);
 
 void RendererBuffersBack_delete(RendererBuffersBack *self);
 

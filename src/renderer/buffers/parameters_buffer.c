@@ -21,6 +21,4 @@ void RendererParametersBuffer_set(RendererParametersBuffer *self,
 
 void RendererParametersBuffer_delete(RendererParametersBuffer *self) {
   GL_CALL(glDeleteBuffers(1, &self->params_ssbo));
-
-  self = NULL;
 }
