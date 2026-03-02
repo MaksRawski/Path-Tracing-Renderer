@@ -1,5 +1,7 @@
 #include "app_state_display.h"
 #include "opengl/gl_call.h"
+#include "stats.h"
+#include "utils/progressbar.h"
 #include "window.h"
 
 // NOTE: renders everything that has to be rendered to the screen
@@ -13,6 +15,9 @@ void AppState_render_and_display_frame(AppState *app_state, Renderer *renderer,
       StatsTimer_start(&app_state->stats.rendering);
     }
     StatsTimer_start(&app_state->stats.last_frame_rendering);
+    ProgressBar_print((float)app_state->stats.frame_number /
+                          app_state->settings.rendering_params.frames_to_render,
+                      StatsTimer_elapsed(&app_state->stats.rendering));
     Renderer_render_frame(renderer, app_state->stats.frame_number++);
   }
   if (render_state == RenderingState_RENDERING ||

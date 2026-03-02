@@ -6,6 +6,7 @@
 #include "cli.h"
 #include "input_handler.h"
 #include "stats.h"
+#include "utils.h"
 #include <stdint.h>
 
 #ifdef __linux__
@@ -89,7 +90,7 @@ int main(int argc, char *argv[]) {
       StatsTimer_stop(&app_state.stats.rendering);
       printf("Rendered %d frames in %s.\n",
              app_state.settings.rendering_params.frames_to_render,
-             Stats_display(app_state.stats.rendering.total_time).str);
+             Time_format(app_state.stats.rendering.total_time).str);
 
       if (app_state.settings.save_after_rendering)
         app_state.pending_actions |= Action_save_image;

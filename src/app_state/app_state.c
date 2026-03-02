@@ -34,7 +34,7 @@ void AppState_build_bvh(AppState *app_state, Arena *tmp_arena) {
 
   printf("Building BVH using the strategy '%s' took: %s\n",
          BVHStrategy_str[app_state->settings.BVH_build_strat],
-         Stats_display(app_state->stats.bvh_build.total_time).str);
+         Time_format(app_state->stats.bvh_build.total_time).str);
   app_state->pending_actions |= Action_update_ssbo_scene;
 }
 

@@ -95,3 +95,29 @@ uint32_t next_power_of_2(uint32_t x) {
   ++x;
   return x;
 }
+
+TinyString Time_format(double time_in_s) {
+  TinyString out;
+  double time_in_ms = time_in_s * 1000.0;
+  double time_in_us = time_in_ms * 1000.0;
+  int wanted_to_write;
+  if (time_in_ms < 1.0) {
+    wanted_to_write = snprintf(out.str, sizeof(out), "%.3f us", time_in_us);
+  } else if (time_in_s < 1.0) {
+    wanted_to_write = snprintf(out.str, sizeof(out), "%.3f ms", time_in_ms);
+  } else {
+    double time_in_min = time_in_s / 60;
+    if (time_in_min > 1) {
+      double time_in_h = time_in_min / 60;
+      if (time_in_h > 1)
+        wanted_to_write = snprintf(out.str, sizeof(out), "%.3f h", time_in_h);
+      else
+        wanted_to_write =
+            snprintf(out.str, sizeof(out), "%.3f min", time_in_min);
+    } else
+      wanted_to_write = snprintf(out.str, sizeof(out), "%.3f s", time_in_s);
+  }
+  ASSERTQ_CUSTOM(wanted_to_write < (int)sizeof(out),
+                 "TinyString turned out to be too small for Time_format!");
+  return out;
+}

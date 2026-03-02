@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "arena.h"
+#include "tiny_string.h"
 
 // FILES
 char *File_read(const char *filename, Arena *arena);
@@ -19,5 +20,8 @@ bool StringArray_join(char *out_str, size_t out_str_capacity, const char *arr[],
 
 // NUMERIC
 uint32_t next_power_of_2(uint32_t x);
+
+// TIME
+TinyString Time_format(double seconds);
 
 #endif // UTILS_H_

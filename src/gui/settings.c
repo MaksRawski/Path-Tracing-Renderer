@@ -47,9 +47,9 @@ static void GuiSettings_Scene(AppState *state) {
     igText("Created BVH nodes: %d", state->scene.bvh_nodes_count);
 
     igText("Loading scene time: %s",
-           Stats_display(state->stats.scene_load.total_time).str);
+           Time_format(state->stats.scene_load.total_time).str);
     igText("BVH build time: %s",
-           Stats_display(state->stats.bvh_build.total_time).str);
+           Time_format(state->stats.bvh_build.total_time).str);
   }
 }
 
@@ -147,7 +147,7 @@ static void GuiSettings_Rendering(AppState *state) {
   state->settings.rendering_params.rendering_resolution.height = res[1];
 
   igText("Rendering last frame took: %s",
-         Stats_display(state->stats.last_frame_rendering.total_time).str);
+         Time_format(state->stats.last_frame_rendering.total_time).str);
 
   RenderingState render_state = AppState_get_rendering_state(state);
   switch (render_state) {
@@ -155,11 +155,11 @@ static void GuiSettings_Rendering(AppState *state) {
     break;
   case RenderingState_RENDERING:
     igText("Elapsed rendering time: %s",
-           Stats_display(StatsTimer_elapsed(&state->stats.rendering)).str);
+           Time_format(StatsTimer_elapsed(&state->stats.rendering)).str);
     break;
   case RenderingState_FINISHED:
     igText("Total rendering time: %s",
-           Stats_display(state->stats.rendering.total_time).str);
+           Time_format(state->stats.rendering.total_time).str);
     break;
   }
   igText("Rendered frames: %d", state->stats.frame_number);

@@ -1,6 +1,7 @@
 #include "stats.h"
 #include "GLFW/glfw3.h"
 #include "asserts.h"
+#include "utils.h"
 #include <stdio.h>
 
 StatsTimer StatsTimer_new(void) { return (StatsTimer){0}; }
@@ -51,23 +52,14 @@ bool Stats_string_time(double time_in_s, char *buffer, size_t buf_size) {
   return true;
 }
 
-TinyString Stats_display(double time_in_s) {
-  TinyString out = {0};
-  bool fit_in_buffer = Stats_string_time(time_in_s, out.str, sizeof(out));
-  ASSERTQ_CUSTOM(fit_in_buffer,
-                 "TinyString turned out to be too tiny for `Stats_string_time` "
-                 "formatting!");
-  return out;
-}
-
 SmallString Stats_str(const Stats *self) {
   SmallString out = {0};
   int written =
       snprintf(out.str, sizeof(out.str),
                "scene load time: %s\nbvh build time: %s\nrendering time: %s\n",
-               Stats_display(self->scene_load.total_time).str,
-               Stats_display(self->bvh_build.total_time).str,
-               Stats_display(self->rendering.total_time).str);
+               Time_format(self->scene_load.total_time).str,
+               Time_format(self->bvh_build.total_time).str,
+               Time_format(self->rendering.total_time).str);
   ASSERTQ_CUSTOM(written < (int)sizeof(out.str),
                  "SmallString turned out to be too small for Stats");
 
