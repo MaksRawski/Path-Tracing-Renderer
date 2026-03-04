@@ -97,16 +97,18 @@ struct HitInfo {
 };
 
 // RNG
-//
-uint pcg32_hash(inout uint seed) {
-    seed = seed * 747796405u + 2891336453u;
-    uint result = ((seed >> ((seed >> 28u) + 4u)) ^ seed) * 277803737u;
-    result = (result >> 22) ^ result;
-    return result;
+// https://github.com/imneme/pcg-c/blob/83252d9c23df9c82ecb42210afed61a7b42402d7/include/pcg_variants.h#L504
+// https://github.com/imneme/pcg-c/blob/83252d9c23df9c82ecb42210afed61a7b42402d7/include/pcg_variants.h#L182
+uint pcg32_step(inout uint state) {
+	uint old_state = state;
+    state = state * 747796405u + 2891336453u;
+    uint word = ((old_state >> ((old_state >> 28u) + 4u)) ^ old_state) * 277803737u;
+    return (word >> 22) ^ word;
 }
 
+// https://www.pcg-random.org/using-pcg-c-basic.html#generating-doubles
 float RandomFloat(inout uint state) {
-    return float(pcg32_hash(state)) / 4294967296.0;
+	return ldexp(pcg32_step(state), -32);
 }
 
 vec3 RandomUnitVector(inout uint state) {
@@ -439,7 +441,8 @@ void main() {
 
     uint pixelIndex = uint(gl_FragCoord.x) + uint(gl_FragCoord.y) * uint(params.width);
     uint rngState = pixelIndex;
-    rngState = pcg32_hash(rngState) ^ uint(frame_number);
+    rngState = pcg32_step(rngState) ^ uint(frame_number);
+    rngState = pcg32_step(rngState);
 
     // gl_FragCoord stores the pixel coordinates [0.5, resolution-0.5]
     vec2 uv = gl_FragCoord.xy / resolution.xy; // normalized coordinates [0, 1]
