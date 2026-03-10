@@ -71,7 +71,7 @@ void AppState_save_image(AppState *app_state, GLuint fbo,
   GL_CALL(glReadBuffer(GL_COLOR_ATTACHMENT0));
   GL_CALL(glPixelStorei(GL_PACK_ALIGNMENT, 1));
 
-  ArenaSnapshot as = Arena_snapshot(tmp_arena);
+  ArenaMark am = Arena_mark(tmp_arena);
   void *pixels = Arena_alloc(tmp_arena, resolution.width * resolution.height *
                                             BYTES_PER_PIXEL);
 
@@ -89,7 +89,7 @@ void AppState_save_image(AppState *app_state, GLuint fbo,
 
   Image_add_metadata(app_state->settings.saved_image_path.str,
                      AppState_str(app_state).str);
-  Arena_rewind(as);
+  Arena_rewind(am);
 }
 
 RenderingState AppState_get_rendering_state(const AppState *app_state) {

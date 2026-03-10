@@ -14,14 +14,14 @@ typedef struct Arena_s {
 typedef struct {
   Arena *arena;
   size_t offset;
-} ArenaSnapshot;
+} ArenaMark;
 
 Arena Arena_new(size_t capacity);
 
 void *Arena_alloc(Arena *arena, size_t size);
 
-ArenaSnapshot Arena_snapshot(Arena *arena);
-void Arena_rewind(ArenaSnapshot snapshot);
+ArenaMark Arena_mark(Arena *arena);
+void Arena_rewind(ArenaMark arena_mark);
 
 void Arena_delete(Arena *arena);
 

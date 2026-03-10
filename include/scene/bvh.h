@@ -47,7 +47,7 @@ void BVH_build(BVHnode *nodes, BVHNodeCount *nodes_offset,
 
 #define BVH_apply_swaps_lut(_lut, _objects, _object_type, _count, _arena)      \
   do {                                                                         \
-    ArenaSnapshot _object_type##_as = Arena_snapshot(_arena);                  \
+    ArenaMark _object_type##_am = Arena_mark(_arena);                          \
     _object_type *_object_type##_copy =                                        \
         Arena_alloc(_arena, _count * sizeof(_object_type));                    \
     for (unsigned long _i = 0; _i < _count; ++_i)                              \
@@ -56,7 +56,7 @@ void BVH_build(BVHnode *nodes, BVHNodeCount *nodes_offset,
       unsigned long swap_idx = _lut[_i];                                       \
       _objects[_i] = _object_type##_copy[swap_idx];                            \
     }                                                                          \
-    Arena_rewind(_object_type##_as);                                           \
+    Arena_rewind(_object_type##_am);                                           \
   } while (0);
 
 #endif // BVH_H_

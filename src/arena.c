@@ -41,19 +41,16 @@ void *Arena_alloc(Arena *arena, size_t size) {
   return ptr;
 }
 
-// snapshotting and rewinding inspired by:
-// https://github.com/tsoding/arena/blob/ab625dd3ac0df8c6d82cbbcd1d8fb976ecb8b9c8/arena.h#L390
-
-ArenaSnapshot Arena_snapshot(Arena *arena) {
+ArenaMark Arena_mark(Arena *arena) {
   if (Arena_is_full(arena))
-    return Arena_snapshot(arena->next_arena);
+    return Arena_mark(arena->next_arena);
   else
-    return (ArenaSnapshot){.arena = arena, .offset = arena->offset};
+    return (ArenaMark){.arena = arena, .offset = arena->offset};
 }
 
-void Arena_rewind(ArenaSnapshot snapshot) {
-  snapshot.arena->offset = snapshot.offset;
-  for (Arena *a = snapshot.arena->next_arena; a != NULL; a = a->next_arena)
+void Arena_rewind(ArenaMark arena_mark) {
+  arena_mark.arena->offset = arena_mark.offset;
+  for (Arena *a = arena_mark.arena->next_arena; a != NULL; a = a->next_arena)
     a->offset = 0;
 }
 

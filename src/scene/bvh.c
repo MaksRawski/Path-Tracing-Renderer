@@ -25,7 +25,7 @@ void BVH_build(BVHnode *nodes, BVHNodeCount *nodes_offset,
   for (BVHTriCount i = 0; i < t_count; ++i)
     swaps_lut[i] = tri_offset + i;
 
-  ArenaSnapshot as = Arena_snapshot(arena);
+  ArenaMark am = Arena_mark(arena);
   vec3 *centroids = Arena_alloc(arena, t_count * sizeof(vec3));
   calculate_centroids(triangles + tri_offset, t_count, centroids);
 
@@ -35,7 +35,7 @@ void BVH_build(BVHnode *nodes, BVHNodeCount *nodes_offset,
             find_best_split_fn);
   ++(*nodes_offset);
 
-  Arena_rewind(as);
+  Arena_rewind(am);
 }
 
 // recursively subdivide a node until there are 2 primitives left

@@ -10,7 +10,7 @@
 void Scene_build_bvh(Scene *scene, BVHStrategy find_best_split_fn_strat,
                      Arena *tmp_arena) {
 
-  ArenaSnapshot as = Arena_snapshot(tmp_arena);
+  ArenaMark am = Arena_mark(tmp_arena);
   BVHSwapsLUTElement *swaps_lut = Arena_alloc(
       tmp_arena, scene->triangles_count * sizeof(BVHSwapsLUTElement));
 
@@ -21,7 +21,7 @@ void Scene_build_bvh(Scene *scene, BVHStrategy find_best_split_fn_strat,
 
   BVH_apply_swaps_lut(swaps_lut, scene->triangles_data, TriangleEx,
                       scene->triangles_count, tmp_arena);
-  Arena_rewind(as);
+  Arena_rewind(am);
 }
 
 bool Scene_is_empty(const Scene *scene) { return scene->triangles_count == 0; }

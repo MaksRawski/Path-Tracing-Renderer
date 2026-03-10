@@ -117,13 +117,13 @@ create_shader_program_from_source(const char *vertex_shader_src,
 static GLuint create_shader_program(const char *vertex_shader_filename,
                                     const char *fragment_shader_filename,
                                     Arena *arena) {
-  ArenaSnapshot as = Arena_snapshot(arena);
+  ArenaMark am = Arena_mark(arena);
   char *vertex_shader_src = File_read(vertex_shader_filename, arena);
   char *fragment_shader_src = File_read(fragment_shader_filename, arena);
 
   GLuint shader_program =
       create_shader_program_from_source(vertex_shader_src, fragment_shader_src);
 
-  Arena_rewind(as);
+  Arena_rewind(am);
   return shader_program;
 }
