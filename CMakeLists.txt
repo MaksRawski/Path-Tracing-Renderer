@@ -6,16 +6,18 @@ project(PathTracingRenderer C CXX)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+
 # build dependencies
 add_subdirectory(lib)
 
 if(MSVC)
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS} /Zi /Od")
     set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} /O2 /DNDEBUG")
-elseif(UNIX)
+else()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wno-unused -pedantic-errors")
     set(CMAKE_C_FLAGS_DEBUG "-g")
-    set(CMAKE_C_FLAGS_RELEASE "-O2 -DNDEBUG")
+    set(CMAKE_C_FLAGS_RELEASE "-O2 -DNDEBUG -march=native")
 endif()
 
 file(GLOB_RECURSE PROJECT_SOURCES "src/*.c")
@@ -26,6 +28,7 @@ set(LIBRARIES glfw glad cgltf cimgui stb_image_write)
 if (UNIX)
     list(APPEND LIBRARIES gtk)
 endif()
+
 target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC ${LIBRARIES})
 
 install(TARGETS ${CMAKE_PROJECT_NAME} DESTINATION .)

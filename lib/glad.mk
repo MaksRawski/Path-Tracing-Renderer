@@ -1,6 +1,6 @@
 include vars.mk
 
-GLAD_CC = clang
+GLAD_CC = $(CC)
 GLAD_CFLAGS = -fPIC -Iglad/include
 
 $(GLAD_TARGET): glad/src/gl.c

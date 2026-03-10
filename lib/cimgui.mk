@@ -11,12 +11,13 @@ CIMGUI_SRC += cimgui/imgui/backends/imgui_impl_opengl3.cpp
 
 CIMGUI_OBJ = $(CIMGUI_SRC:%.cpp=$(LIB_BUILD_DIR)/%.o)
 
-CIMGUI_CXX = clang++
+CIMGUI_CXX = $(CXX)
 CIMGUI_CXXFLAGS = -O2 -fno-exceptions -fno-rtti
 CIMGUI_CXXFLAGS += -DIMGUI_IMPL_API="extern \"C\""
 CIMGUI_CXXFLAGS += -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS=1
 CIMGUI_CXXFLAGS += -Icimgui/imgui/
 CIMGUI_CXXFLAGS += -Wall
+CIMGUI_CXXFLAGS += CIMGUI_CXXFLAGS_CUSTOM
 
 ifeq ($(shell uname -s), Linux)
 	CIMGUI_CXXFLAGS += -fPIC

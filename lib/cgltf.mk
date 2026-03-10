@@ -1,6 +1,6 @@
 include vars.mk
 
-CGLTF_CC = clang
+CGLTF_CC = $(CC)
 CGLTF_CFLAGS = -fPIC
 
 $(CGLTF_TARGET): $(CGLTF_INCLUDE_DIR)/cgltf.c

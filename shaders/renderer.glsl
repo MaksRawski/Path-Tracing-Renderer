@@ -100,7 +100,7 @@ struct HitInfo {
 // https://github.com/imneme/pcg-c/blob/83252d9c23df9c82ecb42210afed61a7b42402d7/include/pcg_variants.h#L504
 // https://github.com/imneme/pcg-c/blob/83252d9c23df9c82ecb42210afed61a7b42402d7/include/pcg_variants.h#L182
 uint pcg32_step(inout uint state) {
-	uint old_state = state;
+    uint old_state = state;
     state = state * 747796405u + 2891336453u;
     uint word = ((old_state >> ((old_state >> 28u) + 4u)) ^ old_state) * 277803737u;
     return (word >> 22) ^ word;
@@ -108,7 +108,7 @@ uint pcg32_step(inout uint state) {
 
 // https://www.pcg-random.org/using-pcg-c-basic.html#generating-doubles
 float RandomFloat(inout uint state) {
-	return ldexp(pcg32_step(state), -32);
+    return ldexp(pcg32_step(state), -32);
 }
 
 vec3 RandomUnitVector(inout uint state) {
@@ -308,14 +308,7 @@ bool RayBVHnodeIntersection(Ray ray, BVHnode bb) {
     return tmax >= tmin && tmax > 0;
 }
 
-vec3 hsv2rgb(vec3 c) {
-    vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
-    return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
-}
-
-// returns info about the nearest point which the ray hits
-HitInfo CalculateRayCollision(Ray ray) {
+HitInfo FindRayCollision(Ray ray) {
     HitInfo closestHit;
     closestHit.didHit = false;
     closestHit.dst = INFINITY;
@@ -352,52 +345,99 @@ HitInfo CalculateRayCollision(Ray ray) {
     return closestHit;
 }
 
-vec3 DiffuseDir(vec3 normal, inout uint rngState) {
+vec3 SampleCosineWeighedHeimsphere(vec3 normal, inout uint rngState) {
     return normalize(normal + RandomUnitVector(rngState));
 }
 
-vec3 ReflectDirection(vec3 dir, vec3 normal) {
+vec3 ReflectDir(vec3 dir, vec3 normal) {
     return dir - 2 * dot(dir, normal) * normal;
 }
 
-vec3 GetColorForRay(Ray ray, inout uint rngState) {
-    vec3 c = vec3(1.0, 1.0, 1.0);
-    vec3 incomingLight = vec3(0.0, 0.0, 0.0);
+// L_o(x, \omega_o) &= L_e(x, \omega_o) + L_r(x, \omega_o)
+// L_r(x, \omega_o) &= \int_{\Omega} f(x, \omega_i, \omega_o) L_i(x, \omega_i)\cos{\theta_i} d\omega_i
+
+// Uniform Lambertian reflection sampling
+// vec3 EvalLambertian(vec3 normal, vec3 outDir, Material mat) {
+//     return mat.base_color_factor.rgb * dot(normal, outDir) / PI;
+// }
+// vec3 SampleUniformHiemsphere(vec3 normal, inout uint rngState) {
+//     vec3 r = RandomUnitVector(rngState);
+//     return dot(normal, r) > 0.0 ? r : -r;
+// }
+// float PdfUniformHemisphere(vec3 inDir, vec3 normal, vec3 outDir) {
+//     return 1.0 / (2.0 * PI);
+// }
+// vec3 UniformSampleLambertian(Ray ray, HitInfo hitInfo, out vec3 dir, inout uint rngState) {
+//     dir = SampleUniformHiemsphere(hitInfo.normal, rngState);
+//     // (albedo * cos phi / pi) / (1.0 / (2.0 * pi)) = 2.0 * albedo * cos phi
+//     // return EvalLambertian(hitInfo.normal, dir, hitInfo.mat) / PdfUniformHemisphere(ray.dir, hitInfo.normal, dir);
+//     return 2.0 * hitInfo.mat.base_color_factor.rgb * dot(hitInfo.normal, dir);
+// }
+
+// AKA diffuse_brdf
+vec3 ImportanceSampleLambertian(vec3 omega_i, HitInfo hitInfo, out vec3 omega_o, inout uint rngState) {
+    omega_o = SampleCosineWeighedHeimsphere(hitInfo.normal, rngState);
+    return hitInfo.mat.base_color_factor.rgb;
+}
+
+// AKA specular_brdf
+vec3 SpecularReflection(vec3 omega_i, HitInfo hitInfo, out vec3 omega_o, inout uint rngState) {
+    omega_o = ReflectDir(omega_i, hitInfo.normal);
+    return hitInfo.mat.base_color_factor.rgb;
+}
+
+vec3 SampleMetalicBRDF(vec3 omega_i, HitInfo hitInfo, out vec3 omega_o, inout uint rngState) {
+    return SpecularReflection(omega_i, hitInfo, omega_o, rngState);
+}
+
+vec3 SampleDielectricBRDF(vec3 omega_i, HitInfo hitInfo, out vec3 omega_o, inout uint rngState) {
+    return ImportanceSampleLambertian(omega_i, hitInfo, omega_o, rngState);
+}
+
+vec3 SampleBRDF(vec3 omega_i, HitInfo hitInfo, out vec3 omega_o, inout uint rngState) {
+    vec3 brdfWeight;
+    float p;
+    if (RandomFloat(rngState) < hitInfo.mat.metallic_factor) {
+        brdfWeight = SampleMetalicBRDF(omega_i, hitInfo, omega_o, rngState);
+        p = hitInfo.mat.metallic_factor;
+    } else {
+        brdfWeight = SampleDielectricBRDF(omega_i, hitInfo, omega_o, rngState);
+        p = 1 - hitInfo.mat.metallic_factor;
+    }
+
+    return brdfWeight / max(p, 0.1);
+}
+
+// Le(x, omega_o)
+vec3 GetLightEmitted(HitInfo hitInfo, vec3 V) {
+    return hitInfo.mat.emissive_factor;
+}
+
+vec3 PathTrace(Ray ray, inout uint rngState) {
+    vec3 throughput = vec3(1.0, 1.0, 1.0);
+    // Lo(x, omega_o)
+    vec3 radiance = vec3(0.0, 0.0, 0.0);
 
     for (int i = 0; i < params.max_bounce_count; ++i) {
-        HitInfo hitInfo = CalculateRayCollision(ray);
+        HitInfo hitInfo = FindRayCollision(ray);
         if (hitInfo.didHit) {
+            vec3 outDir;
+            vec3 reflectedLight = SampleBRDF(ray.dir, hitInfo, outDir, rngState);
+
+            radiance += GetLightEmitted(hitInfo, -ray.dir) * throughput;
+            throughput *= reflectedLight;
+
+            // bounce
             ray.origin = hitInfo.hitPoint;
-
-            float specularChance = hitInfo.mat.metallic_factor * (1.0 - hitInfo.mat.roughness_factor);
-
-            if (RandomFloat(rngState) < specularChance) {
-                vec3 pureReflection = ReflectDirection(ray.dir, hitInfo.normal);
-
-                vec3 roughReflection = pureReflection + RandomUnitVector(rngState) * hitInfo.mat.roughness_factor;
-                ray.dir = normalize(roughReflection);
-
-                if (dot(ray.dir, hitInfo.normal) < 0.0) {
-                    ray.dir = DiffuseDir(hitInfo.normal, rngState);
-                }
-            } else {
-                ray.dir = DiffuseDir(hitInfo.normal, rngState);
-            }
+            ray.dir = outDir;
             ray.inv_dir = 1.0 / ray.dir;
-
-            // calculate the potential light that the object is emitting
-            vec3 emittedLight = hitInfo.mat.emissive_factor;
-
-            incomingLight += emittedLight * c;
-
-            c *= hitInfo.mat.base_color_factor.rgb;
         } else {
             // get color from environment
-            incomingLight += params.env_color.rgb * c;
+            radiance += params.env_color.rgb * throughput;
             break;
         }
     }
-    return incomingLight;
+    return radiance;
 }
 
 struct CameraViewport {
@@ -455,7 +495,7 @@ void main() {
 
     vec3 totalIncomingLight = vec3(0.0, 0.0, 0.0);
     for (int i = 0; i < params.samples_per_pixel; ++i) {
-        totalIncomingLight += GetColorForRay(JitterRay(ray, viewport, rngState), rngState);
+        totalIncomingLight += PathTrace(JitterRay(ray, viewport, rngState), rngState);
     }
     totalIncomingLight /= float(params.samples_per_pixel);
 

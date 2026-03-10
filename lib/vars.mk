@@ -1,4 +1,6 @@
 LIB_BUILD_DIR = build
+CC = clang
+CXX = clang++
 
 CIMGUI_TARGET = $(LIB_BUILD_DIR)/cimgui/libcimgui.a
 GLAD_TARGET = $(LIB_BUILD_DIR)/glad/libglad.a

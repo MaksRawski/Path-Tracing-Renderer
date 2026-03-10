@@ -1,6 +1,6 @@
 include vars.mk
 
-stb_image_write_CC = clang
+stb_image_write_CC = $(CC)
 stb_image_write_CFLAGS = -fPIC
 
 $(stb_image_write_TARGET): $(stb_image_write_INCLUDE_DIR)/stb_image_write.c

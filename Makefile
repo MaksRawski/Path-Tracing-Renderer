@@ -5,13 +5,17 @@ CFLAGS = -std=c11 -Wall -Wextra -pedantic-errors
 CFLAGS += -Wcast-align -Wpointer-arith -Wcast-qual -Wunreachable-code -Wshadow 
 CFLAGS += -Iinclude
 DEBUG_FLAGS = -g
-RELEASE_FLAGS = -O2 -DNDEBUG
+RELEASE_FLAGS = -O2 -DNDEBUG -march=native
+TARGET_OS = linux
 
 include lib/vars.mk
-CFLAGS += $(LIB_INCLUDE_PATHS:%=-Ilib/%)
-CFLAGS += `pkg-config --cflags gtk+-3.0`
-LDFLAGS = -ldl -lm -lX11 -lglfw $(LIB_TARGETS:%=lib/%)
-LDFLAGS += `pkg-config --libs gtk+-3.0`
+CFLAGS += $(LIB_INCLUDE_PATHS:%=-Ilib/%) -flto
+LDFLAGS = $(LIB_TARGETS:%=lib/%) 
+
+ifeq ($(TARGET_OS), linux)
+	CFLAGS += `pkg-config --cflags gtk+-3.0` 
+	LDFLAGS += -ldl -lm -lX11 `pkg-config --libs gtk+-3.0`
+endif
 
 # must be either debug or release
 MODE = debug
@@ -69,6 +73,6 @@ $(TESTS_TARGET): $(TESTS_DEPS)
 	$(CXX) $(CFLAGS) $(TESTS_DEPS) $(LDFLAGS) -o $@
 
 clean:
-	rm -rf build/*
+	rm -rf $(BUILD_DIR)
 
 .PHONY: all clean tests
