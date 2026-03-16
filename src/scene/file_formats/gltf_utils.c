@@ -167,9 +167,9 @@ void alloc_if_necessary(void **dst, size_t count, size_t element_size,
       free(*dst);
     *capacity = next_power_of_2(count);
     if (should_zero)
-      *dst = calloc(count, element_size);
+      *dst = calloc(*capacity, element_size);
     else
-      *dst = malloc(count * element_size);
+      *dst = malloc(*capacity * element_size);
 
     if (dst == NULL) {
       ERROR_FMT("Failed to allocate %lu bytes of memory",
