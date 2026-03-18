@@ -8,10 +8,6 @@
 #include "stats.h"
 #include <stdint.h>
 
-#ifdef __linux__
-#include <gtk/gtk.h>
-#endif
-
 #define DESIRED_WIDTH 1280
 #define DESIRED_HEIGHT 720
 #define WINDOW_TITLE "Path Tracing Renderer"
@@ -21,12 +17,6 @@ int main(int argc, char *argv[]) {
   Arena tmp_arena = Arena_new(16 * 1024 * 1024);
   AppState app_state = AppState_default();
   handle_args(argc, argv, &app_state);
-
-#ifdef __linux__
-  // NOTE: Connects to X11 or Wayland. Necessary for native file dialog
-  // creation.
-  gtk_init(&argc, &argv);
-#endif
 
   Window window = Window_new(WINDOW_TITLE, DESIRED_WIDTH, DESIRED_HEIGHT);
   GUIOverlay gui = GUIOverlay_new(&window);

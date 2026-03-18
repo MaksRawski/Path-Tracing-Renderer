@@ -1,8 +1,8 @@
 #include "gui/file_browser.h"
 
 #ifdef _WIN32
-#include "windows.h"
 #include "stdio.h"
+#include "windows.h"
 // https://learn.microsoft.com/en-us/windows/win32/dlgbox/using-common-dialog-boxes#opening-a-file
 bool GuiFileBrowser_open(char out_path[], size_t capacity) {
   OPENFILENAME ofn;
@@ -29,37 +29,25 @@ bool GuiFileBrowser_open(char out_path[], size_t capacity) {
   }
 }
 #elif defined(__linux__)
-#include <gtk/gtk.h>
+#include "asserts.h"
+#include "stdio.h"
+#include "stdlib.h"
+#include <string.h>
 bool GuiFileBrowser_open(char out_path[], size_t capacity) {
-  GtkWidget *dialog = gtk_file_chooser_dialog_new(
-      "Select a glTF file", NULL, GTK_FILE_CHOOSER_ACTION_OPEN, "_Cancel",
-      GTK_RESPONSE_CANCEL, "_Open", GTK_RESPONSE_ACCEPT, NULL);
-
-  GtkFileFilter *filter = gtk_file_filter_new();
-  gtk_file_filter_set_name(filter, "glTF (*.glb, *.gltf)");
-  gtk_file_filter_add_pattern(filter, "*.glb");
-  gtk_file_filter_add_pattern(filter, "*.gltf");
-  gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
-
-  GtkFileFilter *all_filter = gtk_file_filter_new();
-  gtk_file_filter_set_name(all_filter, "All Files");
-  gtk_file_filter_add_pattern(all_filter, "*");
-  gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), all_filter);
-
-  bool ok = false;
-  if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
-    GtkFileChooser *chooser = GTK_FILE_CHOOSER(dialog);
-    char *filename = gtk_file_chooser_get_filename(chooser);
-    if (filename != NULL) {
-      snprintf(out_path, capacity, "%s", filename);
-      ok = true;
-    }
+  if (system("zenity --version") == 1)
+    ERROR("zenity not installed!");
+  FILE *fd = popen("zenity --file-selection", "r");
+  if (fd == NULL)
+    ERROR("Failed to create zenity process!");
+  if (fgets(out_path, capacity, fd) == NULL)
+    ERROR("Failed to read zenity output!");
+  else
+    out_path[strcspn(out_path, "\n")] = 0;
+  int status = pclose(fd);
+  if (status == -1) {
+    perror("pclose");
+    return false;
   }
-  gtk_widget_destroy(dialog);
-
-  while (gtk_events_pending())
-    gtk_main_iteration();
-
-  return ok;
+  return status == 0;
 }
 #endif

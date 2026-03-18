@@ -3,18 +3,18 @@ CXX = clang++
 
 CFLAGS = -std=c11 -Wall -Wextra -pedantic-errors
 CFLAGS += -Wcast-align -Wpointer-arith -Wcast-qual -Wunreachable-code -Wshadow 
-CFLAGS += -Iinclude
+CFLAGS += -Iinclude 
 DEBUG_FLAGS = -g
-RELEASE_FLAGS = -O2 -DNDEBUG -march=native
+RELEASE_FLAGS = -O2 -DNDEBUG -march=native -flto
 TARGET_OS = linux
+BUILD_DIR_PREFIX = build
 
 include lib/vars.mk
-CFLAGS += $(LIB_INCLUDE_PATHS:%=-Ilib/%) -flto
+CFLAGS += $(LIB_INCLUDE_PATHS:%=-Ilib/%)
 LDFLAGS = $(LIB_TARGETS:%=lib/%) 
 
 ifeq ($(TARGET_OS), linux)
-	CFLAGS += `pkg-config --cflags gtk+-3.0` 
-	LDFLAGS += -ldl -lm -lX11 `pkg-config --libs gtk+-3.0`
+	LDFLAGS += -ldl -lm -lX11 
 endif
 
 # must be either debug or release
@@ -22,11 +22,11 @@ MODE = debug
 
 ifeq ($(MODE), debug)
 	CFLAGS += $(DEBUG_FLAGS)
-	BUILD_DIR = build/debug
+	BUILD_DIR = $(BUILD_DIR_PREFIX)/debug
 endif
 ifeq ($(MODE), release)
 	CFLAGS += $(RELEASE_FLAGS)
-	BUILD_DIR = build/release
+	BUILD_DIR = $(BUILD_DIR_PREFIX)/release
 endif
 
 
