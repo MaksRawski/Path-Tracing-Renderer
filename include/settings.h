@@ -33,7 +33,4 @@ inline static Settings Settings_default(void) {
   };
 }
 
-void Settings_set_Camera(Settings *settings, Camera cam);
-void Settings_set_RendererParameters(Settings *settings, Camera cam);
-
 #endif // SETTINGS_H_

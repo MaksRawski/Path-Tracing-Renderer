@@ -1,8 +1,8 @@
 #include "gui/file_browser.h"
 
 #ifdef _WIN32
-#include "stdio.h"
-#include "windows.h"
+#include <stdio.h>
+#include <windows.h>
 // https://learn.microsoft.com/en-us/windows/win32/dlgbox/using-common-dialog-boxes#opening-a-file
 bool GuiFileBrowser_open(char out_path[], size_t capacity) {
   OPENFILENAME ofn;
@@ -30,17 +30,21 @@ bool GuiFileBrowser_open(char out_path[], size_t capacity) {
 }
 #elif defined(__linux__)
 #include "asserts.h"
-#include "stdio.h"
-#include "stdlib.h"
+// for popen and pclose
+#ifndef __USE_POSIX2 
+#define __USE_POSIX2 
+#endif
+#include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 bool GuiFileBrowser_open(char out_path[], size_t capacity) {
-  if (system("zenity --version") == 1)
+  if (system("zenity --version &> /dev/null") == 1)
     ERROR("zenity not installed!");
   FILE *fd = popen("zenity --file-selection", "r");
   if (fd == NULL)
     ERROR("Failed to create zenity process!");
   if (fgets(out_path, capacity, fd) == NULL)
-    ERROR("Failed to read zenity output!");
+    return false;
   else
     out_path[strcspn(out_path, "\n")] = 0;
   int status = pclose(fd);

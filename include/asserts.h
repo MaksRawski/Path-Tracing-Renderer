@@ -62,7 +62,7 @@ void exit_if_not_impl(bool cond);
       char *: _pre "%s" _post)
 
 static const char *_GENERIC_FMT_STRING__EXAMPLE =
-    GENERIC_FMT_STRING("abc ", 1.337, " def"); // equivalent to abc %f def
+    GENERIC_FMT_STRING("abc ", 1.337, " def"); // equivalent to "abc %f def"
 
 // -----------------------------------------------------------------------------
 #define ASSERT_CUSTOM_FMT_(_cond, _fmt, ...)                                   \

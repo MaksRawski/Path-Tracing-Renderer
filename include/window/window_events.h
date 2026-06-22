@@ -4,7 +4,6 @@
 #include "window/resolution.h"
 #include "window/window_coordinate.h"
 
-#include <GLFW/glfw3.h>
 #include <stdbool.h>
 
 typedef struct {

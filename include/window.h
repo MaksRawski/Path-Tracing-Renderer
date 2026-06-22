@@ -1,7 +1,7 @@
 #ifndef WINDOW_H_
 #define WINDOW_H_
 
-#include <GLFW/glfw3.h>
+#include "GLFW/glfw3.h"
 #include <stdbool.h>
 
 #include "window/scaling.h"
