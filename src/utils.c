@@ -2,6 +2,7 @@
 #include "arena.h"
 #include "asserts.h"
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,29 +39,53 @@ const char *FilePath_get_file_name(const char *path) {
   return last_path_sep ? last_path_sep + 1 : path;
 }
 
-// returns false when the result's length exceeds out_str_capacity
-bool StringArray_join(char *out_str, size_t out_str_capacity, const char *arr[],
-                      size_t arr_len, const char *sep) {
-  // TODO: use regular memcpy
+// TODO: this could be a simple multiplication
+size_t StringArray_join_len(const char *arr[], size_t arr_len,
+                            const char *sep) {
   size_t total_written = 0;
-  size_t sep_len = strlen(sep);
-  for (size_t i = 0; i < arr_len - 1; ++i) {
-    size_t len = strlen(arr[i]);
-    total_written += len + sep_len;
-    if (total_written > out_str_capacity) {
-      return false;
-    }
-    strncat(out_str, arr[i], len);
-    strncat(out_str, sep, sep_len);
-  }
+  const size_t sep_len = strlen(sep);
 
+  for (size_t i = 0; i < arr_len - 1; ++i) {
+    const size_t len = strlen(arr[i]);
+    total_written += len + sep_len;
+  }
   size_t len = strlen(arr[arr_len - 1]);
   total_written += len + 1;
-  if (total_written > out_str_capacity)
-    return false;
 
-  strncat(out_str, arr[arr_len - 1], len);
-  return true;
+  return total_written;
+}
+
+void StringArray_join(char *out_str, const char *arr[], size_t arr_len,
+                      const char *sep) {
+  const size_t sep_len = strlen(sep);
+  size_t total_written = 0;
+  for (size_t i = 0; i < arr_len - 1; ++i) {
+    const size_t len = strlen(arr[i]);
+    memcpy(out_str + total_written, arr[i], len);
+    total_written += len;
+    memcpy(out_str + total_written, sep, sep_len);
+    total_written += sep_len;
+  }
+  strcpy(out_str + total_written, arr[arr_len - 1]);
+}
+
+int StringArray_find_closest_match(const char *s, size_t s_len, //
+                                   const char *list[], size_t list_len) {
+  int match = StringArray_find_closest_match_none;
+  for (unsigned int i = 0; i < list_len; ++i) {
+    if (list[i] == NULL) continue;
+
+    bool string_is_part_of_match = true;
+    for (unsigned int c = 0; c < s_len; ++c)
+      string_is_part_of_match &= (tolower(s[c]) == tolower(list[i][c]));
+
+    if (string_is_part_of_match) {
+      if (match != StringArray_find_closest_match_none)
+        return StringArray_find_closest_match_ambiguous;
+      match = i;
+    }
+  }
+  return match;
 }
 
 // NOTE: works only if exiftool is in PATH

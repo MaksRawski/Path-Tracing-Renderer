@@ -2,6 +2,7 @@
 #include "stdio.h"
 #include <stdarg.h>
 #include <stdlib.h>
+#include <string.h>
 
 bool ASSERT_CUSTOM_impl(bool cond, const char *fail_reason,
                         const char *file_name, int line_num) {

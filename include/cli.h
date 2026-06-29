@@ -4,7 +4,7 @@
 // NOTE: we assume here that app_state has been initialized with defaults
 #include "app_state.h"
 
-void handle_args(int argc, char *argv[], AppState *app_state); 
+void handle_args(int argc, const char **argv, AppState *app_state); 
 
 
 

@@ -12,7 +12,7 @@
 #define DESIRED_HEIGHT 720
 #define WINDOW_TITLE "Path Tracing Renderer"
 
-int main(int argc, char *argv[]) {
+int main(const int argc, const char **argv) {
   // pre-allocate 16MB of memory for any operations that may need it
   Arena tmp_arena = Arena_new(16 * 1024 * 1024);
   AppState app_state = AppState_default();
@@ -26,8 +26,7 @@ int main(int argc, char *argv[]) {
   Renderer_set_params(&renderer, app_state.settings.rendering_params);
 
   while (!glfwWindowShouldClose(window.glfw_window)) {
-    // NOTE: must poll every frame for the OS to know that this application is
-    // working
+    // NOTE: must poll every frame for the OS to know that this application is working
     WindowEventsData events = Window_poll_events(&window);
 
     // === Settings ===
@@ -74,8 +73,7 @@ int main(int argc, char *argv[]) {
 
     // === post-render Actions ===
     // if just finished rendering
-    if (AppState_get_rendering_state(&app_state) == RenderingState_FINISHED &&
-        app_state.stats.rendering.total_time == 0) {
+    if (AppState_get_rendering_state(&app_state) == RenderingState_FINISHED && app_state.stats.rendering.total_time == 0) {
       StatsTimer_stop(&app_state.stats.rendering);
       printf("Rendered %d frames in %s.\n",
              app_state.settings.rendering_params.frames_to_render,
