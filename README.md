@@ -1,6 +1,9 @@
 # Path Tracing Renderer
 Interactive Path Tracing Renderer with an OpenGL backend, written in C.
 
+![Screenshot of the application rendering a model of Stanford Dragon in Cornell Box.](images/dragon.png)
+
+
 ## Current features:
 - GUI to control internal rendering parameters
 - Partial support of glTF 2.0:
@@ -9,47 +12,62 @@ Interactive Path Tracing Renderer with an OpenGL backend, written in C.
         - PBR base color is used as albedo
         - Emission factor (color) and strength are supported
     - If there are perspective cameras available, first one of them will be used
-- Simple BVH is applied to the loaded scene
+- Two BVH types are available: Midpoint split, (simple) SAH
 
-## Naming convention
-- snake_case for functions_names, variable_names and struct_members
-- PascalCase for StructNames
-- StructName_new for "constructors" and StructName_delete for "destructors"
-- StructName_function_name for functions that operate on a given struct directly
 
 ## Building
-This project uses submodules for libraries so if you don't specify `--recurse-submodules`
-during `git clone`, you will have to run `git submodule update --init --recursive` in the
-root of the cloned project.
+This project uses submodules for its dependencies, so make sure to download them while cloning.
+```
+git clone https://github.com/MaksRawski/PathTracingRenderer --recurse-submodules
+```
 
-### Build dependencies (required only for Make):
+If you have cloned without submodules, run this inside the project directory
+```
+git submodule update --init --recursive
+```
+
+### Make
+Build dependencies 
 ```
 make -Clib
 ```
 
-### Build the project:
-
-CMake:
+Build the project
 ```
-cmake -Bbuild && cmake --build build
+make MODE=release
 ```
 
-Make:
+Run it
 ```
-make 
+./build/release/main
 ```
 
-### Build & Run tests:
+Run tests:
+```
+make tests
+```
 
-CMake:
+### CMake
+Configure 
+```
+cmake -Bbuild -DCMAKE_BUILD_TYPE=Release
+```
+
+Build the project
+```
+cmake --build build
+```
+
+Run it
+```
+./build/PathTracingRenderer
+```
+
+Run tests:
 ```
 cmake -Bbuild -DBUILD_TESTS=ON && cmake --build build && ./build/tests
 ```
 
-Make:
-```
-make tests
-```
 
 ## Tests
 My DIY "testing framework" is made up of `include/asserts.h`, `src/asserts.c` 
@@ -59,8 +77,20 @@ and a simple `TEST_RUN` macro from `tests/tests_macros.h`
 to be convenient as runtime checks on debug builds, and so they are completely 
 removed when compiling with `-DNDEBUG`.
 
-### Resources used:
-- [Sebastian Lague's video on ray tracing](https://www.youtube.com/watch?v=Qz0KTGYJtUk)
-- [tinyraytracer](https://github.com/ssloy/tinyraytracer/wiki/Part-1:-understandable-raytracing)
-- [casual shadertoy path tracing](https://blog.demofox.org/2020/05/25/casual-shadertoy-path-tracing-1-basic-camera-diffuse-emissive/)
-- [how to build a BVH series](https://jacco.ompf2.com/2022/04/13/how-to-build-a-bvh-part-1-basics/)
+
+## Coding conventions
+### Naming
+- `snake_case` for function\_names, variable\_names and struct\_members
+- `PascalCase` for StructNames
+
+- `StructName_new` for "constructors" and `StructName_delete` for "destructors"
+- `StructName_function_name` for functions that operate on a given struct directly
+- `function__template` for macros that expand into function definitons
+
+### Other
+- "private" struct functions/helper functions are `static` defined within the same translation unit.
+- stack allocation is heavily preferred
+    - functions that "return a string" take a `char *buf` as argument or return either `SmallString` (`char[1024]`) or `TinyString` (`char[16]`)
+    - 16MB Arena is allocated at the beginning of main and is passed around for all temporary allocations needs
+    - only big allocations (theoretically gigabytes) are `malloc`'ed
+- `stdint.h` types are preferred over `int`, `long` etc. 
