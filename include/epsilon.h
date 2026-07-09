@@ -4,14 +4,6 @@
 #include <math.h>
 #include <stdbool.h>
 
-static inline bool is_zero(double x, double epsilon) {
-  return fabs(x) < epsilon;
-}
-
-static inline bool is_zerof(float x, float epsilon) {
-  return fabsf(x) < epsilon;
-}
-
 static inline bool double_equal_expected(double v, double expected,
                                          double epsilon) {
   return fabs(v - expected) <=
