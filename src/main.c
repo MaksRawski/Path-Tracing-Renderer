@@ -6,15 +6,24 @@
 #include "cli.h"
 #include "input_handler.h"
 #include "stats.h"
+
 #include <stdint.h>
+#include <stdlib.h>
 
 #define DESIRED_WIDTH 1280
 #define DESIRED_HEIGHT 720
 #define WINDOW_TITLE "Path Tracing Renderer"
 
+Arena tmp_arena; 
+static void delete_tmp_arena(void) {
+  Arena_delete(&tmp_arena);
+}
+
 int main(const int argc, const char **argv) {
   // pre-allocate 16MB of memory for any operations that may need it
-  Arena tmp_arena = Arena_new(16 * 1024 * 1024);
+  tmp_arena = Arena_new(16 * 1024 * 1024);
+  atexit(delete_tmp_arena);
+
   AppState app_state = AppState_default();
   handle_args(argc, argv, &app_state);
 
