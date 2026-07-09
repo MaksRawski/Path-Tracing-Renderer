@@ -27,7 +27,7 @@ bool ASSERT_CUSTOM_FMT_impl(bool cond, const char *file_name, int line_num,
 
 noreturn void UNREACHABLE_impl(const char *file_name, int line_num) {
   fprintf(stderr, "%s:%d: " RED("UNREACHABLE REACHED!"), file_name, line_num);
-  exit(1);
+  exit(EXIT_FAILURE);
 }
 
 noreturn void ERROR_impl(const char *prefix, const char *msg) {
@@ -35,7 +35,7 @@ noreturn void ERROR_impl(const char *prefix, const char *msg) {
     fprintf(stderr, "%s\n", msg);
   else
     fprintf(stderr, RED("%s") ": %s\n", prefix, msg);
-  exit(1);
+  exit(EXIT_FAILURE);
 }
 
 noreturn void ERROR_FMT_impl(const char *prefix, const char *fmt, ...) {
@@ -49,7 +49,7 @@ noreturn void ERROR_FMT_impl(const char *prefix, const char *fmt, ...) {
 
 void exit_if_not_impl(bool cond) {
   if (!cond)
-    exit(1);
+    exit(EXIT_FAILURE);
 }
 
 bool ASSERT_EQ_impl(bool equal, const char *a_name, const char *b_name,

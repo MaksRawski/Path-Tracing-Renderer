@@ -13,7 +13,6 @@ typedef struct {
 vec3 vec3_new(float x, float y, float z);
 vec3 vec3_from_float3(const float *const v);
 
-/* float3 read_float3_from_line(char *line); */
 vec3 vec3_min(vec3 a, vec3 b);
 vec3 vec3_max(vec3 a, vec3 b);
 
@@ -34,11 +33,7 @@ void vec3_copy_from_float3(vec3 *const dst, const float *const src);
 void vec3_swap(vec3 *a, vec3 *b);
 bool vec3_eq(vec3 a, vec3 b, float epsilon);
 
-typedef struct {
-  char str[64];
-} Vec3Str;
-
-// returns a string representation of a vector
-Vec3Str vec3_str(vec3 v);
+// NOTE: vec3_str is not provided as it's up to the caller to decide what format
+// they want and at that point there is no point in making an abstraction around it
 
 #endif // VEC3_H_

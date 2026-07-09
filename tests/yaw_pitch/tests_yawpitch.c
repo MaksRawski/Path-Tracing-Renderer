@@ -9,11 +9,12 @@
 #define M_PI 3.141592653589793238462643383279502884
 #endif
 
+// NOTE: _expected_dir is given as a "tuple" (x,y,z)
 #define TEST_YAW_PITCH_TO_DIR(_test_name, _yaw, _pitch, _expected_dir,         \
                               _epsilon)                                        \
   bool test_YawPitch_to_dir__##_test_name(void) {                              \
     Vec3d dir = YawPitch_to_dir(YawPitch_new(_yaw, _pitch));                   \
-    ASSERT_VEC3D_EQ(dir, Vec3d_new _expected_dir, _epsilon);                   \
+    ASSERT_EQ_VEC3D(dir, Vec3d_new _expected_dir, _epsilon);                   \
     return true;                                                               \
   }
 

@@ -105,6 +105,12 @@ static inline void test_ASSERT_COND(void) {
 bool ASSERT_EQ_impl(bool equal, const char *a_name, const char *b_name,
                     const char *file_name, int line_num,
                     const char *single_val_fmt, ...);
+
+// TODO: I think this _Generic is unnecessary, we could just have ASSERT_EQF and ASSERT_EQD
+// TODO: would be nice if visually the precise point in which the floats differ could be highlighted red
+// NOTE: must include epsilon.h here for the functions that are in expanded macro to be available
+// and to not require each macro user to have to include it themselves for mysterious reasons
+// (the LSP complains about it being unnecessary)
 #include "epsilon.h"
 #define ASSERT_EQF_(_v, _expected, _epsilon)                                   \
   ASSERT_EQ_impl(_Generic(((_v) - (_expected)),                                \
@@ -144,25 +150,11 @@ bool ASSERT_EQ_impl(bool equal, const char *a_name, const char *b_name,
 #define ASSERT_EQ(_a, _b) return_if_not(ASSERT_EQ_(_a, _b));
 #define ASSERTQ_EQ(_a, _b) exit_if_not(ASSERT_EQ_(_a, _b));
 
-// NOTE: functions _type_eq and _type_str must exist! _type_str should return a
-// SmallString
-#define ASSERT_TYPE_EQ_(_type, _a, _b)                                         \
-  ASSERT_EQ_impl(_type##_eq(_a, _b), #_a, #_b, __FILE__, __LINE__, "%s",       \
-                 _type##_str(_a).str, _type##_str(_b).str)
+#define ASSERT_EQ_VEC3(_v, _expected, _epsilon) return_if_not(vec3_eq(_v, _expected, _epsilon))
+#define ASSERTQ_EQ_VEC3(_v, _expected, _epsilon) exit_if_not(vec3_eq(_v, _expected, _epsilon))
 
-#define ASSERT_TYPE_EQ_EXTRA_ARGS(_type, _a, _b, ...)                          \
-  ASSERT_EQ_impl(_type##_eq(_a, _b, __VA_ARGS__), #_a, #_b, __FILE__,          \
-                 __LINE__, "%s", _type##_str(_a).str, _type##_str(_b).str)
-
-#define ASSERT_VEC3_EQ(_a, _b, _epsilon)                                       \
-  return_if_not(ASSERT_TYPE_EQ_EXTRA_ARGS(vec3, _a, _b, _epsilon));
-#define ASSERTQ_VEC3_EQ(_a, _b, _epsilon)                                      \
-  exit_if_not(ASSERT_TYPE_EQ_EXTRA_ARGS(vec3, _a, _b, _epsilon));
-
-#define ASSERT_VEC3D_EQ(_a, _b, _epsilon)                                      \
-  return_if_not(ASSERT_TYPE_EQ_EXTRA_ARGS(Vec3d, _a, _b, _epsilon));
-#define ASSERTQ_VEC3D_EQ(_a, _b, _epsilon)                                     \
-  exit_if_not(ASSERT_TYPE_EQ_EXTRA_ARGS(Vec3d, _a, _b, _epsilon));
+#define ASSERT_EQ_VEC3D(_v, _expected, _epsilon) return_if_not(Vec3d_eq(_v, _expected, _epsilon))
+#define ASSERTQ_EQ_VEC3D(_v, _expected, _epsilon) exit_if_not(Vec3d_eq(_v, _expected, _epsilon))
 
 // -----------------------------------------------------------------------------
 

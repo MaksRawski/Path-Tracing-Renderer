@@ -82,8 +82,6 @@ Vec3d Vec3d_cross(Vec3d a, Vec3d b) {
   return r;
 }
 
-Vec3dStr Vec3d_str(Vec3d v) {
-  Vec3dStr res = {0};
-  sprintf(res.str, "%+.20f %+.20f %+.20f", v.x, v.y, v.z);
-  return res;
-}
+// NOTE: Vec3d_str is not provided as it's up to the caller to decide what
+// format they want and at that point there is no point in making an abstraction
+// around it

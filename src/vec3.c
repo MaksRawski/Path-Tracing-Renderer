@@ -1,7 +1,6 @@
 #include "vec3.h"
 #include "epsilon.h"
 #include <math.h>
-#include <stdio.h>
 
 vec3 vec3_new(float x, float y, float z) { return (vec3){x, y, z, 0}; }
 // creates a vec3 from 3 consecutive floats
@@ -75,10 +74,4 @@ vec3 vec3_cross(vec3 a, vec3 b) {
   r.y = a.x * b.z - a.z * b.x;
   r.z = a.x * b.y - a.y * b.x;
   return r;
-}
-
-Vec3Str vec3_str(vec3 v) {
-  Vec3Str res = {0};
-  snprintf(res.str, sizeof(res.str), "%+.10f %+.10f %+.10f", v.x, v.y, v.z);
-  return res;
 }
