@@ -4,6 +4,9 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 add_subdirectory(glfw)
 
+# nativefiledialog-extended
+add_subdirectory(nativefiledialog-extended)
+
 # GLAD
 add_library(glad glad/src/gl.c)
 target_include_directories(glad PUBLIC glad/include)

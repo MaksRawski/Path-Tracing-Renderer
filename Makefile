@@ -14,8 +14,10 @@ include lib/vars.mk
 CFLAGS += $(LIB_INCLUDE_PATHS:%=-Ilib/%)
 LDFLAGS = $(LIB_TARGETS:%=lib/%) 
 
-ifeq ($(shell uname), Linux)
-	LDFLAGS += -ldl -lm -lX11 -lpthread
+# NOTE: wayland and dbus-1 are required only because of nativefiledialog-extended
+# NOTE: we depend on systemd because of this
+ifeq ($(shell uname -s), Linux)
+	LDFLAGS += -ldl -lm -lX11 -lwayland-client -ldbus-1 -lpthread
 endif
 
 # must be either debug or release
