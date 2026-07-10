@@ -9,6 +9,7 @@ DEBUG_FLAGS = -g
 RELEASE_FLAGS = -O2 -DNDEBUG -march=native -flto
 TARGET_OS = linux
 BUILD_DIR_PREFIX = build
+INSTALL_PREFIX = install
 
 include lib/vars.mk
 CFLAGS += $(LIB_INCLUDE_PATHS:%=-Ilib/%)
@@ -40,6 +41,11 @@ D_FILES := $(OBJ:%.o=%.d)
 BUILD_DEPS := $(OBJ)
 
 all: $(TARGET)
+
+install: 
+	cp -r shaders $(INSTALL_PREFIX)
+	cp -r fonts $(INSTALL_PREFIX)
+	cp $(BUILD_DIR)/main $(INSTALL_PREFIX)/PathTracingRenderer
 
 $(TARGET): $(BUILD_DEPS)
 	$(CXX) $(CFLAGS) $(BUILD_DEPS) $(LDFLAGS) -o $@
@@ -76,4 +82,4 @@ $(TESTS_TARGET): $(TESTS_DEPS)
 clean:
 	rm -rf $(BUILD_DIR)
 
-.PHONY: all clean tests
+.PHONY: all install clean tests
