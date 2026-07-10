@@ -6,17 +6,20 @@ Interactive Path Tracing Renderer with an OpenGL backend, written in C.
 
 ## Current features:
 - GUI to control internal rendering parameters
-- Partial support of glTF 2.0:
-    - Meshes can be loaded with all their transformations
-    - Materials:
-        - PBR base color is used as albedo
-        - Emission factor (color) and strength are supported
-    - If there are perspective cameras available, first one of them will be used
-- Two BVH types are available: Midpoint split, (simple) SAH
+- Support for many GPUs thanks to OpenGL 4.6
+- Basic support of glTF 2.0
+- Move the camera around the scene
+- Save rendered image to file
+- Two BVH types are available: Midpoint split and a 
+[Surface Area Heuristic](https://web.archive.org/web/20260328124611/https://jacco.ompf2.com/2022/04/18/how-to-build-a-bvh-part-2-faster-rays/)
+- Settings available from CLI 
 
 
 ## Building
-This project uses submodules for its dependencies, so make sure to download them while cloning.
+***NOTE***: Prebuilt binaries for Windows, macOS and Linux can be downloaded from the [Releases page](https://github.com/MaksRawski/Path-Tracing-Renderer/releases).
+
+
+This project uses submodules for its dependencies, so make sure to get them too while cloning.
 ```
 git clone https://github.com/MaksRawski/PathTracingRenderer --recurse-submodules
 ```
@@ -25,6 +28,13 @@ If you have cloned without submodules, run this inside the project directory
 ```
 git submodule update --init --recursive
 ```
+
+The only system dependencies on Linux are `make`, `cmake` a C compiler and whatever 
+[GLFW needs](https://www.glfw.org/docs/latest/compile.html#compile_deps_wayland).
+
+On Windows and macOS, [cmake](https://cmake.org/download/) and a C compiler should be enough.
+
+Once you have them, you can build the project using either Make (recommended for Linux) or CMake (only option for Windows, and the recommended one for macOS).
 
 ### Make
 Build dependencies 
@@ -69,23 +79,18 @@ cmake -Bbuild -DBUILD_TESTS=ON && cmake --build build && ./build/tests
 ```
 
 
-## Tests
-My DIY "testing framework" is made up of `include/asserts.h`, `src/asserts.c` 
-and a simple `TEST_RUN` macro from `tests/tests_macros.h` 
-
-`asserts` are included in the main part of the project as they turned out
-to be convenient as runtime checks on debug builds, and so they are completely 
-removed when compiling with `-DNDEBUG`.
-
-
 ## Coding conventions
 ### Naming
 - `snake_case` for function\_names, variable\_names and struct\_members
 - `PascalCase` for StructNames
+- `MACRO_CASE` for macros
+
 
 - `StructName_new` for "constructors" and `StructName_delete` for "destructors"
 - `StructName_function_name` for functions that operate on a given struct directly
 - `function__template` for macros that expand into function definitons
+- a pair of `MACRO_NAME` and `MACRO_NAME_impl` for functions that need `__LINE__` and `__FILE__`
+- `MACRO_NAME_` for a not to be used directly macro 
 
 ### Other
 - "private" struct functions/helper functions are `static` defined within the same translation unit.
