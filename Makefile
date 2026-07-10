@@ -7,7 +7,6 @@ CFLAGS += -Wcast-align -Wpointer-arith -Wcast-qual -Wunreachable-code -Wshadow
 CFLAGS += -Iinclude 
 DEBUG_FLAGS = -g
 RELEASE_FLAGS = -O2 -DNDEBUG -march=native -flto
-TARGET_OS = linux
 BUILD_DIR_PREFIX = build
 INSTALL_PREFIX = install
 
@@ -15,7 +14,7 @@ include lib/vars.mk
 CFLAGS += $(LIB_INCLUDE_PATHS:%=-Ilib/%)
 LDFLAGS = $(LIB_TARGETS:%=lib/%) 
 
-ifeq ($(TARGET_OS), linux)
+ifeq ($(shell uname), Linux)
 	LDFLAGS += -ldl -lm -lX11 -lpthread
 endif
 
