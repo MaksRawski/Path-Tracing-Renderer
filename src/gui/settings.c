@@ -18,7 +18,7 @@
 // NOTE: all static functions in this file perform drawing operations.
 // NOTE: everything should be aggressively inlined, there is no reason not to
 
-static inline void scene(GLFWwindow *window, AppState *state);
+static inline void scene(AppState *state);
 static inline void camera(AppState *state);
 static inline void rendering(AppState *state);
 static inline void misc(GUIOverlay *gui, AppState *state);
@@ -28,7 +28,7 @@ void GuiSettings_draw(GUIOverlay *gui, AppState *state) {
 
   if (igCollapsingHeader_TreeNodeFlags("Scene",
                                        ImGuiTreeNodeFlags_DefaultOpen)) {
-    scene(gui->_window, state);
+    scene(state);
   }
   if (igCollapsingHeader_TreeNodeFlags("Camera", 0)) {
     camera(state);
@@ -46,11 +46,11 @@ void GuiSettings_draw(GUIOverlay *gui, AppState *state) {
 
 static void tooltip(const char *desc);
 
-static inline void scene_load_button(GLFWwindow *window, AppState *state);
+static inline void scene_load_button(AppState *state);
 static inline void scene_bvh_type_combobox(AppState *state);
 static inline void scene_stats(AppState *state);
-static inline void scene(GLFWwindow *window, AppState *state) {
-  scene_load_button(window, state);
+static inline void scene(AppState *state) {
+  scene_load_button(state);
   scene_bvh_type_combobox(state);
 
   scene_stats(state);
@@ -109,12 +109,12 @@ static inline void misc(GUIOverlay *gui, AppState *state) {
 }
 
 // === SCENE ===
-static inline void scene_load_button(GLFWwindow *window, AppState *state) {
+static inline void scene_load_button(AppState *state) {
   ImVec2 button_size = {.x = 0, .y = 0};
   // TODO: enable this button only if on windows or zenity is installed
   if (igButton("Load scene", button_size)) {
     SmallString chosen_path = SmallString_new("");
-    if (GuiFileBrowser_open(window, chosen_path.str, sizeof(SmallString))) {
+    if (GuiFileBrowser_open(chosen_path.str, sizeof(SmallString))) {
       state->settings.scene_path = chosen_path;
       state->pending_actions |= Action_load_scene;
     }

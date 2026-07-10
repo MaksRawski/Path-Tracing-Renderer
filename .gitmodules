@@ -4,6 +4,3 @@
 [submodule "glfw"]
 	path = lib/glfw
 	url = https://github.com/glfw/glfw
-[submodule "lib/nativefiledialog-extended"]
-	path = lib/nativefiledialog-extended
-	url = https://github.com/btzy/nativefiledialog-extended

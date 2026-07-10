@@ -11,8 +11,6 @@
 
 typedef struct {
   ImGuiContext *_imgui_ctx;
-  // NOTE: necessary for NFD
-  GLFWwindow *_window;
   const ImGuiStyle _DEFAULT_STYLE;
   float ui_scale;
   bool show_demo;

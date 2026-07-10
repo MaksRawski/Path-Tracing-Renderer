@@ -8,8 +8,7 @@ GUIOverlay GUIOverlay_new(Window *window) {
   GUIOverlay self = {._imgui_ctx = igCreateContext(NULL),
                      ._DEFAULT_STYLE = *igGetStyle(),
                      .ui_scale = 1.0,
-                     .show_demo = false,
-                     ._window = window->glfw_window};
+                     .show_demo = false};
 
   // NOTE: assuming uniform scaling
   float scale;

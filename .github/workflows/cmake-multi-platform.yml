@@ -23,7 +23,7 @@ jobs:
 
     - name: Install system dependencies (Linux)
       if: runner.os == 'Linux'
-      run: sudo apt-get update && sudo apt-get install -y libwayland-dev libxkbcommon-dev xorg-dev libdbus-1-dev
+      run: sudo apt-get update && sudo apt-get install -y libwayland-dev libxkbcommon-dev xorg-dev 
 
     - name: Build vendored dependencies (Linux)
       if: runner.os == 'Linux'
