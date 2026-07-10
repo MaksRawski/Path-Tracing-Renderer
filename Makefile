@@ -1,4 +1,5 @@
 CC = clang
+# NOTE: because C++ library is used (Dear ImGui) a C++ compiler is necessary for linking with it
 CXX = clang++
 
 CFLAGS = -std=c11 -Wall -Wextra -pedantic-errors
@@ -14,7 +15,7 @@ CFLAGS += $(LIB_INCLUDE_PATHS:%=-Ilib/%)
 LDFLAGS = $(LIB_TARGETS:%=lib/%) 
 
 ifeq ($(TARGET_OS), linux)
-	LDFLAGS += -ldl -lm -lX11 
+	LDFLAGS += -ldl -lm -lX11 -lpthread
 endif
 
 # must be either debug or release
