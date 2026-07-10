@@ -13,22 +13,13 @@ jobs:
     strategy:
       fail-fast: false 
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v7
       with:
         submodules: 'recursive'
-
-    - name: Cache build directories
-      uses: actions/cache@v6
-      with:
-        path: |
-          ${{github.workspace}}/build
-          ${{github.workspace}}/lib/build
-        key: ${{ runner.os }}-build-cache-${{ github.sha }}
-        restore-keys: ${{ runner.os }}-build-cache-
 
     - name: Install system dependencies (Linux)
       if: runner.os == 'Linux'
@@ -38,8 +29,8 @@ jobs:
       if: runner.os == 'Linux'
       run: make -Clib
 
-    - name: Configure CMake (Windows)
-      if: runner.os == 'Windows'
+    - name: Configure CMake (Windows, MacOS)
+      if: runner.os != 'Linux'
       run: >
         cmake -B ${{github.workspace}}/build
         -DCMAKE_BUILD_TYPE=Release
@@ -51,8 +42,8 @@ jobs:
       if: runner.os == 'Linux'
       run: make MODE=release
 
-    - name: Build (Windows)
-      if: runner.os == 'Windows'
+    - name: Build (Windows, MacOS)
+      if: runner.os != 'Linux'
       run: cmake --build ${{github.workspace}}/build --config Release
 
     - name: Test (Linux)
@@ -63,12 +54,16 @@ jobs:
       if: runner.os == 'Windows'
       run: ${{github.workspace}}/build/Release/tests.exe
 
+    - name: Test (MacOS)
+      if: runner.os == 'MacOS'
+      run: ${{github.workspace}}/build/tests
+
     - name: Install (Linux)
       if: runner.os == 'Linux'
       run: make MODE=release install
 
-    - name: Install (Windows)
-      if: runner.os == 'Windows'
+    - name: Install (Windows, MacOS)
+      if: runner.os != 'Linux'
       run: cmake --install ${{github.workspace}}/build
 
     - name: Upload artifacts

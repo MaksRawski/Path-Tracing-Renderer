@@ -5,6 +5,9 @@ set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 add_subdirectory(glfw)
 
 # nativefiledialog-extended
+if(APPLE)
+  enable_language(OBJC OBJCXX)
+endif()
 add_subdirectory(nativefiledialog-extended)
 
 # GLAD
@@ -59,10 +62,9 @@ endif()
 
 target_link_libraries(cimgui PUBLIC glfw)
 
-# Link IMM32 on Windows for imgui
 if(WIN32)
     target_link_libraries(cimgui PRIVATE imm32)
-elseif(UNIX)
+elseif(LINUX)
     target_link_libraries(cimgui PRIVATE X11)
 endif()
 
