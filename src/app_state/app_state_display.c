@@ -2,9 +2,16 @@
 #include "opengl/gl_call.h"
 #include "window.h"
 
+#ifdef TRACY_ENABLE
+#include "TracyC.h"
+#endif // TRACY_ENABLE
+
 // NOTE: renders everything that has to be rendered to the screen
 void AppState_render_and_display_frame(AppState *app_state, Renderer *renderer,
                                        GUIOverlay *gui, Window *window) {
+#ifdef TRACY_ENABLE
+  TracyCZoneS(render_and_display_frame, 3, true);
+#endif // TRACY_ENABLE
   RenderingState render_state = AppState_get_rendering_state(app_state);
   GL_CALL(glClear(GL_COLOR_BUFFER_BIT));
 
@@ -28,6 +35,10 @@ void AppState_render_and_display_frame(AppState *app_state, Renderer *renderer,
     GUIOverlay_render_frame(gui);
 
   Window_swap_buffers(window);
+
   // NOTE: only at this point can we expect the frame to actually be rendered
   StatsTimer_stop(&app_state->stats.last_frame_rendering);
+#ifdef TRACY_ENABLE
+  TracyCZoneEnd(render_and_display_frame);
+#endif // TRACY_ENABLE
 }

@@ -3,6 +3,10 @@
 #include "scene/aabb.h"
 #include <math.h>
 
+#ifdef TRACY_ENABLE
+#include "TracyC.h"
+#endif // TRACY_ENABLE
+
 void FindBestSplitFn_midpoint(const BVHnode *node, const Triangle *triangles,
                                  const vec3 *centroids, int *best_axis,
                                  float *best_split_pos) {
@@ -21,6 +25,10 @@ void FindBestSplitFn_midpoint(const BVHnode *node, const Triangle *triangles,
 
 static float SAH_cost(const BVHnode *node, const Triangle *triangles,
                       const vec3 *centroids, int axis, float split_pos) {
+#ifdef TRACY_ENABLE
+  TracyCZone(zone_sah_cost, true);
+  TracyCZoneValue(zone_sah_cost, node->count);
+#endif
   AABB left = AABB_new(), right = AABB_new();
   unsigned int left_count = 0, right_count = 0;
   for (unsigned int i = 0; i < node->count; ++i) {
@@ -35,6 +43,9 @@ static float SAH_cost(const BVHnode *node, const Triangle *triangles,
     }
   }
   float cost = left_count * AABB_area(&left) + right_count * AABB_area(&right);
+#ifdef TRACY_ENABLE
+  TracyCZoneEnd(zone_sah_cost);
+#endif
   return cost > 0 ? cost : INFINITY;
 }
 
@@ -42,6 +53,10 @@ static float SAH_cost(const BVHnode *node, const Triangle *triangles,
 void FindBestSplitFn_SAH(const BVHnode *node, const Triangle *triangles,
                          const vec3 *centroids, int *best_axis,
                          float *best_split_pos) {
+#ifdef TRACY_ENABLE
+  TracyCZone(zone_sah, true);
+  TracyCZoneValue(zone_sah, node->count);
+#endif
   AABB parent_aabb = AABB_from(node->bound_min, node->bound_max);
   float parent_cost = node->count * AABB_area(&parent_aabb);
   float best_cost = parent_cost;
@@ -57,4 +72,7 @@ void FindBestSplitFn_SAH(const BVHnode *node, const Triangle *triangles,
       }
     }
   }
+#ifdef TRACY_ENABLE
+  TracyCZoneEnd(zone_sah);
+#endif
 }

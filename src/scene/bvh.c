@@ -1,8 +1,13 @@
 #include "scene/bvh.h"
 #include "arena.h"
+#include "asserts.h"
 #include "scene/aabb.h"
 #include "vec3.h"
 #include <math.h>
+
+#ifdef TRACY_ENABLE
+#include "TracyC.h"
+#endif // TRACY_ENABLE
 
 static void calculate_centroids(Triangle *tri, int tri_count, vec3 centroids[]);
 static void set_node_bounds(BVHnode *node, const Triangle tris[]);
@@ -22,6 +27,9 @@ void BVH_build(BVHnode *nodes, BVHNodeCount *nodes_offset,
                BVHSwapsLUTElement *swaps_lut, Triangle triangles[],
                BVHTriCount tri_offset, BVHTriCount t_count,
                FindBestSplitFn find_best_split_fn, Arena *arena) {
+#ifdef TRACY_ENABLE
+  TracyCZone(zone_build_bvh, true);
+#endif
   for (BVHTriCount i = 0; i < t_count; ++i)
     swaps_lut[i] = tri_offset + i;
 
@@ -36,53 +44,67 @@ void BVH_build(BVHnode *nodes, BVHNodeCount *nodes_offset,
   ++(*nodes_offset);
 
   Arena_rewind(am);
+#ifdef TRACY_ENABLE
+  TracyCZoneEnd(zone_build_bvh);
+#endif
 }
 
+// TODO: replace this recursive call with a while loop?
 // recursively subdivide a node until there are 2 primitives left
 void subdivide(BVHnode nodes[], int node_idx, Triangle tris[], vec3 centroids[],
                BVHNodeCount *created_nodes, BVHTriCount swaps_lut[],
                FindBestSplitFn find_best_split_fn) {
-  BVHnode *node = nodes + node_idx;
-  // 0. first set the bounds, only a leaf node can be subdivided!
-  set_node_bounds(node, tris);
+#define nodes_stack_size 50
+  int nodes_stack[nodes_stack_size];
+  uint32_t nodes_stack_ptr = 0;
+  nodes_stack[nodes_stack_ptr++] = node_idx;
 
-  if (node->count <= 8)
-    return;
+  while (nodes_stack_ptr > 0) {
+    node_idx = nodes_stack[--nodes_stack_ptr];
+    BVHnode *node = nodes + node_idx;
+    // 0. first set the bounds, only a leaf node can be subdivided!
+    set_node_bounds(node, tris);
 
-  // 1. determine axis and position of a split
-  int axis = -1;
-  float split_pos = -INFINITY;
-  find_best_split_fn(node, tris, centroids, &axis, &split_pos);
-  if (axis == -1 || split_pos == -INFINITY)
-    return;
+    if (node->count <= 8)
+      continue;
 
-  // 2.
-  BVHTriCount split_index = split_group(
-      tris, centroids, node->first, node->count, axis, split_pos, swaps_lut);
+    // 1. determine axis and position of a split
+    int axis = -1;
+    float split_pos = -INFINITY;
+    find_best_split_fn(node, tris, centroids, &axis, &split_pos);
+    
+    if (axis == -1 || split_pos == -INFINITY)
+      continue;
 
-  // 3. create child nodes for the splits
-  // if the split turned out to leave all elements on one side
-  // then we leave that node as it was
-  if (split_index == node->first || split_index == (node->first + node->count))
-    return;
+    // 2.
+    BVHTriCount split_index = split_group(
+        tris, centroids, node->first, node->count, axis, split_pos, swaps_lut);
 
-  int left_node_idx = ++(*created_nodes);
-  int right_node_idx = ++(*created_nodes);
-  BVHnode *left_node = &nodes[left_node_idx];
-  BVHnode *right_node = &nodes[right_node_idx];
-  left_node->first = node->first;
-  left_node->count = split_index - node->first;
-  right_node->first = split_index;
-  right_node->count = node->count - left_node->count;
+    // 3. create child nodes for the splits
+    // if the split turned out to leave all elements on one side
+    // then we leave that node as it was
+    if (split_index == node->first ||
+        split_index == (node->first + node->count))
+      continue;
 
-  // denote that this node is a parent
-  node->count = 0;
-  node->first = left_node_idx;
+    int left_node_idx = ++(*created_nodes);
+    int right_node_idx = ++(*created_nodes);
+    BVHnode *left_node = &nodes[left_node_idx];
+    BVHnode *right_node = &nodes[right_node_idx];
+    left_node->first = node->first;
+    left_node->count = split_index - node->first;
+    right_node->first = split_index;
+    right_node->count = node->count - left_node->count;
 
-  subdivide(nodes, left_node_idx, tris, centroids, created_nodes, swaps_lut,
-            find_best_split_fn);
-  subdivide(nodes, right_node_idx, tris, centroids, created_nodes, swaps_lut,
-            find_best_split_fn);
+    // denote that this node is a parent
+    node->count = 0;
+    node->first = left_node_idx;
+
+    if (nodes_stack_ptr + 2 > nodes_stack_size)
+      ERROR("Nodes stack overflow in subdivide!");
+    nodes_stack[nodes_stack_ptr++] = left_node_idx;
+    nodes_stack[nodes_stack_ptr++] = right_node_idx;
+  }
 }
 
 // centroids should already have an allocated memory for tri_count of vec3
@@ -111,6 +133,9 @@ static BVHTriCount split_group(Triangle tris[], vec3 centroids[],
                                BVHTriCount first, BVHTriCount count,
                                unsigned int axis, float split_pos,
                                BVHTriCount swaps_lut[]) {
+#ifdef TRACY_ENABLE
+  TracyCZone(split_group, true);
+#endif
   int i = first;
   int j = i + count - 1;
   while (i <= j) {
@@ -124,5 +149,8 @@ static BVHTriCount split_group(Triangle tris[], vec3 centroids[],
       --j;
     }
   }
+#ifdef TRACY_ENABLE
+  TracyCZoneEnd(split_group);
+#endif
   return i;
 }

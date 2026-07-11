@@ -7,6 +7,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef TRACY_ENABLE
+#include "TracyC.h"
+#endif // TRACY_ENABLE
+
 // renders just pure white
 #define DEFAULT_FRAGMENT_SHADER                                                \
   "#version 330 core\nvoid main(){gl_FragColor=vec4(1.0,1.0,1.0,1.0);}"
@@ -34,16 +38,26 @@ RendererShaders RendererShaders_new(const char *vertex_shader_path,
 }
 
 bool RendererShaders_update(RendererShaders *self, Arena *arena) {
+#ifdef TRACY_ENABLE
+  TracyCZone(update_shaders, true);
+#endif // TRACY_ENABLE
+  bool changed = false;
   if (FileWatcher_did_change(&self->vertex_shader) ||
       FileWatcher_did_change(&self->fragment_shader)) {
     printf("Shaders have changed, reloading...\n");
     RendererShaders_force_update(self, arena);
-    return true;
+    changed = true;
   }
-  return false;
+#ifdef TRACY_ENABLE
+  TracyCZoneEnd(update_shaders);
+#endif // TRACY_ENABLE
+  return changed;
 }
 
 void RendererShaders_force_update(RendererShaders *self, Arena *arena) {
+#ifdef TRACY_ENABLE
+  TracyCZone(force_update_shaders, true);
+#endif // TRACY_ENABLE
   GLuint new_program = create_shader_program(self->vertex_shader.path,
                                              self->fragment_shader.path, arena);
 
@@ -58,6 +72,9 @@ void RendererShaders_force_update(RendererShaders *self, Arena *arena) {
     GL_CALL(glDeleteProgram(self->program));
 
   self->program = new_program;
+#ifdef TRACY_ENABLE
+  TracyCZoneEnd(force_update_shaders);
+#endif // TRACY_ENABLE
 }
 
 void RendererShaders_delete(RendererShaders *self) {

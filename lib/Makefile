@@ -7,6 +7,7 @@ include glad.mk
 include glfw.mk
 include cgltf.mk
 include stb_image_write.mk
+include tracy.mk
 
 clean:
 	rm -rf $(LIB_BUILD_DIR)

@@ -5,8 +5,9 @@ CXX = clang++
 CFLAGS = -std=c11 -Wall -Wextra -pedantic-errors
 CFLAGS += -Wcast-align -Wpointer-arith -Wcast-qual -Wunreachable-code -Wshadow 
 CFLAGS += -Iinclude 
-DEBUG_FLAGS = -g
-RELEASE_FLAGS = -O2 -DNDEBUG -march=native -flto
+DEBUG_CFLAGS = -g
+PROFILE_CFLAGS = -O2 -DTRACY_ENABLE -march=native -flto
+RELEASE_CFLAGS = -O2 -DNDEBUG -march=native -flto
 BUILD_DIR_PREFIX = build
 INSTALL_PREFIX = install
 
@@ -18,15 +19,19 @@ ifeq ($(shell uname), Linux)
 	LDFLAGS += -ldl -lm -lX11 -lpthread
 endif
 
-# must be either debug or release
+# must be either debug, release or profile
 MODE = debug
 
 ifeq ($(MODE), debug)
-	CFLAGS += $(DEBUG_FLAGS)
+	CFLAGS += $(DEBUG_CFLAGS)
 	BUILD_DIR = $(BUILD_DIR_PREFIX)/debug
 endif
+ifeq ($(MODE), profile)
+	CFLAGS += $(PROFILE_CFLAGS)
+	BUILD_DIR = $(BUILD_DIR_PREFIX)/profile
+endif
 ifeq ($(MODE), release)
-	CFLAGS += $(RELEASE_FLAGS)
+	CFLAGS += $(RELEASE_CFLAGS)
 	BUILD_DIR = $(BUILD_DIR_PREFIX)/release
 endif
 
@@ -45,6 +50,16 @@ install:
 	cp -r shaders $(INSTALL_PREFIX)
 	cp -r fonts $(INSTALL_PREFIX)
 	cp $(BUILD_DIR)/main $(INSTALL_PREFIX)/PathTracingRenderer
+
+ifeq ($(MODE), profile)
+profile: $(TARGET)
+	lib/$(TRACY_SERVER_PROFILER) -a 127.0.0.1 &
+	$(TARGET)
+else
+profile: 
+	@$(MAKE) MODE=profile profile
+endif
+
 
 $(TARGET): $(BUILD_DEPS)
 	$(CXX) $(CFLAGS) $(BUILD_DEPS) $(LDFLAGS) -o $@
@@ -81,4 +96,4 @@ $(TESTS_TARGET): $(TESTS_DEPS)
 clean:
 	rm -rf $(BUILD_DIR)
 
-.PHONY: all install clean tests
+.PHONY: all profile install clean tests

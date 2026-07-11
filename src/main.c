@@ -10,6 +10,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#ifdef TRACY_ENABLE
+#include "TracyC.h"
+#endif // TRACY_ENABLE
+
 #define DESIRED_WIDTH 1280
 #define DESIRED_HEIGHT 720
 #define WINDOW_TITLE "Path Tracing Renderer"
@@ -19,6 +23,13 @@ static void delete_tmp_arena(void) {
   Arena_delete(&tmp_arena);
 }
 
+static void post_render(void) {
+#ifdef TRACY_ENABLE
+  TracyCZone(post_render, true);
+  TracyCZoneEnd(post_render);
+#endif // TRACY_ENABLE
+}
+
 int main(const int argc, const char **argv) {
   // pre-allocate 16MB of memory for any operations that may need it
   tmp_arena = Arena_new(16 * 1024 * 1024);
@@ -26,6 +37,7 @@ int main(const int argc, const char **argv) {
 
   AppState app_state = AppState_default();
   handle_args(argc, argv, &app_state);
+  // TODO: validate the app_state after it has been filled with user input
 
   Window window = Window_new(WINDOW_TITLE, DESIRED_WIDTH, DESIRED_HEIGHT);
   GUIOverlay gui = GUIOverlay_new(&window);
@@ -35,6 +47,9 @@ int main(const int argc, const char **argv) {
   Renderer_set_params(&renderer, app_state.settings.rendering_params);
 
   while (!glfwWindowShouldClose(window.glfw_window)) {
+#ifdef TRACY_ENABLE
+    TracyCZoneS(main_loop, 2, true);
+#endif // TRACY_ENABLE
     // NOTE: must poll every frame for the OS to know that this application is working
     WindowEventsData events = Window_poll_events(&window);
 
@@ -81,6 +96,7 @@ int main(const int argc, const char **argv) {
     AppState_render_and_display_frame(&app_state, &renderer, &gui, &window);
 
     // === post-render Actions ===
+    post_render();
     // if just finished rendering
     if (AppState_get_rendering_state(&app_state) == RenderingState_FINISHED && app_state.stats.rendering.total_time == 0) {
       StatsTimer_stop(&app_state.stats.rendering);
@@ -107,6 +123,9 @@ int main(const int argc, const char **argv) {
 
     // reset pending_actions for the next frame
     app_state.pending_actions = 0;
+#ifdef TRACY_ENABLE
+    TracyCZoneEnd(main_loop);
+#endif // TRACY_ENABLE
   }
 
   Renderer_delete(&renderer);

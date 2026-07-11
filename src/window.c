@@ -8,6 +8,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef TRACY_ENABLE
+#include "TracyC.h"
+#endif // TRACY_ENABLE
+
 // Function to handle glfw errors
 void glfw_error_callback(int error, const char *description) {
   fprintf(stderr, "Error (%d): %s\n", error, description);
@@ -78,6 +82,9 @@ WindowResolution Window_get_framebuffer_size(const Window *self) {
 void Window_display_framebuffer(GLuint fbo, WindowResolution fbo_res,
                                 WindowResolution display_res,
                                 WindowScalingMode scaling_mode) {
+#ifdef TRACY_ENABLE
+  TracyCZone(display_framebuffer, true);
+#endif // TRACY_ENABLE
   // desired x and y offset and width and height
   int dx, dy, dw, dh;
   switch (scaling_mode) {
@@ -114,6 +121,9 @@ void Window_display_framebuffer(GLuint fbo, WindowResolution fbo_res,
   GL_CALL(glBlitFramebuffer(0, 0, fbo_res.width, fbo_res.height, //
                             dx, dy, dx + dw, dy + dh,            //
                             GL_COLOR_BUFFER_BIT, GL_LINEAR));
+#ifdef TRACY_ENABLE
+  TracyCZoneEnd(display_framebuffer);
+#endif // TRACY_ENABLE
 }
 
 void Window_steal_mouse(GLFWwindow *window) {
@@ -151,7 +161,18 @@ WindowEventsData Window_poll_events(Window *self) {
   return events;
 }
 
-void Window_swap_buffers(Window *self) { glfwSwapBuffers(self->glfw_window); }
+void Window_swap_buffers(Window *self) {
+#ifdef TRACY_ENABLE
+  TracyCZone(swap_buffers, true);
+#endif // TRACY_ENABLE
+  glfwSwapBuffers(self->glfw_window);
+#ifdef TRACY_ENABLE
+  TracyCZoneEnd(swap_buffers);
+#endif // TRACY_ENABLE
+#ifdef TRACY_ENABLE
+  TracyCFrameMark
+#endif
+}
 
 void Window_delete(Window *self) {
   (void)(self);

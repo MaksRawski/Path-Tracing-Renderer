@@ -4,6 +4,10 @@
 #include "cimgui_impl.h"
 #include "gui/settings.h"
 
+#ifdef TRACY_ENABLE
+#include "TracyC.h"
+#endif // TRACY_ENABLE
+
 GUIOverlay GUIOverlay_new(Window *window) {
   GUIOverlay self = {._imgui_ctx = igCreateContext(NULL),
                      ._DEFAULT_STYLE = *igGetStyle(),
@@ -36,9 +40,15 @@ void GUIOverlay_update_state(GUIOverlay *self, AppState *state) {
 bool GUIOverlay_is_focused(void) { return igGetIO_Nil()->WantCaptureMouse; }
 
 void GUIOverlay_render_frame(GUIOverlay *self) {
+#ifdef TRACY_ENABLE
+  TracyCZone(gui_render, true);
+#endif // TRACY_ENABLE
   UNUSED(self);
   igRender();
   ImGui_ImplOpenGL3_RenderDrawData(igGetDrawData());
+#ifdef TRACY_ENABLE
+  TracyCZoneEnd(gui_render);
+#endif // TRACY_ENABLE
 }
 
 void GUIOverlay_scale(GUIOverlay *self, float scale) {

@@ -12,6 +12,10 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#ifdef TRACY_ENABLE
+#include "TracyC.h"
+#endif // TRACY_ENABLE
+
 #define VERTEX_SHADER_PATH "shaders/vertex.glsl"
 #define FRAGMENT_SHADER_PATH "shaders/renderer.glsl"
 
@@ -29,7 +33,13 @@ Renderer Renderer_new(Arena *arena) {
 }
 
 void Renderer_load_scene(Renderer *self, const Scene *scene) {
+#ifdef TRACY_ENABLE
+  TracyCZone(load_scene, true);
+#endif // TRACY_ENABLE
   RendererBuffers_set_scene(&self->_buffers, scene);
+#ifdef TRACY_ENABLE
+  TracyCZoneEnd(load_scene);
+#endif // TRACY_ENABLE
   printf("Loaded triangles: %d\n", scene->triangles_count);
   printf("Created nodes: %d\n", scene->bvh_nodes_count);
 }
@@ -46,14 +56,24 @@ void Renderer_set_params(Renderer *self, RendererParameters params) {
 }
 
 void Renderer_clear_backbuffer(Renderer *self) {
+#ifdef TRACY_ENABLE
+  TracyCZone(clear_backbuffer, true);
+#endif // TRACY_ENABLE
   RendererBuffersBack_resize(&self->_buffers.back, self->_res);
+#ifdef TRACY_ENABLE
+  TracyCZoneEnd(clear_backbuffer);
+#endif // TRACY_ENABLE
 }
 
 GLuint Renderer_get_fbo(const Renderer *self) {
   return self->_buffers.back.fbo;
 }
 
+// NOTE: OpenGL is actually non-blocking
 void Renderer_render_frame(const Renderer *self, uint32_t frame_number) {
+#ifdef TRACY_ENABLE
+  TracyCZone(render_frame, true);
+#endif // TRACY_ENABLE
   // setup the program and bind the vao associated with the quad
   // and the vbo holding the vertices of the quad
   GL_CALL(glUseProgram(self->_shaders.program));
@@ -68,6 +88,9 @@ void Renderer_render_frame(const Renderer *self, uint32_t frame_number) {
   GL_CALL(glUniform1i(
       glGetUniformLocation(self->_shaders.program, "BackBufferTexture"), 0));
   GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
+#ifdef TRACY_ENABLE
+  TracyCZoneEnd(render_frame);
+#endif // TRACY_ENABLE
 }
 
 void Renderer_delete(Renderer *self) {
