@@ -86,7 +86,7 @@ int main(const int argc, const char **argv) {
       StatsTimer_stop(&app_state.stats.rendering);
       printf("Rendered %d frames in %s.\n",
              app_state.settings.rendering_params.frames_to_render,
-             Stats_display(app_state.stats.rendering.total_time).str);
+             Stats_fmt_time(app_state.stats.rendering.total_time).str);
 
       if (app_state.settings.save_after_rendering)
         app_state.pending_actions |= Action_save_image;

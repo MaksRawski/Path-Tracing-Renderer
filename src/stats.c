@@ -34,29 +34,17 @@ void Stats_reset_rendering(Stats *self) {
   self->frame_number = 0;
 }
 
-bool Stats_string_time(double time_in_s, char *buffer, size_t buf_size) {
-  double time_in_ms = time_in_s * 1000.0;
-  double time_in_us = time_in_ms * 1000.0;
-  int wanted_to_write;
-  if (time_in_ms < 1.0) {
-    wanted_to_write = snprintf(buffer, buf_size, "%.3f us", time_in_us);
-  } else if (time_in_s < 1.0) {
-    wanted_to_write = snprintf(buffer, buf_size, "%.3f ms", time_in_ms);
-  } else {
-    wanted_to_write = snprintf(buffer, buf_size, "%.3f s", time_in_s);
-  }
-  if (wanted_to_write >= (long)buf_size) {
-    return false;
-  }
-  return true;
-}
-
-TinyString Stats_display(double time_in_s) {
+TinyString Stats_fmt_time(double time_in_s) {
   TinyString out = {0};
-  bool fit_in_buffer = Stats_string_time(time_in_s, out.str, sizeof(out));
-  ASSERTQ_CUSTOM(fit_in_buffer,
-                 "TinyString turned out to be too tiny for `Stats_string_time` "
-                 "formatting!");
+  const double time_in_ms = time_in_s * 1000.0;
+  const double time_in_us = time_in_ms * 1000.0;
+  if (time_in_ms < 1.0) {
+    sprintf(out.str,  "%.3f us", time_in_us);
+  } else if (time_in_s < 1.0) {
+    sprintf(out.str, "%.3f ms", time_in_ms);
+  } else {
+    sprintf(out.str, "%.3f s", time_in_s);
+  }
   return out;
 }
 
@@ -65,9 +53,9 @@ SmallString Stats_str(const Stats *self) {
   int written =
       snprintf(out.str, sizeof(out.str),
                "scene load time: %s\nbvh build time: %s\nrendering time: %s\n",
-               Stats_display(self->scene_load.total_time).str,
-               Stats_display(self->bvh_build.total_time).str,
-               Stats_display(self->rendering.total_time).str);
+               Stats_fmt_time(self->scene_load.total_time).str,
+               Stats_fmt_time(self->bvh_build.total_time).str,
+               Stats_fmt_time(self->rendering.total_time).str);
   ASSERTQ_CUSTOM(written < (int)sizeof(out.str),
                  "SmallString turned out to be too small for Stats");
 

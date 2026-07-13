@@ -137,9 +137,9 @@ static inline void scene_stats(AppState *state) {
     igText("Created BVH nodes: %d", state->scene.bvh_nodes_count);
 
     igText("Loading scene time: %s",
-           Stats_display(state->stats.scene_load.total_time).str);
+           Stats_fmt_time(state->stats.scene_load.total_time).str);
     igText("BVH build time: %s",
-           Stats_display(state->stats.bvh_build.total_time).str);
+           Stats_fmt_time(state->stats.bvh_build.total_time).str);
   }
 }
 
@@ -254,7 +254,7 @@ static inline bool rendering_resolution(AppState *state) {
 
 static inline void rendering_stats(AppState *state) {
   igText("Rendering last frame took: %s",
-         Stats_display(state->stats.last_frame_rendering.total_time).str);
+         Stats_fmt_time(state->stats.last_frame_rendering.total_time).str);
 
   RenderingState render_state = AppState_get_rendering_state(state);
   switch (render_state) {
@@ -262,11 +262,11 @@ static inline void rendering_stats(AppState *state) {
     break;
   case RenderingState_RENDERING:
     igText("Elapsed rendering time: %s",
-           Stats_display(StatsTimer_elapsed(&state->stats.rendering)).str);
+           Stats_fmt_time(StatsTimer_elapsed(&state->stats.rendering)).str);
     break;
   case RenderingState_FINISHED:
     igText("Total rendering time: %s",
-           Stats_display(state->stats.rendering.total_time).str);
+           Stats_fmt_time(state->stats.rendering.total_time).str);
     break;
   }
   igText("Rendered frames: %d", state->stats.frame_number);
