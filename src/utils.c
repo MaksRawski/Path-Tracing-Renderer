@@ -39,7 +39,6 @@ const char *FilePath_get_file_name(const char *path) {
   return last_path_sep ? last_path_sep + 1 : path;
 }
 
-// TODO: this could be a simple multiplication
 size_t StringArray_join_len(const char *arr[], size_t arr_len,
                             const char *sep) {
   size_t total_written = 0;
@@ -74,11 +73,13 @@ int StringArray_find_closest_match(const char *s, size_t s_len, //
   int match = StringArray_find_closest_match_none;
   for (unsigned int i = 0; i < list_len; ++i) {
     if (list[i] == NULL) continue;
+    // NOTE: if the provided string is longer than the currently matched string then it can't be it
+    if (s_len > strlen(list[i])) continue;
 
     bool string_is_part_of_match = true;
     for (unsigned int c = 0; c < s_len; ++c)
       string_is_part_of_match &= (tolower(s[c]) == tolower(list[i][c]));
-
+    
     if (string_is_part_of_match) {
       if (match != StringArray_find_closest_match_none)
         return StringArray_find_closest_match_ambiguous;
