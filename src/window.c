@@ -1,12 +1,15 @@
 #include "asserts.h"
 #include "glad/gl.h"
 //
-#include "opengl/gl_call.h"
+#define CIMGUI_DEFINE_ENUMS_AND_STRUCTS
+#include "cimgui.h"
 #include "window.h"
 
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+bool g_RENDERER_HOVERED = false;
 
 // Function to handle glfw errors
 void glfw_error_callback(int error, const char *description) {
@@ -75,45 +78,54 @@ WindowResolution Window_get_framebuffer_size(const Window *self) {
   return res;
 }
 
-void Window_display_framebuffer(GLuint fbo, WindowResolution fbo_res,
-                                WindowResolution display_res,
+// TODO: rethink how should display of rendered frame be done if we're using docking
+void Window_display_framebuffer(GLuint fbo_tex, WindowResolution fbo_res,
+                                WindowResolution _display_res,
                                 WindowScalingMode scaling_mode) {
-  // desired x and y offset and width and height
-  int dx, dy, dw, dh;
+  igBegin("Rendering", NULL, 0);
+  g_RENDERER_HOVERED = igIsWindowHovered(0);
+
+  ImVec2 ig_window_size;
+  igGetContentRegionAvail(&ig_window_size);
+  const struct ImTextureRef *ig_tex_ref = ImTextureRef_ImTextureRef_TextureID(fbo_tex);
+
+  // NOTE: glTF spec actually says:
+  // "client implementations SHOULD NOT crop or perform non-uniform scaling (“stretching”) to fill the viewport."
+  // so providing stretching feels kind of stupid 
+  // desired x and y offset and width and height w.r.t. window size
   switch (scaling_mode) {
   case WindowScalingMode_STRETCH: {
-    dx = 0;
-    dy = 0;
-    dw = display_res.width;
-    dh = display_res.height;
+    igImage(*ig_tex_ref, ig_window_size, (ImVec2){.x = 0, .y = 1}, (ImVec2){.x = 1, .y = 0});
     break;
   }
   case WindowScalingMode_FIT_CENTER: {
-    double fbo_aspect_ratio = (double)fbo_res.width / fbo_res.height;
-    double display_aspect_ratio =
-        (double)display_res.width / display_res.height;
-
-    if (fbo_aspect_ratio >= display_aspect_ratio) {
-      dw = display_res.width;
-      dh = display_res.width / fbo_aspect_ratio;
-      dx = 0;
-      dy = (double)(display_res.height - dh) / 2.0;
+    const double fbo_aspect_ratio = (double)fbo_res.width / fbo_res.height;
+    const double ig_window_aspect_ratio = (double)ig_window_size.x / ig_window_size.y;
+    // size that fits inside ig_window_size that stil has the same aspect ratio that fbo_res had
+    ImVec2 desired_size;
+    if (fbo_aspect_ratio >= ig_window_aspect_ratio) {
+      desired_size.x = ig_window_size.x;
+      desired_size.y = ig_window_size.x / fbo_aspect_ratio;
     } else {
-      dh = display_res.height;
-      dw = display_res.height * fbo_aspect_ratio;
-      dx = (double)(display_res.width - dw) / 2.0;
-      dy = 0;
+      desired_size.y = ig_window_size.y;
+      desired_size.x = ig_window_size.y * fbo_aspect_ratio;
     }
+
+    // ig_cursor is the top left aligned, left corner in absolute (window) coordinates
+    // of where the image would normally be placed
+    ImVec2 ig_cursor;
+    igGetCursorScreenPos(&ig_cursor);
+    // center align
+    ig_cursor.x += (ig_window_size.x - desired_size.x) / 2;
+    ig_cursor.y += (ig_window_size.y - desired_size.y) / 2;
+    igSetCursorScreenPos(ig_cursor);
+    igImage(*ig_tex_ref, desired_size, (ImVec2){.x = 0, .y = 1}, (ImVec2){.x = 1, .y = 0});
   } break;
   case WindowScalingMode__COUNT: {
     UNREACHABLE();
   }
   }
-  GL_CALL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo));
-  GL_CALL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
-  GL_CALL(glBlitFramebuffer(0, 0, fbo_res.width, fbo_res.height, //
-                            dx, dy, dx + dw, dy + dh,            //
-                            GL_COLOR_BUFFER_BIT, GL_LINEAR));
+  igEnd();
 }
 
 void Window_steal_mouse(GLFWwindow *window) {

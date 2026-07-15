@@ -1,5 +1,3 @@
-#include "gui.h"
-
 #include "input_handler.h"
 #include "input_handler_action.h"
 #include "scene/camera.h"
@@ -25,9 +23,9 @@ InputHandlerAction InputHandler_update(InputHandler *self,
 }
 
 void InputHandler_update_focus(InputHandler *self) {
-  bool lmb_pressed =
-      Window_is_mouse_button_pressed(self->window, GLFW_MOUSE_BUTTON_1);
-  bool mouse_over_renderer = !GUIOverlay_is_focused();
+  const bool lmb_pressed = Window_is_mouse_button_pressed(self->window, GLFW_MOUSE_BUTTON_1);
+  const bool mouse_over_renderer = g_RENDERER_HOVERED;
+
   if (mouse_over_renderer && lmb_pressed && !self->renderer_focused) {
     self->renderer_focused = true;
     Window_steal_mouse(self->window->glfw_window);

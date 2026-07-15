@@ -49,6 +49,10 @@ void Renderer_clear_backbuffer(Renderer *self) {
   RendererBuffersBack_resize(&self->_buffers.back, self->_res);
 }
 
+GLuint Renderer_get_fbo_tex(const Renderer *self) {
+  return self->_buffers.back.fboTex;
+}
+
 GLuint Renderer_get_fbo(const Renderer *self) {
   return self->_buffers.back.fbo;
 }

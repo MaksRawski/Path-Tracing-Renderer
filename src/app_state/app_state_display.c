@@ -18,7 +18,7 @@ void AppState_render_and_display_frame(AppState *app_state, Renderer *renderer,
   if (render_state == RenderingState_RENDERING ||
       render_state == RenderingState_FINISHED) {
     Window_display_framebuffer(
-        Renderer_get_fbo(renderer),
+        Renderer_get_fbo_tex(renderer),
         app_state->settings.rendering_params.rendering_resolution,
         Window_get_framebuffer_size(window), app_state->settings.scaling_mode);
   }

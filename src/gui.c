@@ -16,6 +16,7 @@ GUIOverlay GUIOverlay_new(Window *window) {
   GUIOverlay_scale(&self, scale);
 
   ImGuiIO *io = igGetIO_Nil();
+  io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
   ImFontAtlas_AddFontFromFileTTF(io->Fonts, "fonts/Cousine/Cousine-Regular.ttf",
                                  12, NULL, NULL);
 
@@ -30,10 +31,23 @@ void GUIOverlay_update_state(GUIOverlay *self, AppState *state) {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   igNewFrame();
+
+  const ImGuiID dockspace_id = igGetID_Str("dockspace");
+  const ImGuiViewport *viewport = igGetMainViewport();
+  if (igDockBuilderGetNode(dockspace_id) == NULL) {
+    igDockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+    igDockBuilderSetNodeSize(dockspace_id, viewport->Size);
+    const ImGuiID dock_main = dockspace_id;
+    const ImGuiID dock_settings = 0;
+    // TODO: this one shouldn't be movable?
+    igDockBuilderDockWindow("Rendering", dock_main);
+    igDockBuilderDockWindow("Settings", dock_settings);
+    igDockBuilderFinish(dockspace_id);
+  }
+  igDockSpaceOverViewport(dockspace_id, viewport, ImGuiDockNodeFlags_PassthruCentralNode, ImGuiWindowClass_ImGuiWindowClass());
+  
   GuiSettings_draw(self, state);
 }
-
-bool GUIOverlay_is_focused(void) { return igGetIO_Nil()->WantCaptureMouse; }
 
 void GUIOverlay_render_frame(GUIOverlay *self) {
   UNUSED(self);

@@ -8,6 +8,8 @@
 #include "window/window_coordinate.h"
 #include "window/window_events.h"
 
+extern bool g_RENDERER_HOVERED;
+
 typedef struct {
   GLFWwindow *glfw_window;
 } Window;
@@ -21,7 +23,7 @@ Window Window_new(const char *window_title, int width, int height);
 
 WindowEventsData Window_poll_events(Window *self);
 
-void Window_display_framebuffer(GLuint fbo, WindowResolution fbo_res,
+void Window_display_framebuffer(GLuint fbo_tex, WindowResolution fbo_res,
                                 WindowResolution display_res,
                                 WindowScalingMode scaling_mode);
 WindowResolution Window_get_framebuffer_size(const Window *self);

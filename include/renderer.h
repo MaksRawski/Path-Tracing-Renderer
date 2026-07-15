@@ -21,6 +21,7 @@ void Renderer_set_params(Renderer *self, RendererParameters params);
 
 void Renderer_render_frame(const Renderer *self, unsigned int frame_number);
 GLuint Renderer_get_fbo(const Renderer *self);
+GLuint Renderer_get_fbo_tex(const Renderer *self);
 
 void Renderer_clear_backbuffer(Renderer *self);
 
