@@ -6,7 +6,7 @@ Interactive Path Tracing Renderer with an OpenGL backend, written in C.
 
 ## Current features:
 - GUI to control internal rendering parameters
-- Support for many GPUs thanks to OpenGL 4.6
+- Support for many GPUs (specifically those without hardware ray tracing support) thanks to the usage of OpenGL 4.6
 - Basic support of glTF 2.0
 - Move the camera around the scene
 - Save rendered image to file
@@ -16,10 +16,11 @@ Interactive Path Tracing Renderer with an OpenGL backend, written in C.
 
 
 ## Building
-***NOTE***: Prebuilt binaries for Windows, macOS and Linux can be downloaded from the [Releases page](https://github.com/MaksRawski/Path-Tracing-Renderer/releases).
+***NOTE***: Prebuilt binaries for Windows, macOS and Linux can be downloaded from the 
+[Releases page](https://github.com/MaksRawski/Path-Tracing-Renderer/releases).
 
 
-This project uses submodules for its dependencies, so make sure to get them too while cloning.
+This project uses submodules for its dependencies, so make sure to get them when cloning.
 ```
 git clone https://github.com/MaksRawski/PathTracingRenderer --recurse-submodules
 ```
@@ -34,9 +35,9 @@ The only system dependencies on Linux are `make`, `cmake` a C compiler and whate
 
 On Windows and macOS, [cmake](https://cmake.org/download/) and a C compiler should be enough.
 
-Once you have them, you can build the project using either Make (recommended for Linux) or CMake (only option for Windows, and the recommended one for macOS).
+Once you have them, you can build the project using either Make (recommended for Linux) or CMake (only option for Windows and macOS).
 
-### Make
+### Make (Linux)
 Build dependencies 
 ```
 make -Clib
@@ -57,7 +58,28 @@ Run tests:
 make tests
 ```
 
-### CMake
+### CMake (Windows)
+Configure 
+```
+cmake -Bbuild -DCMAKE_BUILD_TYPE=Release
+```
+
+Build the project
+```
+cmake --build build --config Release
+```
+
+Run it
+```
+./build/Release/PathTracingRenderer.exe
+```
+
+Run tests:
+```
+cmake -Bbuild -DBUILD_TESTS=ON && cmake --build build --config Debug && ./build/debug/tests.exe
+```
+
+### CMake (macOS)
 Configure 
 ```
 cmake -Bbuild -DCMAKE_BUILD_TYPE=Release
@@ -88,14 +110,15 @@ cmake -Bbuild -DBUILD_TESTS=ON && cmake --build build && ./build/tests
 
 - `StructName_new` for "constructors" and `StructName_delete` for "destructors"
 - `StructName_function_name` for functions that operate on a given struct directly
-- `function__template` for macros that expand into function definitons
+- `function__template` for macros that expand into function definitions
 - a pair of `MACRO_NAME` and `MACRO_NAME_impl` for functions that need `__LINE__` and `__FILE__`
 - `MACRO_NAME_` for a not to be used directly macro 
+- `g_GLOBAL` for global variables
 
 ### Other
 - "private" struct functions/helper functions are `static` defined within the same translation unit.
 - stack allocation is heavily preferred
-    - functions that "return a string" take a `char *buf` as argument or return either `SmallString` (`char[1024]`) or `TinyString` (`char[16]`)
-    - 16MB Arena is allocated at the beginning of main and is passed around for all temporary allocations needs
-    - only big allocations (theoretically gigabytes) are `malloc`'ed
+- functions that "return a string" take a `char *buf` as argument or return either `SmallString` (`char[1024]`) or `TinyString` (`char[16]`)
+- 16MB Arena is allocated at the beginning of main and is passed around for all temporary allocations needs
+- only big allocations (theoretically gigabytes) are `malloc`'ed
 - `stdint.h` types are preferred over `int`, `long` etc. 

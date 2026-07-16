@@ -29,7 +29,7 @@ jobs:
       if: runner.os == 'Linux'
       run: make -Clib
 
-    - name: Configure CMake (Windows, MacOS)
+    - name: Configure CMake (Windows, macOS)
       if: runner.os != 'Linux'
       run: >
         cmake -B ${{github.workspace}}/build
@@ -42,7 +42,7 @@ jobs:
       if: runner.os == 'Linux'
       run: make MODE=release
 
-    - name: Build (Windows, MacOS)
+    - name: Build (Windows, macOS)
       if: runner.os != 'Linux'
       run: cmake --build ${{github.workspace}}/build --config Release
 
@@ -54,15 +54,15 @@ jobs:
       if: runner.os == 'Windows'
       run: ${{github.workspace}}/build/Release/tests.exe
 
-    - name: Test (MacOS)
-      if: runner.os == 'MacOS'
+    - name: Test (macOS)
+      if: runner.os == 'macOS'
       run: ${{github.workspace}}/build/tests
 
     - name: Install (Linux)
       if: runner.os == 'Linux'
       run: make MODE=release install
 
-    - name: Install (Windows, MacOS)
+    - name: Install (Windows, macOS)
       if: runner.os != 'Linux'
       run: cmake --install ${{github.workspace}}/build
 
