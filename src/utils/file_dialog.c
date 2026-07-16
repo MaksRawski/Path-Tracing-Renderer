@@ -1,4 +1,3 @@
-#include "gui/file_browser.h"
 #include "asserts.h"
 
 #if defined(__linux__) || defined(__APPLE__)
@@ -14,8 +13,11 @@ static bool read_output_of_cmd(const char *cmd, char *out, size_t out_size) {
   FILE *fd = popen(cmd, "r");
   if (fd == NULL)
     ERROR("Failed to create a process!");
-  if (fgets(out, out_size, fd) == NULL)
+  if (fgets(out, out_size, fd) == NULL) {
+    // NOTE: this is not a irrecoverable error so we just log it
+    fprintf(stderr, RED("ERROR:") "fgets of popen(\"%s\") failed, out_size = %lu\n", cmd, out_size);
     return false;
+  }
   else
     out[strcspn(out, "\n")] = 0;
   int status = pclose(fd);
@@ -31,8 +33,12 @@ static bool read_output_of_cmd(const char *cmd, char *out, size_t out_size) {
 #ifdef _WIN32
 #include <stdio.h>
 #include <windows.h>
+bool FileDialog_is_available(void) {
+  // TODO: check if it actually is always available
+  return true;
+}
 // https://learn.microsoft.com/en-us/windows/win32/dlgbox/using-common-dialog-boxes#opening-a-file
-bool GuiFileBrowser_open(char out_path[], size_t capacity) {
+bool FileDialog_open_gltf(char out_path[], size_t capacity) {
   OPENFILENAME ofn;
   char szFile[260];
 
@@ -57,16 +63,19 @@ bool GuiFileBrowser_open(char out_path[], size_t capacity) {
   }
 }
 #elif defined(__APPLE__)
-bool GuiFileBrowser_open(char out_path[], size_t capacity) {
-  if (system("which osascript &> /dev/null") == 1)
-    ERROR("osascript not installed!");
+bool FileDialog_is_available(void) {
+  return (system("which osascript &> /dev/null") == 0);
+}
+bool FileDialog_open_gltf(char out_path[], size_t capacity) {
   return read_output_of_cmd("osascript -e 'POSIX PATH of (choose file of type {\"///\", \"gltf\", \"glb\"})'", out_path, capacity);
 }
 #elif defined(__linux__)
-bool GuiFileBrowser_open(char out_path[], size_t capacity) {
-  if (system("zenity --version &> /dev/null") == 1)
-    ERROR("zenity not installed!");
-  // TODO: try to use kdialog or sth if zenity not installed
-  return read_output_of_cmd("zenity --file-selection", out_path, capacity);
+  // TODO: try to use kdialog or sth if zenity not installed,
+  // remember to update FileDialog_not_available_msg afterwards
+bool FileDialog_is_available(void) {
+  return (system("zenity --version &> /dev/null") == 0);
+}
+bool FileDialog_open_gltf(char out_path[], size_t capacity) {
+  return read_output_of_cmd("zenity --file-selection --file-filter='glTF(*.gltf, *.glb) | *.gltf *.glb'", out_path, capacity);
 }
 #endif // 

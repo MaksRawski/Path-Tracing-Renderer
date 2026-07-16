@@ -1,12 +1,13 @@
 #include "gui/settings.h"
 #include "action.h"
-#include "gui/file_browser.h"
+#include "asserts.h"
 #include "rad_deg.h"
 #include "scene/bvh/strategies.h"
 #include "scene/camera.h"
 #include "small_string.h"
 #include "stats.h"
 #include "utils.h"
+#include "utils/file_dialog.h"
 #include "window/scaling.h"
 #include "yawpitch.h"
 
@@ -46,12 +47,12 @@ void GuiSettings_draw(GUIOverlay *gui, AppState *state) {
 
 static void tooltip(const char *desc);
 
-static inline void scene_load_button(AppState *state);
-static inline void scene_bvh_type_combobox(AppState *state);
+static inline void scene_path(AppState *state);
+static inline void scene_bvh_type(AppState *state);
 static inline void scene_stats(AppState *state);
 static inline void scene(AppState *state) {
-  scene_load_button(state);
-  scene_bvh_type_combobox(state);
+  scene_path(state);
+  scene_bvh_type(state);
 
   scene_stats(state);
 }
@@ -109,19 +110,39 @@ static inline void misc(GUIOverlay *gui, AppState *state) {
 }
 
 // === SCENE ===
-static inline void scene_load_button(AppState *state) {
-  ImVec2 button_size = {.x = 0, .y = 0};
-  // TODO: enable this button only if on windows or zenity is installed
-  if (igButton("Load scene", button_size)) {
-    SmallString chosen_path = SmallString_new("");
-    if (GuiFileBrowser_open(chosen_path.str, sizeof(SmallString))) {
+static inline void scene_path(AppState *state) {
+  const ImVec2 button_size = {.x = 0, .y = 0};
+
+  static SmallString chosen_path = {0};
+  // NOTE: check if nfd is available only on the first call to this function (first draw)
+  static int8_t native_file_dialog_available = -1;
+  if (native_file_dialog_available == -1) {
+    native_file_dialog_available = FileDialog_is_available();
+    if (!native_file_dialog_available)
+        fprintf(stderr, YELLOW("NOTE: ") //
+                "Defaulting to text input as native file dialog is not available: "
+                FileDialog_not_available_msg "\n");
+    // NOTE: also setting this function-local on the first draw
+    chosen_path = state->settings.scene_path;
+  }
+  
+  if (native_file_dialog_available) {
+    if (igButton("Load scene", button_size)) {
+      if (FileDialog_open_gltf(chosen_path.str, sizeof(SmallString))) {
+        state->settings.scene_path = chosen_path;
+        state->pending_actions |= Action_load_scene;
+      }
+    }
+  } else {
+    igInputText("Scene path", chosen_path.str, sizeof(chosen_path), 0, NULL, NULL);
+    if (igButton("Load scene", button_size)) {
       state->settings.scene_path = chosen_path;
       state->pending_actions |= Action_load_scene;
     }
   }
 }
 
-static inline void scene_bvh_type_combobox(AppState *state) {
+static inline void scene_bvh_type(AppState *state) {
   if (igCombo_Str_arr("BVH type", (int *)&state->settings.BVH_build_strat,
                       BVHStrategy_str, BVHStrategy__COUNT, 5)) {
     state->pending_actions |= Action_build_bvh;
